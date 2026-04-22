@@ -16,6 +16,10 @@
       }
     }
   ],
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "school_saas.settings",
+    "PYTHONPATH": "backend"
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
