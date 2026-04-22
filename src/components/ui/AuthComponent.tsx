@@ -199,7 +199,11 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         }, TEXT_LOOP_INTERVAL * 2000);
       } catch (err: any) {
         setModalStatus('closed');
-        setInlineError(err.response?.data?.error || "Google login failed.");
+        let errorMsg = err.response?.data?.error || "Google login failed.";
+        if (typeof errorMsg === 'object') {
+          errorMsg = JSON.stringify(errorMsg);
+        }
+        setInlineError(errorMsg);
       }
     },
     onError: () => {
@@ -239,7 +243,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         }, TEXT_LOOP_INTERVAL * 3000);
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || err.response?.data?.detail || err.message || "Authentication failed.";
+      let errorMsg = err.response?.data?.error || err.response?.data?.detail || err.message || "Authentication failed.";
+      if (typeof errorMsg === 'object') {
+        errorMsg = JSON.stringify(errorMsg);
+      }
       setInlineError(errorMsg); 
       // setModalStatus('error'); // Disabled modal as per "error login page pr hi show krwaya"
     }
