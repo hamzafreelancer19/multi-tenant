@@ -223,15 +223,15 @@ export default function DashboardLayout() {
       <main className="main-content">
         <header className="topbar">
           <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button 
-              className="icon-btn mobile-only" 
+            <button
+              className="icon-btn mobile-only"
               onClick={() => setIsMobileMenuOpen(true)}
               style={{ display: 'none' }} // Controlled by CSS but added here for safety
             >
               <Menu size={20} />
             </button>
-            <button 
-              className="icon-btn desktop-only" 
+            <button
+              className="icon-btn desktop-only"
               onClick={() => setIsCollapsed(!isCollapsed)}
               title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
@@ -248,8 +248,8 @@ export default function DashboardLayout() {
             </button>
 
             <div style={{ position: "relative" }}>
-              <button 
-                className={`icon-btn ${showNotifs ? 'active' : ''}`} 
+              <button
+                className={`icon-btn ${showNotifs ? 'active' : ''}`}
                 onClick={() => setShowNotifs(!showNotifs)}
               >
                 <Bell size={20} />
@@ -257,7 +257,7 @@ export default function DashboardLayout() {
                   <span className="badge">{unreadCount}</span>
                 )}
               </button>
-              
+
               {showNotifs && (
                 <div className="notif-dropdown glass-panel">
                   <div className="notif-header">
@@ -268,21 +268,21 @@ export default function DashboardLayout() {
                       </button>
                     )}
                   </div>
-                  
+
                   <div className="notif-scroll">
                     {notifications.length > 0 ? (
                       notifications.map((n) => (
-                        <div 
-                          key={n.id} 
+                        <div
+                          key={n.id}
                           className={`notif-item ${!n.is_read ? 'notif-item-unread' : ''}`}
                         >
-                          <div className="notif-item-icon" style={{ 
+                          <div className="notif-item-icon" style={{
                             background: n.message.includes('registration') ? 'var(--blue-soft)' : 'var(--accent-soft)',
                             color: n.message.includes('registration') ? 'var(--blue)' : 'var(--accent)'
                           }}>
                             {n.message.includes('registration') ? <School size={18} /> : <Bell size={18} />}
                           </div>
-                          
+
                           <div className="notif-item-content">
                             <p className="notif-item-msg">{n.message}</p>
                             <span className="notif-item-time">
@@ -290,10 +290,10 @@ export default function DashboardLayout() {
                               {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          
+
                           {!n.is_read && (
-                            <button 
-                              className="notif-read-btn" 
+                            <button
+                              className="notif-read-btn"
                               title="Mark as read"
                               onClick={(e) => handleMarkRead(n.id, e)}
                             >

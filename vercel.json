@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/school_saas/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.9"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/school_saas/wsgi.py"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "backend/school_saas/wsgi.py"
+    },
+    {
+      "src": "/static/admin/(.*)",
+      "dest": "backend/school_saas/wsgi.py"
+    },
+    {
+      "src": "/static/rest_framework/(.*)",
+      "dest": "backend/school_saas/wsgi.py"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
