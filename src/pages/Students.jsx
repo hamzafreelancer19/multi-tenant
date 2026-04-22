@@ -37,7 +37,7 @@ export default function Students() {
   useEffect(() => { fetchStudents(); }, []);
 
   // ─── Filtering ───────────────────────────────────────────────────
-  const filtered = students.filter((s) => {
+  const filtered = Array.isArray(students) ? students.filter((s) => {
     const q = search.toLowerCase();
     const matchSearch = !q ||
       (s.name && s.name.toLowerCase().includes(q)) ||
@@ -45,7 +45,7 @@ export default function Students() {
       (s.class_name && s.class_name.toLowerCase().includes(q));
     const matchStatus = filterStatus === "All" || (s.status || "Active") === filterStatus;
     return matchSearch && matchStatus;
-  });
+  }) : [];
 
   // ─── Modal helpers ────────────────────────────────────────────────
   const openAdd = () => {
@@ -156,7 +156,7 @@ export default function Students() {
       {/* Stats bar */}
       <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
         {["All", "Active", "Inactive"].map((s) => {
-          const count = s === "All" ? students.length : students.filter(st => (st.status || "Active") === s).length;
+          const count = s === "All" ? (Array.isArray(students) ? students.length : 0) : (Array.isArray(students) ? students.filter(st => (st.status || "Active") === s).length : 0);
           return (
             <div key={s} style={{ background: "var(--bg-paper)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 16px", fontSize: "0.85rem", color: "var(--text-muted)" }}>
               <strong style={{ color: "var(--text)", fontSize: "1.1rem" }}>{count}</strong> {s}

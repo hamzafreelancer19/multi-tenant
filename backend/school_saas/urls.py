@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from users.views import MeView, SignupView
+from users.views import MeView, SignupView, GoogleLoginView
 from core.views import (
     DashboardStatsView, 
     ActivityLogListView, 
@@ -37,6 +37,7 @@ urlpatterns = [
     
     # Real Auth Integration
     path('api/signup/', SignupView.as_view(), name='signup'),
+    path('api/auth/google/', GoogleLoginView.as_view(), name='google-login'),
     path('api/me/', MeView.as_view(), name='me'),
     path('api/dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('api/dashboard/activities/', ActivityLogListView.as_view(), name='dashboard-activities'),

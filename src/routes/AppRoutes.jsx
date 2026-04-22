@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "../pages/LandingPage";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 import Dashboard from "../pages/Dashboard";
@@ -10,6 +11,8 @@ import Attendance from "../pages/Attendance";
 import Fees from "../pages/Fees";
 import SystemExplorer from "../pages/SystemExplorer";
 import Profile from "../pages/Profile";
+import Subscription from "../pages/Subscription";
+import Settings from "../pages/Settings";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -19,7 +22,8 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected Dashboard Routes (Wrapped in Layout) */}
@@ -88,6 +92,8 @@ export default function AppRoutes() {
             }
           />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         {/* Fallback to Login */}

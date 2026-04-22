@@ -5,6 +5,11 @@ export const loginUser = async (credentials) => {
   return response.data; // { access, refresh }
 };
 
+export const googleLoginAuth = async (access_token, school_name = null) => {
+  const response = await api.post("auth/google/", { access_token, school_name });
+  return response.data; // { access, refresh, user }
+};
+
 export const signupUser = async (data) => {
   const response = await api.post("signup/", data);
   return response.data;

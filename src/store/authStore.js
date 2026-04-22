@@ -11,6 +11,15 @@ export const setUser = (user) => {
 };
 
 export const getUser = () => {
+  if (isDemoMode()) {
+    return { 
+      username: "Demo Admin", 
+      email: "demo@edusaas.com", 
+      role: "admin", 
+      school_name: "Demo International School",
+      plan_status: "Active"
+    };
+  }
   const user = localStorage.getItem("user");
   return user ? JSON.parse(user) : null;
 };
@@ -28,12 +37,22 @@ export const getRefreshToken = () => {
   return localStorage.getItem("refreshToken");
 };
 
+export const setDemoMode = (val) => {
+  if (val) localStorage.setItem("isDemo", "true");
+  else localStorage.removeItem("isDemo");
+};
+
+export const isDemoMode = () => {
+  return localStorage.getItem("isDemo") === "true";
+};
+
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
+  localStorage.removeItem("isDemo");
 };
 
 export const isAuthenticated = () => {
-  return !!localStorage.getItem("token");
+  return isDemoMode() || !!localStorage.getItem("token");
 };

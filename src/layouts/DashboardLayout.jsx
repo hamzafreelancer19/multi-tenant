@@ -1,6 +1,8 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { logout, getRole, getUser } from "../store/authStore";
+import { logout, getRole, getUser, setUser, isDemoMode } from "../store/authStore";
+import { getUserProfile } from "../auth/authService";
+import api from "../api/axios";
 import {
   LayoutDashboard,
   Users,
@@ -18,9 +20,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Database,
-  User as UserIcon
+  User as UserIcon,
+  Lock,
+  Zap,
+  Menu
 } from "lucide-react";
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "../api/dashboardApi";
+
+const LOCKED_ROUTES = ["/students", "/teachers", "/attendance", "/fees"];
 
 const navItems = [
   { to: "/dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", roles: ["superadmin", "admin", "teacher", "accountant", "student"] },
@@ -31,7 +38,9 @@ const navItems = [
   { to: "/teachers", icon: <GraduationCap size={20} />, label: "Teachers", roles: ["admin"] },
   { to: "/attendance", icon: <ClipboardCheck size={20} />, label: "Attendance", roles: ["admin", "teacher"] },
   { to: "/fees", icon: <CreditCard size={20} />, label: "Fees", roles: ["admin", "accountant"] },
+  { to: "/subscription", icon: <Zap size={20} />, label: "Subscription", roles: ["admin"] },
   { to: "/profile", icon: <UserIcon size={20} />, label: "Profile", roles: ["superadmin", "admin", "teacher", "accountant", "student"] },
+  { to: "/settings", icon: <School size={20} />, label: "School Settings", roles: ["admin"] },
 ];
 
 export default function DashboardLayout() {
@@ -42,6 +51,8 @@ export default function DashboardLayout() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [planStatus, setPlanStatus] = useState(null);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -55,6 +66,7 @@ export default function DashboardLayout() {
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const fetchNotifs = async () => {
+    if (isDemoMode()) return; // Don't fetch real notifs in demo
     try {
       const res = await getNotifications();
       setNotifications(res.data);
@@ -63,8 +75,34 @@ export default function DashboardLayout() {
     }
   };
 
+  const fetchPlanStatus = async () => {
+    if (isDemoMode()) {
+      setPlanStatus("Active");
+      return;
+    }
+    if (!["admin", "teacher", "accountant"].includes(role)) return;
+    try {
+      // Safety Sync
+      let currentUser = user;
+      if (role === "admin" && !currentUser?.school) {
+        const freshProfile = await getUserProfile();
+        setUser(freshProfile);
+        currentUser = freshProfile;
+      }
+
+      const res = await api.get("/schools/");
+      const schools = Array.isArray(res.data) ? res.data : [];
+      const mySchool = schools.find(s => s.id === Number(currentUser?.school)) || schools[0];
+      setPlanStatus(mySchool?.plan_status || "Inactive");
+    } catch (err) {
+      console.error("Plan status fetch failed:", err);
+      setPlanStatus("Inactive");
+    }
+  };
+
   useEffect(() => {
     fetchNotifs();
+    fetchPlanStatus();
     const interval = setInterval(fetchNotifs, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -97,8 +135,13 @@ export default function DashboardLayout() {
 
   return (
     <div className="layout">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
       {/* Sidebar */}
-      <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">
             <School size={24} />
@@ -113,20 +156,42 @@ export default function DashboardLayout() {
           <p className="nav-section-label">MAIN MENU</p>
           {navItems
             .filter((item) => item.roles.includes(role))
-            .map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `nav-link ${isActive ? "nav-link-active" : ""}`
-                }
-                title={isCollapsed ? item.label : ""}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                <span>{item.label}</span>
-                <ChevronRight size={14} className="nav-chevron" />
-              </NavLink>
-            ))}
+            .map((item) => {
+              const isLocked = ["admin", "teacher", "accountant"].includes(role) && planStatus !== "Active" && LOCKED_ROUTES.includes(item.to);
+              if (isLocked) {
+                return (
+                  <div
+                    key={item.to}
+                    className="nav-link"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/subscription");
+                    }}
+                    style={{ opacity: 0.5, cursor: "pointer" }}
+                    title="Upgrade your plan to access this feature"
+                  >
+                    <span className="nav-icon">{item.icon}</span>
+                    <span>{item.label}</span>
+                    <Lock size={13} style={{ marginLeft: "auto", flexShrink: 0 }} />
+                  </div>
+                );
+              }
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `nav-link ${isActive ? "nav-link-active" : ""}`
+                  }
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  title={isCollapsed ? item.label : ""}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                  <ChevronRight size={14} className="nav-chevron" />
+                </NavLink>
+              );
+            })}
         </nav>
 
         <div className="sidebar-bottom">
@@ -141,6 +206,12 @@ export default function DashboardLayout() {
               </div>
             )}
           </div>
+          {isDemoMode() && (
+            <button className="demo-exit-sidebar" onClick={handleLogout}>
+              <div className="pulse-dot"></div>
+              <span>Exit Demo Mode</span>
+            </button>
+          )}
           <button className="logout-btn" onClick={handleLogout}>
             <LogOut size={18} />
             <span>Logout</span>
@@ -153,7 +224,14 @@ export default function DashboardLayout() {
         <header className="topbar">
           <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button 
-              className="icon-btn" 
+              className="icon-btn mobile-only" 
+              onClick={() => setIsMobileMenuOpen(true)}
+              style={{ display: 'none' }} // Controlled by CSS but added here for safety
+            >
+              <Menu size={20} />
+            </button>
+            <button 
+              className="icon-btn desktop-only" 
               onClick={() => setIsCollapsed(!isCollapsed)}
               title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
@@ -234,9 +312,9 @@ export default function DashboardLayout() {
                 </div>
               )}
             </div>
-            <div className="avatar-sm" style={{ background: 'var(--accent)', color: 'white' }}>
+            <Link to="/profile" className="avatar-sm" style={{ background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
               {user?.username?.[0]?.toUpperCase() || "U"}
-            </div>
+            </Link>
           </div>
         </header>
 

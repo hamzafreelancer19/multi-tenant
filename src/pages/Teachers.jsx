@@ -29,7 +29,7 @@ export default function Teachers() {
     setLoading(true);
     try {
       const res = await getTeachers();
-      setTeachers(res.data);
+      setTeachers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.warn("Using fallback teacher data");
       setTeachers([
@@ -67,10 +67,10 @@ export default function Teachers() {
     }
   };
 
-  const filtered = teachers.filter((t) =>
+  const filtered = Array.isArray(teachers) ? teachers.filter((t) =>
     t.name?.toLowerCase().includes(search.toLowerCase()) ||
     t.subject?.toLowerCase().includes(search.toLowerCase())
-  );
+  ) : [];
 
   return (
     <div className="page">

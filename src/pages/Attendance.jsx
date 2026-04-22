@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Loader2 } from "lucide-react";
 import { getStudents } from "../api/studentsApi";
 import { bulkMarkAttendance, getAttendance } from "../api/attendanceApi";
+import PremiumCard from "../components/ui/PremiumCard";
 
 const classes = [
   "Nursery", "Prep",
@@ -29,13 +30,14 @@ export default function Attendance() {
         getStudents(),
         getAttendance({ date })
       ]);
-      const filtered = res.data.filter(s => s.class_name === selectedClass || !s.class_name);
+      const studentList = Array.isArray(res.data) ? res.data : [];
+      const filtered = studentList.filter(s => s.class_name === selectedClass || !s.class_name);
       setStudents(filtered);
       
       const initial = {};
       filtered.forEach(s => initial[s.id] = "Present");
       
-      if (attRes.data && attRes.data.length > 0) {
+      if (attRes.data && Array.isArray(attRes.data)) {
         attRes.data.forEach(record => {
           if (initial.hasOwnProperty(record.student)) {
             initial[record.student] = record.status;
@@ -84,7 +86,7 @@ export default function Attendance() {
     }
   };
 
-  const counts = students.reduce(
+  const counts = (Array.isArray(students) ? students : []).reduce(
     (acc, s) => {
       const status = attendance[s.id] || "Present";
       acc[status] = (acc[status] || 0) + 1;
@@ -134,37 +136,44 @@ export default function Attendance() {
 
       {/* Summary Cards */}
       <div className="att-summary">
-        <div className="att-stat present-stat">
-          <CheckCircle2 size={22} />
+        <PremiumCard className="att-stat" auroraColor="#10b981">
+          <CheckCircle2 size={22} className="text-green-500" />
           <div>
             <p className="att-stat-val">{counts.Present}</p>
             <p className="att-stat-label">Present</p>
           </div>
-        </div>
-        <div className="att-stat absent-stat">
-          <XCircle size={22} />
+        </PremiumCard>
+        
+        <PremiumCard className="att-stat" auroraColor="#ef4444">
+          <XCircle size={22} className="text-red-500" />
           <div>
             <p className="att-stat-val">{counts.Absent}</p>
             <p className="att-stat-label">Absent</p>
           </div>
-        </div>
-        <div className="att-stat leave-stat">
-          <MinusCircle size={22} />
+        </PremiumCard>
+        
+        <PremiumCard className="att-stat" auroraColor="#f59e0b">
+          <MinusCircle size={22} className="text-amber-500" />
           <div>
             <p className="att-stat-val">{counts.Leave}</p>
             <p className="att-stat-label">On Leave</p>
           </div>
-        </div>
-        <div className="att-stat total-stat">
-          <div>
+        </PremiumCard>
+        
+        <PremiumCard className="att-stat total-stat" auroraColor="#C4A6F7">
+          <div style={{ flex: 1 }}>
             <p className="att-stat-val">{students.length}</p>
             <p className="att-stat-label">Total</p>
           </div>
-          <div className="att-pie-bar">
-            <div className="att-pie-fill" style={{ width: `${students.length ? (counts.Present / students.length) * 100 : 0}%` }} />
+          <div style={{ flex: 1, marginLeft: 12 }}>
+            <div className="att-pie-bar">
+              <div className="att-pie-fill" style={{ width: `${students.length ? (counts.Present / students.length) * 100 : 0}%` }} />
+            </div>
+            <span className="att-pct" style={{ display: 'block', textAlign: 'right', marginTop: 4 }}>
+              {students.length ? Math.round((counts.Present / students.length) * 100) : 0}%
+            </span>
           </div>
-          <span className="att-pct">{students.length ? Math.round((counts.Present / students.length) * 100) : 0}%</span>
-        </div>
+        </PremiumCard>
       </div>
 
       {/* Class Selector */}
@@ -182,7 +191,7 @@ export default function Attendance() {
       </div>
 
       {/* Student List */}
-      <div className="card">
+      <PremiumCard className="card" auroraColor="#C4A6F7">
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
            <p className="att-hint" style={{ margin: 0 }}>Click a status badge to cycle: Present → Absent → Leave</p>
            <div className="table-count">{students.length} Students found</div>
@@ -221,7 +230,7 @@ export default function Attendance() {
             <div className="empty-state">No students found in this class.</div>
           )}
         </div>
-      </div>
+      </PremiumCard>
     </div>
   );
 }

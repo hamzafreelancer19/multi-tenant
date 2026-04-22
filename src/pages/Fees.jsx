@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { getFees, createFee, getFeeStats } from "../api/feesApi";
 import { getStudents } from "../api/studentsApi";
+import PremiumCard from "../components/ui/PremiumCard";
 
 export default function Fees() {
   const [fees, setFees] = useState([]);
@@ -78,14 +79,14 @@ export default function Fees() {
     }
   };
 
-  const filtered = fees.filter((f) =>
+  const filtered = Array.isArray(fees) ? fees.filter((f) =>
     f.student_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  ) : [];
 
   const stats = [
-    { label: "Total Collected", value: `RS. ${feeStats.collected.toLocaleString()}`, icon: <TrendingUp size={20} />, color: "green" },
-    { label: "Pending Fees", value: `RS. ${feeStats.pending.toLocaleString()}`, icon: <Clock size={20} />, color: "orange" },
-    { label: "Overdue", value: `${feeStats.overdue_count} Students`, icon: <AlertCircle size={20} />, color: "red" },
+    { label: "Total Collected", value: `RS. ${(feeStats?.collected || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: "green" },
+    { label: "Pending Fees", value: `RS. ${(feeStats?.pending || 0).toLocaleString()}`, icon: <Clock size={20} />, color: "orange" },
+    { label: "Overdue", value: `${feeStats?.overdue_count || 0} Students`, icon: <AlertCircle size={20} />, color: "red" },
   ];
 
   return (
@@ -103,13 +104,21 @@ export default function Fees() {
       {/* Stats Grid */}
       <div className="stats-grid">
         {stats.map((s, i) => (
-          <div key={i} className={`stat-card stat-${s.color}`}>
+          <PremiumCard 
+            key={i} 
+            className={`stat-card stat-${s.color}`}
+            auroraColor={
+              s.color === "green" ? "#10b981" :
+              s.color === "orange" ? "#fbbf24" :
+              s.color === "red" ? "#ef4444" : "#C4A6F7"
+            }
+          >
             <div className="stat-icon">{s.icon}</div>
             <div className="stat-info">
               <div className="stat-value">{s.value}</div>
               <div className="stat-label">{s.label}</div>
             </div>
-          </div>
+          </PremiumCard>
         ))}
       </div>
 
@@ -134,7 +143,7 @@ export default function Fees() {
       </div>
 
       {/* Table */}
-      <div className="card table-card">
+      <PremiumCard className="card table-card" auroraColor="#C4A6F7">
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
             <Loader2 className="spin" size={32} />
@@ -178,7 +187,7 @@ export default function Fees() {
         {!loading && filtered.length === 0 && (
           <div className="empty-state">No fee records found.</div>
         )}
-      </div>
+      </PremiumCard>
 
       {/* RECORD PAYMENT MODAL */}
       {showModal && (

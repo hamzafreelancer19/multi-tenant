@@ -1,0 +1,81 @@
+.global-bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background-color: var(--bg-base);
+  pointer-events: none;
+}
+
+.global-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  z-index: -9;
+  mix-blend-mode: screen;
+}
+
+/* Light Mode Aurora Colors */
+.aurora-1 {
+  top: -10%;
+  left: -10%;
+  width: 70vw;
+  height: 70vw;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent 70%);
+  animation: aurora-float 20s infinite alternate ease-in-out;
+}
+
+.aurora-2 {
+  bottom: -10%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25), transparent 70%);
+  animation: aurora-float 25s infinite alternate-reverse ease-in-out;
+  animation-delay: -5s;
+}
+
+.aurora-3 {
+  top: 40%;
+  left: 30%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent 70%);
+  animation: aurora-float 30s infinite alternate ease-in-out;
+  animation-delay: -10s;
+}
+
+/* Dark Mode Adjustments */
+.dark .aurora-1 { background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 70%); opacity: 0.6; }
+.dark .aurora-2 { background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%); opacity: 0.5; }
+.dark .aurora-3 { background: radial-gradient(circle, rgba(16, 185, 129, 0.1), transparent 70%); opacity: 0.4; }
+
+.global-glass-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  background: rgba(255, 255, 255, 0.05);
+  z-index: -8;
+}
+
+.dark .global-glass-overlay {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.global-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: -7;
+}
+
+@keyframes aurora-float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5vw, -5vh) scale(1.1); }
+  100% { transform: translate(-5vw, 5vh) scale(0.9); }
+}

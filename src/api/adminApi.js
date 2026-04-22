@@ -7,6 +7,8 @@ export const updateSchool = (id, data) => api.patch(`schools/${id}/`, data);
 export const deleteSchool = (id) => api.delete(`schools/${id}/`);
 export const approveSchool = (id) => api.post(`schools/${id}/approve/`);
 export const rejectSchool = (id) => api.post(`schools/${id}/reject/`);
+export const approvePlan = (id) => api.post(`schools/${id}/approve_plan/`);
+export const rejectPlan = (id) => api.post(`schools/${id}/reject_plan/`);
 
 // Platform Users Management
 export const getPlatformUsers = (params = {}) => api.get("platform-users/", { params });

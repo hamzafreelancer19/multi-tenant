@@ -1,5 +1,6 @@
 import { getUser, getRole } from "../store/authStore";
 import { User, Mail, Shield, Calendar, School, CheckCircle, Activity } from "lucide-react";
+import PremiumCard from "../components/ui/PremiumCard";
 
 export default function Profile() {
   const user = getUser();
@@ -19,9 +20,9 @@ export default function Profile() {
         <p className="page-sub">Manage your personal account settings and preferences</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '32px' }}>
+      <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginTop: '32px' }}>
         {/* Profile Card */}
-        <div className="glass-panel" style={{ padding: '32px', textAlign: 'center', height: 'fit-content' }}>
+        <PremiumCard className="glass-panel" auroraColor="#8b5cf6" style={{ padding: '32px', textAlign: 'center', height: 'fit-content' }}>
           <div style={{ 
             width: '100px', height: '100px', 
             borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--purple))',
@@ -33,10 +34,7 @@ export default function Profile() {
           <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{user?.username}</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{role}</p>
           
-          <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <span className="badge badge-success">Active</span>
-            <span className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>Verified</span>
-          </div>
+
 
           <div style={{ marginTop: '32px', borderTop: '1px solid var(--border)', paddingTop: '24px', textAlign: 'left' }}>
              <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '16px' }}>Account History</p>
@@ -49,18 +47,18 @@ export default function Profile() {
                 <span style={{ fontSize: '13px' }}>Identity Verified</span>
              </div>
           </div>
-        </div>
+        </PremiumCard>
 
         {/* Details Section */}
-        <div className="glass-panel" style={{ padding: '32px' }}>
+        <PremiumCard className="glass-panel" auroraColor="#3b82f6" style={{ padding: '32px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
              General Information
           </h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {infoItems.map((item, idx) => (
-              <div key={idx} style={{ displlay: 'flex', gap: '16px', alignItems: 'center', padding: '16px', background: 'var(--bg-hover)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                 <div style={{ color: 'var(--accent)', background: 'var(--accent-soft)', padding: '10px', borderRadius: '10px' }}>
+              <div key={idx} className="profile-info-item" style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '16px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                 <div style={{ color: 'var(--accent)', background: 'var(--accent-soft)', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.icon}
                  </div>
                  <div>
@@ -76,8 +74,8 @@ export default function Profile() {
                 <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     Linked Institution
                 </h3>
-                <div style={{ padding: '20px', background: 'linear-gradient(135deg, var(--bg-hover), transparent)', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', background: 'var(--bg-card)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', border: '1px solid var(--border)' }}>
+                <div className="profile-institution-card" style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(5px)', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', border: '1px solid var(--border)' }}>
                         <School size={24} />
                     </div>
                     <div>
@@ -88,7 +86,7 @@ export default function Profile() {
                 </div>
             </div>
           )}
-        </div>
+        </PremiumCard>
       </div>
     </div>
   );

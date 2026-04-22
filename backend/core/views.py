@@ -60,18 +60,22 @@ class DashboardStatsView(APIView):
             "fees_collected": fees_collected,
         })
 
+from datetime import timedelta
+
 class ActivityLogListView(generics.ListAPIView):
     serializer_class = ActivityLogSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
+        time_threshold = timezone.now() - timedelta(hours=12)
+        
         if user.role == 'superadmin':
             # Superadmin only sees platform-wide activity (no school specific logs)
-            return ActivityLog.objects.filter(school__isnull=True).order_by('-created_at')[:20]
+            return ActivityLog.objects.filter(school__isnull=True, created_at__gte=time_threshold).order_by('-created_at')[:20]
             
         if hasattr(user, 'school') and user.school:
-            return ActivityLog.objects.filter(school=user.school).order_by('-created_at')[:10]
+            return ActivityLog.objects.filter(school=user.school, created_at__gte=time_threshold).order_by('-created_at')[:10]
         return ActivityLog.objects.none()
 
 class NotificationListView(generics.ListAPIView):
