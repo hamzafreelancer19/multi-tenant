@@ -12,35 +12,34 @@
       "src": "backend/school_saas/wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb",
         "runtime": "python3.9"
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "backend/school_saas/wsgi.py"
+      "source": "/api/(.*)",
+      "destination": "backend/school_saas/wsgi.py"
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "backend/school_saas/wsgi.py"
+      "source": "/admin/(.*)",
+      "destination": "backend/school_saas/wsgi.py"
     },
     {
-      "src": "/static/admin/(.*)",
-      "dest": "backend/school_saas/wsgi.py"
+      "source": "/static/admin/(.*)",
+      "destination": "backend/school_saas/wsgi.py"
     },
     {
-      "src": "/static/rest_framework/(.*)",
-      "dest": "backend/school_saas/wsgi.py"
+      "source": "/static/rest_framework/(.*)",
+      "destination": "backend/school_saas/wsgi.py"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
