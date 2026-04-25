@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [activities, setActivities] = useState([]);
   const [recentStudents, setRecentStudents] = useState([]);
+  const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [statsData, setStatsData] = useState({
     students: 0,
     teachers: 0,
@@ -49,22 +50,28 @@ export default function Dashboard() {
   const fetchAll = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const [statsRes, actRes, studentsRes] = await Promise.all([
+      const [statsRes, actRes, studentsRes, enrollRes] = await Promise.all([
         getDashboardStats(),
         getActivities(),
         getStudents(),
+        api.get('/enrollments/')
       ]);
       setStatsData(statsRes.data);
       setActivities(Array.isArray(actRes.data) ? actRes.data : []);
       // API already returns newest first (ordered by -id), take first 5
       const all = Array.isArray(studentsRes.data) ? studentsRes.data : [];
       setRecentStudents(all.slice(0, 5));
+      
+      const allEnroll = Array.isArray(enrollRes.data) ? enrollRes.data : [];
+      setPendingEnrollments(allEnroll.filter(e => e.status === 'Pending').slice(0, 5));
+
       setLastUpdated(new Date());
     } catch (err) {
       console.warn("Dashboard fetch failed:", err);
       setStatsData({ students: 0, teachers: 0, attendance: 0, fees_collected: 0 });
       setActivities([]);
       setRecentStudents([]);
+      setPendingEnrollments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -257,6 +264,75 @@ export default function Dashboard() {
 
       {/* Bottom Grid */}
       <div className="dashboard-grid">
+
+        {/* Pending Admissions (Landing Page) - For School Admin */}
+        {role === "admin" && (
+          <PremiumCard className="card" auroraColor="#f59e0b">
+            <div className="card-header">
+              <h3 className="card-title">
+                <ClipboardCheck size={18} /> Pending Admissions
+              </h3>
+              {pendingEnrollments.length > 0 && (
+                <span style={{
+                  fontSize: "0.7rem", background: "#f59e0b", color: "#fff",
+                  borderRadius: 99, padding: "2px 8px"
+                }}>{pendingEnrollments.length} NEW</span>
+              )}
+            </div>
+            <div className="activity-list">
+              {pendingEnrollments.length > 0 ? (
+                pendingEnrollments.map((e) => (
+                  <div key={e.id} className="activity-item" style={{ borderLeft: "3px solid #f59e0b", paddingLeft: 12 }}>
+                    <div className="activity-info">
+                      <p className="activity-name">{e.student_name} ({e.student_age}y)</p>
+                      <p className="activity-action">Father: {e.father_name} · {e.father_phone}</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button 
+                        className="icon-btn-sm" 
+                        style={{ color: "#10B981" }}
+                        onClick={async () => {
+                          if (window.confirm(`Accept enrollment for ${e.student_name}?`)) {
+                            await api.post(`/enrollments/${e.id}/accept/`);
+                            fetchAll();
+                          }
+                        }}
+                      >
+                        <Zap size={14} fill="currentColor" />
+                      </button>
+                      <button 
+                        className="icon-btn-danger" 
+                        onClick={async () => {
+                          if (window.confirm(`Reject enrollment for ${e.student_name}?`)) {
+                            await api.post(`/enrollments/${e.id}/reject/`);
+                            fetchAll();
+                          }
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
+                  <ClipboardCheck size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
+                  <p style={{ fontSize: "0.85rem" }}>No pending admissions.</p>
+                  <p style={{ fontSize: "0.75rem" }}>New requests from the landing page will appear here.</p>
+                </div>
+              )}
+              {pendingEnrollments.length > 0 && (
+                <button 
+                  className="text-btn" 
+                  style={{ width: "100%", padding: "12px", borderTop: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--accent)" }}
+                  onClick={() => navigate("/enrollments")}
+                >
+                  View All Requests
+                </button>
+              )}
+            </div>
+          </PremiumCard>
+        )}
 
         {/* Recent Activity - REALTIME */}
         <PremiumCard className="card" auroraColor="#8b5cf6">

@@ -7,8 +7,9 @@ from students.models import Student
 from teachers.models import Teacher
 from attendance.models import Attendance
 from fees.models import Fee
-from .models import ActivityLog, Notification
+from core.models import ActivityLog, Notification
 from .serializers import ActivityLogSerializer, NotificationSerializer
+from core.utils import get_current_school
 from schools.models import School
 from django.contrib.auth import get_user_model
 
@@ -21,13 +22,11 @@ class DashboardStatsView(APIView):
         user = request.user
 
         if user.role == 'superadmin':
+            # ... existing superadmin logic ...
             total_schools = School.objects.count()
             total_users = User.objects.count()
-            
-            # Get latest 5 schools
             recent_schools = School.objects.all().order_by('-created_at')[:5]
             schools_list = [{"id": s.id, "name": s.name, "code": s.code, "created_at": s.created_at} for s in recent_schools]
-            
             return Response({
                 "is_superadmin": True,
                 "total_schools": total_schools,
@@ -35,10 +34,9 @@ class DashboardStatsView(APIView):
                 "recent_schools": schools_list,
             })
 
-        if not hasattr(user, 'school') or not user.school:
-            return Response({"error": "No school assigned to user"}, status=400)
-            
-        school = user.school
+        school = get_current_school(request)
+        if not school:
+            return Response({"error": "No school context found"}, status=400)
         today = timezone.now().date()
 
         total_students = Student.objects.filter(school=school).count()
@@ -71,11 +69,11 @@ class ActivityLogListView(generics.ListAPIView):
         time_threshold = timezone.now() - timedelta(hours=12)
         
         if user.role == 'superadmin':
-            # Superadmin only sees platform-wide activity (no school specific logs)
             return ActivityLog.objects.filter(school__isnull=True, created_at__gte=time_threshold).order_by('-created_at')[:20]
             
-        if hasattr(user, 'school') and user.school:
-            return ActivityLog.objects.filter(school=user.school, created_at__gte=time_threshold).order_by('-created_at')[:10]
+        school = get_current_school(self.request)
+        if school:
+            return ActivityLog.objects.filter(school=school, created_at__gte=time_threshold).order_by('-created_at')[:10]
         return ActivityLog.objects.none()
 
 class NotificationListView(generics.ListAPIView):
@@ -85,11 +83,11 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'superadmin':
-            # Superadmin only sees platform-wide notifications (e.g. new registrations)
             return Notification.objects.filter(school__isnull=True).order_by('-created_at')[:20]
             
-        if hasattr(user, 'school') and user.school:
-            return Notification.objects.filter(school=user.school).order_by('-created_at')[:10]
+        school = get_current_school(self.request)
+        if school:
+            return Notification.objects.filter(school=school).order_by('-created_at')[:10]
         return Notification.objects.none()
 
 class MarkNotificationReadView(APIView):
@@ -101,7 +99,8 @@ class MarkNotificationReadView(APIView):
             if user.role == 'superadmin':
                 notif = Notification.objects.get(pk=pk, school__isnull=True)
             else:
-                notif = Notification.objects.get(pk=pk, school=user.school)
+                school = get_current_school(request)
+                notif = Notification.objects.get(pk=pk, school=school)
             
             notif.is_read = True
             notif.save()
@@ -116,8 +115,10 @@ class MarkAllNotificationsReadView(APIView):
         user = request.user
         if user.role == 'superadmin':
             Notification.objects.filter(school__isnull=True, is_read=False).update(is_read=True)
-        elif hasattr(user, 'school') and user.school:
-            Notification.objects.filter(school=user.school, is_read=False).update(is_read=True)
+        else:
+            school = get_current_school(request)
+            if school:
+                Notification.objects.filter(school=school, is_read=False).update(is_read=True)
         
         return Response({"status": "all items marked as read"})
 

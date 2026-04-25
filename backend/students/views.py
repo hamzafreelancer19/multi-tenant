@@ -4,23 +4,25 @@ from .models import Student
 from .serializers import StudentSerializer
 from core.models import ActivityLog, Notification
 
+from core.utils import get_current_school
+
 class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
 
     def get_queryset(self):
         """
-        Filter students by the user's school.
+        Filter students by the current school context.
         """
-        user = self.request.user
-        if hasattr(user, 'school') and user.school:
-            return Student.objects.filter(school=user.school)
+        school = get_current_school(self.request)
+        if school:
+            return Student.objects.filter(school=school)
         return Student.objects.none()
 
     def perform_create(self, serializer):
         """
-        Automatically assign the student to the user's school and generate roll_no.
+        Automatically assign the student to the current school context.
         """
-        school = self.request.user.school
+        school = get_current_school(self.request)
         # Auto-generate a random roll number (e.g., R-8492)
         random_roll = f"R-{random.randint(1000, 9999)}"
         student = serializer.save(school=school, roll_no=random_roll)

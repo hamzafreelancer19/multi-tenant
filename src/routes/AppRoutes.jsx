@@ -13,16 +13,29 @@ import SystemExplorer from "../pages/SystemExplorer";
 import Profile from "../pages/Profile";
 import Subscription from "../pages/Subscription";
 import Settings from "../pages/Settings";
+import LandingPageSettings from "../pages/LandingPageSettings";
+import Enrollments from "../pages/Enrollments";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 
+import TokenHandler from "../components/auth/TokenHandler";
+
+import SchoolLandingPage from "../pages/SchoolLandingPage";
+import { useTenant } from "../context/TenantContext";
+
 export default function AppRoutes() {
+  const tenant = useTenant();
+
   return (
     <BrowserRouter>
+      <TokenHandler />
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
+        <Route 
+          path="/" 
+          element={tenant.schoolName ? <SchoolLandingPage /> : <LandingPage />} 
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
@@ -90,6 +103,22 @@ export default function AppRoutes() {
                 <SystemExplorer />
               </RoleRoute>
             }
+          />
+          <Route 
+            path="/landing-settings" 
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <LandingPageSettings />
+              </RoleRoute>
+            } 
+          />
+          <Route 
+            path="/enrollments" 
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Enrollments />
+              </RoleRoute>
+            } 
           />
           <Route path="/profile" element={<Profile />} />
           <Route path="/subscription" element={<Subscription />} />

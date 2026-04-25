@@ -7,6 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from datetime import date, timedelta
 
+from core.utils import get_current_school
+
 class SchoolViewSet(viewsets.ModelViewSet):
     queryset = School.objects.all().order_by('-created_at')
     serializer_class = SchoolSerializer
@@ -15,8 +17,10 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.role == 'superadmin':
             return School.objects.all().order_by('-created_at')
-        if hasattr(self.request.user, 'school') and self.request.user.school:
-            return School.objects.filter(id=self.request.user.school.id)
+        
+        school = get_current_school(self.request)
+        if school:
+            return School.objects.filter(id=school.id)
         return School.objects.none()
 
     @action(detail=True, methods=['post'])
@@ -121,3 +125,88 @@ class SchoolViewSet(viewsets.ModelViewSet):
             avatar="R"
         )
         return Response({"message": f"Plan rejected for {school.name}."})
+
+from .models import Enrollment
+from .serializers import EnrollmentSerializer
+from rest_framework import permissions
+
+class EnrollmentPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if view.action == 'create':
+            return True
+        return request.user and request.user.is_authenticated
+
+class EnrollmentViewSet(viewsets.ModelViewSet):
+    queryset = Enrollment.objects.all().order_by('-created_at')
+    serializer_class = EnrollmentSerializer
+    permission_classes = [EnrollmentPermission]
+
+    def get_queryset(self):
+        if self.request.user.role == 'superadmin':
+            return Enrollment.objects.all().order_by('-created_at')
+        
+        school = get_current_school(self.request)
+        if school:
+            return Enrollment.objects.filter(school=school).order_by('-created_at')
+        return Enrollment.objects.none()
+
+    def perform_create(self, serializer):
+        # On landing page, we might not have a user, but we should have a school context
+        # The school ID should be passed in the request data
+        serializer.save()
+        
+        # Log activity
+        instance = serializer.instance
+        from core.models import ActivityLog
+        ActivityLog.objects.create(
+            school=instance.school,
+            name="Landing Page",
+            action=f"new enrollment request: {instance.student_name}",
+            avatar=instance.student_name[0].upper()
+        )
+
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        enrollment = self.get_object()
+        enrollment.status = 'Accepted'
+        enrollment.save()
+        
+        # Automatically create a Student record
+        from students.models import Student
+        import uuid
+        
+        # Auto-generate a roll number
+        roll_no = f"ADM-{str(uuid.uuid4())[:4].upper()}"
+        
+        Student.objects.create(
+            school=enrollment.school,
+            name=enrollment.student_name,
+            class_name="Pending Assignment", # School admin can change this later
+            roll_no=roll_no,
+            phone=enrollment.father_phone,
+            status='Active'
+        )
+        
+        from core.models import ActivityLog
+        ActivityLog.objects.create(
+            school=enrollment.school,
+            name=request.user.username,
+            action=f"accepted admission and created student: {enrollment.student_name}",
+            avatar="A"
+        )
+        return Response({"message": f"Enrollment for {enrollment.student_name} accepted and student record created."})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        enrollment = self.get_object()
+        enrollment.status = 'Rejected'
+        enrollment.save()
+        
+        from core.models import ActivityLog
+        ActivityLog.objects.create(
+            school=enrollment.school,
+            name=request.user.username,
+            action=f"rejected enrollment: {enrollment.student_name}",
+            avatar="R"
+        )
+        return Response({"message": f"Enrollment for {enrollment.student_name} rejected."})

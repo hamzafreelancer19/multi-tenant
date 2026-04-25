@@ -7,11 +7,13 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
+        school = get_current_school(request)
         return Response({
             "id": user.id,
             "username": user.username,
             "role": user.role,
-            "school": user.school.id if user.school else None,
+            "school": school.id if school else None,
+            "user_school_id": user.school.id if user.school else None,
         })
 
 from rest_framework.permissions import AllowAny
@@ -21,6 +23,7 @@ from schools.models import School
 User = get_user_model()
 
 from core.models import Notification
+from core.utils import get_current_school
 
 class SignupView(APIView):
     permission_classes = [AllowAny]
@@ -36,8 +39,14 @@ class SignupView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already taken"}, status=400)
 
+        from django.utils.text import slugify
+        
         # Create the tenant (School) - Default status is 'Pending'
-        school = School.objects.create(name=school_name)
+        domain_slug = slugify(school_name)
+        school = School.objects.create(
+            name=school_name,
+            domain=f"{domain_slug}.localhost"
+        )
 
         # Create the School Admin
         user = User.objects.create(
@@ -78,9 +87,10 @@ class UserViewSet(viewsets.ModelViewSet):
         # Only superadmin manages all users
         if self.request.user.role == 'superadmin':
             return User.objects.all().order_by('-date_joined')
-        # School admins can manage users within their school
-        if hasattr(self.request.user, 'school') and self.request.user.school:
-            return User.objects.filter(school=self.request.user.school).order_by('-date_joined')
+        # School context admins can manage users within their school
+        school = get_current_school(self.request)
+        if school:
+            return User.objects.filter(school=school).order_by('-date_joined')
         return User.objects.none()
 
 from google.oauth2 import id_token
@@ -120,7 +130,12 @@ class GoogleLoginView(APIView):
 
                 # If they are on the Signup page, they provided a school name
                 school_name = provided_school_name
-                school = School.objects.create(name=school_name) # Default is 'Pending'
+                from django.utils.text import slugify
+                domain_slug = slugify(school_name)
+                school = School.objects.create(
+                    name=school_name,
+                    domain=f"{domain_slug}.localhost"
+                ) # Default is 'Pending'
                 
                 user = User.objects.create(
                     username=email,
@@ -165,4 +180,75 @@ class GoogleLoginView(APIView):
             return Response({"error": f"Invalid token: {str(e)}"}, status=400)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+class TenantInfoView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        school = get_current_school(request)
+        if school:
+            from students.models import Student
+            from teachers.models import Teacher
+            
+            student_count = Student.objects.filter(school=school).count()
+            teacher_count = Teacher.objects.filter(school=school).count()
+            course_count = Student.objects.filter(school=school).values('class_name').distinct().count()
+            
+            return Response({
+                "school_id": school.id,
+                "school_name": school.name,
+                "landing": {
+                    "hero_title": school.landing_hero_title or f"Welcome to {school.name}",
+                    "hero_subtitle": school.landing_hero_subtitle or "Providing quality education for a brighter future.",
+                    "about": school.landing_about_text or f"{school.name} is dedicated to excellence in education.",
+                    "primary_color": school.landing_primary_color,
+                    "contact_email": school.landing_contact_email or "info@school.com",
+                    "contact_phone": school.landing_contact_phone or "+123456789",
+                    "show_stats": school.landing_show_stats,
+                    "hero_image_url": school.landing_hero_image_url,
+                    "center_image_url": school.landing_center_image_url,
+                    "features": school.landing_features,
+                    "testimonials": school.landing_testimonials,
+                    "programs": school.landing_programs,
+                    "languages": school.landing_languages,
+                    "stats": {
+                        "students": student_count,
+                        "teachers": teacher_count,
+                        "courses": course_count,
+                    }
+                }
+            })
+        return Response({
+            "school_id": None,
+            "school_name": None,
+            "detail": "No tenant detected"
+        }, status=200)
+
+class SchoolLandingUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        if request.user.role != 'admin':
+            return Response({"error": "Only school admins can update landing page settings."}, status=403)
+        
+        school = get_current_school(request)
+        if not school:
+            return Response({"error": "No school context found."}, status=400)
+            
+        school.landing_hero_title = request.data.get('hero_title', school.landing_hero_title)
+        school.landing_hero_subtitle = request.data.get('hero_subtitle', school.landing_hero_subtitle)
+        school.landing_about_text = request.data.get('about', school.landing_about_text)
+        school.landing_primary_color = request.data.get('primary_color', school.landing_primary_color)
+        school.landing_contact_email = request.data.get('contact_email', school.landing_contact_email)
+        school.landing_contact_phone = request.data.get('contact_phone', school.landing_contact_phone)
+        school.landing_show_stats = request.data.get('show_stats', school.landing_show_stats)
+        school.landing_hero_image_url = request.data.get('hero_image_url', school.landing_hero_image_url)
+        school.landing_center_image_url = request.data.get('center_image_url', school.landing_center_image_url)
+        school.landing_features = request.data.get('features', school.landing_features)
+        school.landing_testimonials = request.data.get('testimonials', school.landing_testimonials)
+        school.landing_programs = request.data.get('programs', school.landing_programs)
+        school.landing_languages = request.data.get('languages', school.landing_languages)
+        school.save()
+        
+        return Response({"message": "Landing page settings updated successfully!"})
 

@@ -1,0 +1,857 @@
+/* 
+   SchoolLandingPage.css 
+   COMPLETE UI REHAUL - PREMIUM VANILLA CSS
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --primary: #5D5DFF;
+  --accent: #FF7D32;
+  --pink: #EC4899;
+  --bg-light: #FDFDFF;
+  --text-dark: #0F172A;
+  --text-grey: #64748B;
+  --font-main: 'Outfit', sans-serif;
+  --shadow-sm: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --shadow-premium: 0 25px 50px -12px rgba(93, 93, 255, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+}
+
+.slp-wrapper {
+  overflow-x: hidden;
+}
+
+/* NAVBAR */
+.slp-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(15px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8%;
+  z-index: 1000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.slp-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slp-logo-icon {
+  width: 45px;
+  height: 45px;
+  background: var(--primary);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 20px rgba(93, 93, 255, 0.3);
+}
+
+.slp-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.slp-logo-text {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: #1E1B4B;
+}
+
+.slp-nav-links {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+}
+
+.slp-nav-links a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: 0.3s;
+}
+
+.slp-nav-links a:hover {
+  color: var(--primary);
+}
+
+.slp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.slp-mobile-actions {
+  display: none;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.slp-btn-text {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-grey);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.slp-btn-primary {
+  padding: 12px 30px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 14px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(93, 93, 255, 0.2);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.slp-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(93, 93, 255, 0.3);
+}
+
+/* HERO SECTION */
+.slp-hero {
+  padding: 180px 8% 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 95vh;
+  gap: 60px;
+}
+
+.slp-hero-content {
+  flex: 1;
+}
+
+.slp-hero-badge {
+  display: inline-block;
+  padding: 8px 18px;
+  background: #FDF2F8;
+  color: var(--pink);
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 30px;
+}
+
+.slp-hero-title {
+  font-size: 80px;
+  line-height: 0.95;
+  font-weight: 900;
+  color: var(--text-dark);
+  margin-bottom: 30px;
+  letter-spacing: -3px;
+}
+
+.slp-hero-title span {
+  color: var(--primary);
+}
+
+.slp-hero-desc {
+  font-size: 18px;
+  color: var(--text-grey);
+  line-height: 1.7;
+  max-width: 500px;
+  margin-bottom: 45px;
+}
+
+.slp-hero-btns {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.slp-btn-orange {
+  padding: 20px 45px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 900;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 15px 30px rgba(255, 125, 50, 0.3);
+  transition: all 0.3s;
+}
+
+.slp-btn-orange:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(255, 125, 50, 0.4);
+}
+
+.slp-hero-img-container {
+  flex: 1.2;
+  position: relative;
+}
+
+.slp-hero-img {
+  width: 100%;
+  border-radius: 50px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* WHY CHOOSE US */
+.slp-features {
+  padding: 100px 8%;
+  background: #F8FAFF;
+  text-align: center;
+}
+
+.slp-section-head {
+  max-width: 700px;
+  margin: 0 auto 70px;
+}
+
+.slp-section-head h2 {
+  font-size: 50px;
+  font-weight: 900;
+  margin-bottom: 20px;
+  letter-spacing: -1.5px;
+}
+
+.slp-section-head p {
+  color: var(--text-grey);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.slp-features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+
+.slp-feature-card {
+  background: white;
+  padding: 45px 35px;
+  border-radius: 35px;
+  text-align: left;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.slp-feature-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 25px 50px rgba(93, 93, 255, 0.1);
+  border-color: rgba(93, 93, 255, 0.1);
+}
+
+.slp-feature-icon {
+  width: 65px;
+  height: 65px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.slp-feature-card h3 {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 15px;
+}
+
+.slp-feature-card p {
+  font-size: 14px;
+  color: var(--text-grey);
+  line-height: 1.6;
+}
+
+/* LANGUAGES ORBIT */
+.slp-languages {
+  padding: 120px 8%;
+  text-align: center;
+}
+
+.slp-orbit-wrapper {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  margin: 80px auto;
+}
+
+.slp-orbit-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: slp-rotate-orbit 40s linear infinite;
+  pointer-events: none; /* Allow clicking through to center image if needed */
+}
+
+.slp-orbit-container > * {
+  pointer-events: auto; /* Re-enable pointer events for orbit items */
+}
+
+.slp-center-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  border: 12px solid white;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 5;
+}
+
+.slp-center-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slp-lang-item {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translate(-50%, -50%);
+  animation: slp-counter-rotate 40s linear infinite;
+}
+
+.slp-lang-flag {
+  width: 60px;
+  height: 60px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #eee;
+  transition: transform 0.3s ease;
+}
+
+.slp-lang-item:hover .slp-lang-flag {
+  transform: scale(1.1);
+  border-color: var(--primary);
+}
+
+.slp-lang-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.slp-orbit-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130%;
+  height: 130%;
+  border: 2px dashed #E2E8F0;
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* PROGRAMS */
+.slp-programs {
+  padding: 100px 8%;
+}
+
+.slp-programs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 60px;
+}
+
+.slp-programs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.slp-program-card {
+  padding: 55px 45px;
+  border-radius: 45px;
+  background: white;
+  border: 1px solid #F1F5F9;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.03);
+}
+
+.slp-program-card:hover {
+  transform: translateY(-15px);
+  box-shadow: 0 30px 60px rgba(93, 93, 255, 0.12);
+  border-color: rgba(93, 93, 255, 0.2);
+}
+
+.slp-program-badge {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  padding: 6px 15px;
+  background: var(--primary);
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+  border-radius: 50px;
+  letter-spacing: 1px;
+}
+
+.slp-btn-more {
+  background: #E0E7FF;
+  color: var(--primary);
+  border: none;
+  padding: 12px 25px;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.slp-btn-more:hover {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 8px 20px rgba(93, 93, 255, 0.2);
+}
+
+/* ENROLLMENT FORM */
+.slp-enrollment {
+  padding: 120px 8%;
+  background: white;
+}
+
+.slp-enroll-container {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.slp-enroll-info {
+  flex: 1;
+}
+
+.slp-enroll-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.slp-benefit {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.slp-enroll-form-card {
+  flex: 1;
+  background: white;
+  padding: 50px;
+  border-radius: 40px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+  border: 1px solid #F1F5F9;
+}
+
+.slp-form-group {
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slp-form-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+}
+
+.slp-form-group label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1E1B4B;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.slp-form-group input {
+  padding: 15px 20px;
+  border-radius: 15px;
+  border: 2px solid #F1F5F9;
+  background: #F8FAFF;
+  font-family: var(--font-main);
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.slp-form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 10px 20px rgba(93, 93, 255, 0.05);
+}
+
+/* TESTIMONIALS */
+.slp-testimonials {
+  padding: 100px 8%;
+  background: #F8FAFF;
+}
+
+.slp-test-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.slp-test-card {
+  background: white;
+  padding: 40px;
+  border-radius: 45px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* CTA */
+.slp-cta {
+  padding: 80px 8%;
+}
+
+.slp-cta-box {
+  background: linear-gradient(135deg, #5D5DFF 0%, #EC4899 100%);
+  border-radius: 70px;
+  padding: 100px 50px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.slp-cta-box h2 {
+  font-size: 70px;
+  font-weight: 900;
+  line-height: 0.9;
+  margin-bottom: 30px;
+  letter-spacing: -2px;
+}
+
+/* FOOTER */
+.slp-footer {
+  padding: 100px 8% 50px;
+  background: white;
+  border-top: 1px solid #F1F5F9;
+}
+
+.slp-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 50px;
+  margin-bottom: 80px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .slp-hero-title {
+    font-size: 60px;
+  }
+
+  .slp-hero-img {
+    width: 100%;
+    height: auto;
+  }
+
+  .slp-orbit-container {
+    width: 500px;
+    height: 500px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .slp-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 120px 5% 60px;
+    gap: 50px;
+    overflow: hidden;
+  }
+
+  .slp-hero-img-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .slp-hero-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .slp-features-grid,
+  .slp-programs-grid,
+  .slp-test-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .slp-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .slp-nav {
+    padding: 15px 5%;
+    height: 70px;
+  }
+
+  .slp-nav-actions {
+    display: none;
+  }
+
+  .slp-mobile-toggle {
+    display: block;
+  }
+
+  .slp-nav-links {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 80%;
+    height: 100vh;
+    background: white;
+    flex-direction: column;
+    justify-content: center;
+    padding: 50px;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+  }
+
+  .slp-nav-links.open {
+    right: 0;
+  }
+
+  .slp-mobile-actions {
+    display: flex;
+  }
+
+  .slp-mobile-actions .slp-btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 18px;
+  }
+
+  .slp-nav-links a {
+    font-size: 24px;
+    width: 100%;
+    text-align: center;
+    padding: 15px 0;
+  }
+
+  .slp-hero-title {
+    font-size: 45px;
+  }
+
+  .slp-hero-desc {
+    font-size: 16px;
+    margin: 20px auto 40px;
+  }
+
+  .slp-features-grid,
+  .slp-programs-grid,
+  .slp-test-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .slp-enroll-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 50px;
+  }
+
+  .slp-enroll-benefits {
+    align-items: center;
+  }
+
+  .slp-enroll-form-card {
+    width: 100%;
+    padding: 30px 20px;
+  }
+
+  .slp-orbit-section {
+    padding: 100px 5%;
+  }
+
+  .slp-orbit-container {
+    width: 100%;
+    height: auto;
+    border: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px 10px;
+    margin: 0;
+  }
+
+  .slp-orbit-wrapper {
+    width: 240px !important;
+    height: 240px !important;
+    margin: 60px auto !important;
+  }
+
+  .slp-center-img {
+    width: 160px !important;
+    height: 160px !important;
+    border-width: 6px !important;
+  }
+
+  .slp-lang-flag {
+    width: 45px !important;
+    height: 45px !important;
+    font-size: 20px !important;
+  }
+
+  .slp-lang-label {
+    font-size: 8px !important;
+    letter-spacing: 0px !important;
+  }
+
+  .slp-orbit-ring {
+    border-width: 1px !important;
+    opacity: 0.5;
+  }
+
+  .slp-lang-tag {
+    position: static !important;
+    transform: none !important;
+    width: auto;
+    padding: 12px 20px !important;
+    font-size: 14px !important;
+  }
+
+  .slp-lang-tag span {
+    font-size: 20px !important;
+  }
+
+  .slp-orbit-container::before,
+  .slp-orbit-container div[style*="dashed"] {
+    display: none !important;
+  }
+
+  .slp-cta-box {
+    padding: 60px 5%;
+  }
+
+  .slp-cta-box h2 {
+    font-size: 32px;
+  }
+
+  .slp-footer {
+    padding: 80px 5% 40px;
+  }
+
+  .slp-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+
+  .slp-footer-grid .slp-logo {
+    justify-content: center;
+  }
+
+  .slp-footer-grid ul {
+    align-items: center;
+  }
+
+  .slp-footer-grid div:last-child div {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .slp-hero-title {
+    font-size: 38px;
+  }
+
+  .slp-hero-btns {
+    flex-direction: column;
+  }
+
+  .slp-btn-orange,
+  .slp-btn-text {
+    width: 100%;
+    text-align: center;
+  }
+
+  .slp-program-card {
+    padding: 30px 20px;
+  }
+}
+/* ANIMATIONS */
+@keyframes slp-rotate-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slp-counter-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+@keyframes slp-float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}

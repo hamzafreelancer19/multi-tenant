@@ -5,13 +5,15 @@ from .models import Attendance
 from .serializers import AttendanceSerializer
 from core.models import ActivityLog
 
+from core.utils import get_current_school
+
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'school') and user.school:
-            qs = Attendance.objects.filter(school=user.school).select_related('student')
+        school = get_current_school(self.request)
+        if school:
+            qs = Attendance.objects.filter(school=school).select_related('student')
             date = self.request.query_params.get('date')
             if date:
                 qs = qs.filter(date=date)
@@ -19,7 +21,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         return Attendance.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(school=self.request.user.school)
+        school = get_current_school(self.request)
+        serializer.save(school=school)
 
     @action(detail=False, methods=['post'], url_path='bulk')
     def bulk_create(self, request):
@@ -27,7 +30,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if not records:
             return Response({'error': 'No records provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        school = request.user.school
+        school = get_current_school(request)
         created_count = 0
         updated_count = 0
 

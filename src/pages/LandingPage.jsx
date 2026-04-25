@@ -8,12 +8,16 @@ import {
 import { isAuthenticated, setDemoMode } from "../store/authStore";
 import BackgroundGlow from "../components/ui/BackgroundGlow";
 import GradientBackground from "../components/ui/GradientBackground";
+import { useTenant } from "../context/TenantContext";
 import "./LandingPage.css";
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const loggedIn = isAuthenticated();
+  const tenant = useTenant();
+  
+  const brandName = tenant?.schoolName || "EduSaaS";
 
   useEffect(() => {
     if (loggedIn) {
@@ -34,9 +38,9 @@ export default function LandingPage() {
       <nav className={`lp-navbar ${isMobileMenuOpen ? 'active' : ''}`}>
         <div className="lp-logo">
           <div className="logo-icon">
-            <span style={{ color: 'white' }}>E</span>
+            <span style={{ color: 'white' }}>{brandName[0]}</span>
           </div>
-          EduSaaS
+          {brandName}
         </div>
 
         <div className={`lp-nav-links ${isMobileMenuOpen ? 'show' : ''}`}>
@@ -354,9 +358,9 @@ export default function LandingPage() {
           <div className="lp-footer-brand">
             <div className="lp-logo">
               <div className="logo-icon">
-                <span style={{ color: 'white' }}>E</span>
+                <span style={{ color: 'white' }}>{brandName[0]}</span>
               </div>
-              EduSaaS
+              {brandName}
             </div>
             <p className="lp-footer-desc">Empowering educational institutions with precision tools for academic and administrative excellence.</p>
             <div className="lp-social">

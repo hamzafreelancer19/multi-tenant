@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { logout, getRole, getUser, setUser, isDemoMode } from "../store/authStore";
 import { getUserProfile } from "../auth/authService";
 import api from "../api/axios";
+import { useTenant } from "../context/TenantContext";
 import {
   LayoutDashboard,
   Users,
@@ -35,11 +36,12 @@ const navItems = [
   { to: "/users", icon: <Users size={20} />, label: "Users", roles: ["superadmin"] },
   { to: "/database", icon: <Database size={20} />, label: "Database", roles: ["superadmin"] },
   { to: "/students", icon: <Users size={20} />, label: "Students", roles: ["admin", "teacher"] },
+  { to: "/enrollments", icon: <ClipboardCheck size={20} />, label: "Admission Requests", roles: ["admin"] },
   { to: "/teachers", icon: <GraduationCap size={20} />, label: "Teachers", roles: ["admin"] },
   { to: "/attendance", icon: <ClipboardCheck size={20} />, label: "Attendance", roles: ["admin", "teacher"] },
   { to: "/fees", icon: <CreditCard size={20} />, label: "Fees", roles: ["admin", "accountant"] },
   { to: "/subscription", icon: <Zap size={20} />, label: "Subscription", roles: ["admin"] },
-  { to: "/profile", icon: <UserIcon size={20} />, label: "Profile", roles: ["superadmin", "admin", "teacher", "accountant", "student"] },
+  { to: "/landing-settings", icon: <LayoutDashboard size={20} />, label: "Public Landing Page", roles: ["admin"] },
   { to: "/settings", icon: <School size={20} />, label: "School Settings", roles: ["admin"] },
 ];
 
@@ -47,7 +49,10 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const role = getRole();
   const user = getUser();
+  const tenant = useTenant();
   const [notifications, setNotifications] = useState([]);
+  
+  const brandName = tenant?.schoolName || "EduSaaS";
   const [showNotifs, setShowNotifs] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -147,7 +152,7 @@ export default function DashboardLayout() {
             <School size={24} />
           </div>
           <div>
-            <div className="logo-title">EduSaaS</div>
+            <div className="logo-title">{brandName}</div>
             <div className="logo-sub">School Management</div>
           </div>
         </div>

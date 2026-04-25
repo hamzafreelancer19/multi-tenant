@@ -3,7 +3,12 @@ export const setToken = (token) => {
 };
 
 export const getToken = () => {
-  return localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  if (token) return token;
+  
+  // Fallback to URL params for domain handoff
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('token');
 };
 
 export const setUser = (user) => {
@@ -54,5 +59,10 @@ export const logout = () => {
 };
 
 export const isAuthenticated = () => {
-  return isDemoMode() || !!localStorage.getItem("token");
+  if (isDemoMode()) return true;
+  if (localStorage.getItem("token")) return true;
+  
+  // Check URL during handoff
+  const urlParams = new URLSearchParams(window.location.search);
+  return !!urlParams.get('token');
 };

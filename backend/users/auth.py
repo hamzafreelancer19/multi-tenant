@@ -25,4 +25,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             if user.school.status != 'Approved':
                 raise ValidationError(f"Your school '{user.school.name}' is {user.school.status}. Please wait for approval or contact the platform administrator.")
         
+        # Add school domain to response
+        if user.school:
+            data['school_domain'] = user.school.domain
+            data['school_name'] = user.school.name
+        
         return data

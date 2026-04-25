@@ -3,26 +3,29 @@ from .models import Teacher
 from .serializers import TeacherSerializer
 from core.models import ActivityLog, Notification
 
+from core.utils import get_current_school
+
 class TeacherViewSet(viewsets.ModelViewSet):
     serializer_class = TeacherSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'school') and user.school:
-            return Teacher.objects.filter(school=user.school)
+        school = get_current_school(self.request)
+        if school:
+            return Teacher.objects.filter(school=school)
         return Teacher.objects.none()
 
     def perform_create(self, serializer):
-        teacher = serializer.save(school=self.request.user.school)
+        school = get_current_school(self.request)
+        teacher = serializer.save(school=school)
         try:
             ActivityLog.objects.create(
-                school=self.request.user.school,
+                school=school,
                 name=teacher.name,
                 action=f"joined as {teacher.subject} Teacher",
                 avatar=teacher.name.split(" ")[1][0].upper() if " " in teacher.name else teacher.name[0].upper()
             )
             Notification.objects.create(
-                school=self.request.user.school,
+                school=school,
                 message=f"New teacher {teacher.name} has joined the faculty."
             )
         except Exception as e:

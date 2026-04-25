@@ -15,6 +15,7 @@ import { loginUser, signupUser, getUserProfile, googleLoginAuth } from "@/auth/a
 import { setToken, setRefreshToken, setUser } from "@/store/authStore";
 import BackgroundGlow from "./BackgroundGlow";
 import { useGoogleLogin } from '@react-oauth/google';
+import { useTenant } from "@/context/TenantContext";
 
 // --- CONFETTI LOGIC ---
 import type { Options as ConfettiOptions, GlobalOptions as ConfettiGlobalOptions, CreateTypes as ConfettiInstance } from "canvas-confetti";
@@ -148,19 +149,24 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [schoolName, setSchoolName] = useState("");
-
-  // Clear inline error when typing
-  useEffect(() => {
-    if (inlineError) setInlineError('');
-  }, [email, password, schoolName]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authStep, setAuthStep] = useState(mode === "signup" ? "school" : "email");
   const [modalStatus, setModalStatus] = useState<'closed' | 'loading' | 'error' | 'success'>('closed');
   const [modalErrorMessage, setModalErrorMessage] = useState('');
-  const [inlineError, setInlineError] = useState(''); // New state for inline errors
+  const [inlineError, setInlineError] = useState('');
   const confettiRef = useRef<ConfettiRef>(null);
+
+  const tenant = useTenant();
   const navigate = useNavigate();
+  
+  // Use domain-based school name if available
+  const effectiveBrandName = tenant?.schoolName || brandName;
+
+  // Clear inline error when typing
+  useEffect(() => {
+    if (inlineError) setInlineError('');
+  }, [email, password, schoolName]);
 
   const isEmailValid = mode === 'login' ? email.length >= 3 : /\S+@\S+\.\S+/.test(email);
   const isPasswordValid = password.length >= 6;
@@ -195,7 +201,14 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         setTimeout(() => {
           fireSideCanons();
           setModalStatus('success');
-          setTimeout(() => navigate("/dashboard"), 1500);
+          setTimeout(() => {
+            if (data.school_domain && window.location.hostname !== data.school_domain) {
+              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
+              window.location.href = targetUrl;
+            } else {
+              navigate("/dashboard");
+            }
+          }, 1500);
         }, TEXT_LOOP_INTERVAL * 2000);
       } catch (err: any) {
         setModalStatus('closed');
@@ -233,7 +246,14 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         setTimeout(() => {
           fireSideCanons();
           setModalStatus('success');
-          setTimeout(() => navigate("/dashboard"), 1500);
+          setTimeout(() => {
+            if (data.school_domain && window.location.hostname !== data.school_domain) {
+              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
+              window.location.href = targetUrl;
+            } else {
+              navigate("/dashboard");
+            }
+          }, 1500);
         }, TEXT_LOOP_INTERVAL * 2000);
       } else {
         await signupUser({ school_name: schoolName, username: email, password });
@@ -370,7 +390,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
       <div className="fixed top-4 left-4 z-20 flex items-center gap-2">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           {logo}
-          <h1 className="text-base font-bold text-slate-900">{brandName}</h1>
+          <h1 className="text-base font-bold text-slate-900">{effectiveBrandName}</h1>
         </div>
       </div>
 
@@ -387,17 +407,17 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
             {authStep === "email" && <motion.div key="email-content" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
               <BlurFade delay={0.25 * 1} className="w-full text-center"><p className="font-serif font-light text-4xl sm:text-5xl md:text-6xl tracking-tight text-slate-900 whitespace-nowrap">Get started with Us</p></BlurFade>
               <BlurFade delay={0.25 * 2}><p className="text-sm font-medium text-slate-600">Continue with</p></BlurFade>
-              <BlurFade delay={0.25 * 3} className="w-full"><div className="flex items-center justify-center gap-6 w-full px-2">
-                <button type="button" onClick={() => handleGoogleLogin()} className="social-glass-button flex-1 group">
+              <BlurFade delay={0.25 * 3} className="w-full max-w-[340px]"><div className="flex items-center justify-center gap-4 w-full">
+                <button type="button" onClick={() => handleGoogleLogin()} className="social-glass-button flex-1 group px-4">
                   <div className="relative transform transition-transform group-hover:rotate-12 duration-300"><GoogleIcon /></div>
                   <span className="font-bold text-base text-slate-800 tracking-tight">Google</span>
                 </button>
-                <button type="button" className="social-glass-button flex-1 group">
+                <button type="button" className="social-glass-button flex-1 group px-4">
                   <div className="relative transform transition-transform group-hover:rotate-12 duration-300"><GitHubIcon className="w-6 h-6 text-slate-900" /></div>
                   <span className="font-bold text-base text-slate-800 tracking-tight">GitHub</span>
                 </button>
               </div></BlurFade>
-              <BlurFade delay={0.25 * 4} className="w-[300px]"><div className="flex items-center w-full gap-2 py-2"><hr className="w-full border-slate-300" /><span className="text-xs font-semibold text-slate-500">OR</span><hr className="w-full border-slate-300" /></div></BlurFade>
+              <BlurFade delay={0.25 * 4} className="w-full max-w-[340px]"><div className="flex items-center w-full gap-2 py-2"><hr className="w-full border-slate-300" /><span className="text-xs font-semibold text-slate-500">OR</span><hr className="w-full border-slate-300" /></div></BlurFade>
             </motion.div>}
 
             {authStep === "password" && <motion.div key="password-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">

@@ -29,20 +29,52 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add Tenant Domain header
+    config.headers["X-Tenant-Domain"] = window.location.hostname;
+    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle 401 globally – clear token & redirect to landing if not already there
+// Handle 401 globally – attempt refresh OR redirect
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const isLoginRequest = originalRequest.url?.includes("token/");
+      
+      // If it's not a login request, try to refresh
+      if (!isLoginRequest) {
+        originalRequest._retry = true;
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        if (refreshToken) {
+          try {
+            // Attempt to get a new access token
+            const res = await axios.post("/api/token/refresh/", { refresh: refreshToken });
+            const { access } = res.data;
+
+            if (access) {
+              localStorage.setItem("token", access);
+              originalRequest.headers.Authorization = `Bearer ${access}`;
+              return api(originalRequest);
+            }
+          } catch (refreshError) {
+            // Refresh failed, logout and redirect
+            console.error("Token refresh failed:", refreshError);
+          }
+        }
+      }
+
+      // If refresh failed or no refresh token, logout and redirect
       localStorage.removeItem("token");
-      // Only redirect if we aren't already on the landing page to avoid loops
-      // AND don't redirect if it's the login request itself
-      const isLoginRequest = error.config?.url?.includes("token/");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      
       if (window.location.pathname !== "/" && !isLoginRequest) {
         window.location.href = "/";
       }

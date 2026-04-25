@@ -6,13 +6,15 @@ from .models import Fee
 from .serializers import FeeSerializer
 from core.models import ActivityLog
 
+from core.utils import get_current_school
+
 class FeeViewSet(viewsets.ModelViewSet):
     serializer_class = FeeSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'school') and user.school:
-            qs = Fee.objects.filter(school=user.school).select_related('student')
+        school = get_current_school(self.request)
+        if school:
+            qs = Fee.objects.filter(school=school).select_related('student')
             # Optional filter by status
             status = self.request.query_params.get('status')
             if status and status != 'All':
@@ -21,9 +23,10 @@ class FeeViewSet(viewsets.ModelViewSet):
         return Fee.objects.none()
 
     def perform_create(self, serializer):
-        fee = serializer.save(school=self.request.user.school)
+        school = get_current_school(self.request)
+        fee = serializer.save(school=school)
         ActivityLog.objects.create(
-            school=self.request.user.school,
+            school=school,
             name=fee.student.name,
             action=f"fee recorded: RS. {fee.amount}",
             avatar=fee.student.name[0].upper() if fee.student.name else "S"
@@ -31,9 +34,9 @@ class FeeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        user = self.request.user
-        if hasattr(user, 'school') and user.school:
-            fees = Fee.objects.filter(school=user.school)
+        school = get_current_school(self.request)
+        if school:
+            fees = Fee.objects.filter(school=school)
             collected = fees.filter(status='Paid').aggregate(Sum('amount'))['amount__sum'] or 0
             pending = fees.filter(status='Pending').aggregate(Sum('amount'))['amount__sum'] or 0
             overdue_count = fees.filter(status='Overdue').count()
