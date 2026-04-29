@@ -9,7 +9,8 @@ from core.views import (
     NotificationListView,
     MarkNotificationReadView,
     MarkAllNotificationsReadView,
-    SystemDatabaseView
+    SystemDatabaseView,
+    AIChatView
 )
 
 from rest_framework.routers import DefaultRouter
@@ -50,12 +51,22 @@ urlpatterns = [
     path('api/notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='notification-read'),
     path('api/notifications/read-all/', MarkAllNotificationsReadView.as_view(), name='notification-read-all'),
     path('api/system/explorer/', SystemDatabaseView.as_view(), name='system-explorer'),
+    path('api/ai/chat/', AIChatView.as_view(), name='ai-chat'),
 
     # Apps
     path('api/students/', include('students.urls')),
     path('api/teachers/', include('teachers.urls')),
     path('api/attendance/', include('attendance.urls')),
     path('api/fees/', include('fees.urls')),
+    path('api/exams/', include('exams.urls')),
+    path('api/notices/', include('notices.urls')),
+    path('api/timetable/', include('timetable.urls')),
+    path('api/assignments/', include('assignments.urls')),
+    path('api/classes/', include('classes.urls')),
+    path('api/library/', include('library.urls')),
+    path('api/transport/', include('transport.urls')),
+    path('api/staff/', include('staff.urls')),
+    path('api/inventory/', include('inventory.urls')),
 ]
 from django.conf import settings
 from django.conf.urls.static import static

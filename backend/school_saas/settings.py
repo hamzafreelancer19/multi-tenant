@@ -51,6 +51,15 @@ INSTALLED_APPS = [
     'attendance',
     'fees',
     'core',
+    'exams',
+    'notices',
+    'timetable',
+    'assignments',
+    'classes',
+    'library',
+    'transport',
+    'staff',
+    'inventory',
 ]
 
 MIDDLEWARE = [
@@ -95,6 +104,23 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Future: Tenant databases will be injected dynamically at runtime
+# This placeholder allows the framework to be multi-db aware without changing current behavior.
+TENANT_DATABASES = {
+    'example': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'example_db',
+    }
+}
+
+DATABASE_ROUTERS = [
+    'core.db_router.TenantDatabaseRouter'
+]
+
+# SaaS Architecture Control Flags
+ENABLE_TENANT_DB_CREATION = False # Default is False for safety
+TENANT_DB_SWITCHING_ENABLED = False # Master switch for per-tenant DB routing
 
 
 # Password validation

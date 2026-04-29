@@ -1,0 +1,214 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "../pages/LandingPage";
+import Login from "../pages/Login";
+import Signup from "../pages/Signup";
+import Dashboard from "../pages/Dashboard";
+import Students from "../pages/Students";
+import Schools from "../pages/Schools";
+import Users from "../pages/Users";
+import Teachers from "../pages/Teachers";
+import Attendance from "../pages/Attendance";
+import Fees from "../pages/Fees";
+import SystemExplorer from "../pages/SystemExplorer";
+import Profile from "../pages/Profile";
+import Subscription from "../pages/Subscription";
+import Settings from "../pages/Settings";
+import LandingPageSettings from "../pages/LandingPageSettings";
+import Enrollments from "../pages/Enrollments";
+import Exams from "../pages/Exams";
+import Notices from "../pages/Notices";
+import Timetable from "../pages/Timetable";
+import Assignments from "../pages/Assignments";
+import Library from "../pages/Library";
+import Transport from "../pages/Transport";
+import StaffManagement from "../pages/StaffManagement";
+import Inventory from "../pages/Inventory";
+import CertificateGenerator from "../pages/CertificateGenerator";
+import DashboardLayout from "../layouts/DashboardLayout";
+import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
+
+import TokenHandler from "../components/auth/TokenHandler";
+
+import SchoolLandingPage from "../pages/SchoolLandingPage";
+import { useTenant } from "../context/TenantContext";
+
+export default function AppRoutes() {
+  const tenant = useTenant();
+
+  return (
+    <BrowserRouter>
+      <TokenHandler />
+      <Routes>
+        {/* Public Routes */}
+        <Route 
+          path="/" 
+          element={tenant.schoolName ? <SchoolLandingPage /> : <LandingPage />} 
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* Protected Dashboard Routes (Wrapped in Layout) */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/schools"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <Schools />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <Users />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/students"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Students />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/teachers"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Teachers />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Attendance />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/fees"
+            element={
+              <RoleRoute allowedRoles={["admin", "accountant"]}>
+                <Fees />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/exams"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Exams />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/notices"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Notices />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/timetable"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Timetable />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/assignments"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Assignments />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/library"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Library />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/transport"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <Transport />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/staff"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <StaffManagement />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Inventory />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/certificates"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher"]}>
+                <CertificateGenerator />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/database"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <SystemExplorer />
+              </RoleRoute>
+            }
+          />
+          <Route 
+            path="/landing-settings" 
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <LandingPageSettings />
+              </RoleRoute>
+            } 
+          />
+          <Route 
+            path="/enrollments" 
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Enrollments />
+              </RoleRoute>
+            } 
+          />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+
+        {/* Fallback to Login */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

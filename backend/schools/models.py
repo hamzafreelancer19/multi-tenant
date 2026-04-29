@@ -49,10 +49,25 @@ class School(models.Model):
     landing_programs = models.JSONField(default=list, blank=True)
     landing_languages = models.JSONField(default=list, blank=True)
 
+    database_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Name of the dedicated database for this school"
+    )
+
     def save(self, *args, **kwargs):
         if not self.code:
             import uuid
             self.code = str(uuid.uuid4())[:8].upper()
+        
+        if not self.database_name:
+            # Generate database name from code: lowercase + _db
+            import re
+            # Sanitize code to ensure it's a valid DB name (though UUID/Upper is usually fine)
+            safe_code = re.sub(r'[^a-zA-Z0-9]', '_', self.code.lower())
+            self.database_name = f"{safe_code}_db"
+
         super().save(*args, **kwargs)
 
     def __str__(self):

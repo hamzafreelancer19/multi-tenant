@@ -14,6 +14,15 @@ class SchoolViewSet(viewsets.ModelViewSet):
     serializer_class = SchoolSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        school = serializer.save()
+        
+        # SaaS: Auto-create dedicated database if enabled
+        from django.conf import settings
+        from core.tenant_db_creator import create_tenant_database
+        if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
+            create_tenant_database(school)
+
     def get_queryset(self):
         if self.request.user.role == 'superadmin':
             return School.objects.all().order_by('-created_at')

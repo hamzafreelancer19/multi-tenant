@@ -168,3 +168,19 @@ class SystemDatabaseView(APIView):
             "total_count": model.objects.count(),
             "data": results
         })
+
+from .ai_agent import process_ai_message
+
+class AIChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        message = request.data.get("message")
+        if not message:
+            return Response({"error": "Message is required"}, status=400)
+            
+        school = get_current_school(request)
+        school_id = school.id if school else None
+        
+        reply = process_ai_message(message, school_id)
+        return Response({"reply": reply})

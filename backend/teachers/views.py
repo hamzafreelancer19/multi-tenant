@@ -2,8 +2,9 @@ from rest_framework import viewsets
 from .models import Teacher
 from .serializers import TeacherSerializer
 from core.models import ActivityLog, Notification
-
 from core.utils import get_current_school
+from core.plan_limits import check_teacher_limit
+
 
 class TeacherViewSet(viewsets.ModelViewSet):
     serializer_class = TeacherSerializer
@@ -16,6 +17,11 @@ class TeacherViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         school = get_current_school(self.request)
+
+        # ---- Plan Enforcement ----
+        check_teacher_limit(school)
+        # --------------------------
+
         teacher = serializer.save(school=school)
         try:
             ActivityLog.objects.create(
@@ -30,3 +36,4 @@ class TeacherViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             print(f"[Warning] Could not log teacher activity: {e}")
+

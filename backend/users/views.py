@@ -48,6 +48,12 @@ class SignupView(APIView):
             domain=f"{domain_slug}.localhost"
         )
 
+        # SaaS: Auto-create dedicated database if enabled
+        from django.conf import settings
+        from core.tenant_db_creator import create_tenant_database
+        if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
+            create_tenant_database(school)
+
         # Create the School Admin
         user = User.objects.create(
             username=username,
@@ -137,6 +143,12 @@ class GoogleLoginView(APIView):
                     domain=f"{domain_slug}.localhost"
                 ) # Default is 'Pending'
                 
+                # SaaS: Auto-create dedicated database if enabled
+                from django.conf import settings
+                from core.tenant_db_creator import create_tenant_database
+                if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
+                    create_tenant_database(school)
+
                 user = User.objects.create(
                     username=email,
                     role="admin",
