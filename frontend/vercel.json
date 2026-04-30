@@ -1,46 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "backend/school_saas/wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9"
-      }
-    }
-  ],
-  "env": {
-    "DJANGO_SETTINGS_MODULE": "school_saas.settings",
-    "PYTHONPATH": "backend"
-  },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "backend/school_saas/wsgi.py"
-    },
-    {
-      "source": "/admin/(.*)",
-      "destination": "backend/school_saas/wsgi.py"
-    },
-    {
-      "source": "/static/admin/(.*)",
-      "destination": "backend/school_saas/wsgi.py"
-    },
-    {
-      "source": "/static/rest_framework/(.*)",
-      "destination": "backend/school_saas/wsgi.py"
-    },
-    {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

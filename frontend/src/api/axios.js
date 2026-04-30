@@ -3,7 +3,7 @@ import { handleMockRequest } from "./mockData";
 import { isDemoMode } from "../store/authStore";
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   headers: {
     "Content-Type": "application/json",
   },
