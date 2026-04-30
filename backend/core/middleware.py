@@ -21,8 +21,14 @@ class TenantMiddleware:
             request.domain_school = school
             request.tenant = school # Enhanced storage
             
-            # Prepare database context (but SAFE MODE returns 'default' for now)
+            # Prepare database context
             if school.database_name:
+                # Inject database connection into settings if not already there
+                from django.conf import settings as django_settings
+                if school.database_name not in django_settings.DATABASES:
+                    new_db_config = django_settings.DATABASES['default'].copy()
+                    new_db_config['NAME'] = school.database_name
+                    django_settings.DATABASES[school.database_name] = new_db_config
                 set_current_tenant_db(school.database_name)
         else:
             request.domain_school = None

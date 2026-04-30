@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+import dj_database_url
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file if it exists
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--xujvej22!o+9(65*p_n9!o$uw1ofc*(=+)&9=mw_7i2-q*^^v'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -99,10 +105,10 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"postgres://postgres:hamza123@localhost:5432/school_db",
+        conn_max_age=600
+    )
 }
 
 # Future: Tenant databases will be injected dynamically at runtime
@@ -119,8 +125,8 @@ DATABASE_ROUTERS = [
 ]
 
 # SaaS Architecture Control Flags
-ENABLE_TENANT_DB_CREATION = False # Default is False for safety
-TENANT_DB_SWITCHING_ENABLED = False # Master switch for per-tenant DB routing
+ENABLE_TENANT_DB_CREATION = True # Enabled for real multi-tenancy
+TENANT_DB_SWITCHING_ENABLED = True # Enabled for real multi-tenancy
 
 
 # Password validation
@@ -183,7 +189,8 @@ REST_FRAMEWORK = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 
 # SaaS Logging Configuration
 LOGGING = {

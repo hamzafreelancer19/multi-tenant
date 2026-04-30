@@ -8,35 +8,46 @@ from schools.models import School
 from users.models import User
 from students.models import Student
 from teachers.models import Teacher
+from core.tenant_db_creator import create_tenant_database
 
 def seed_data():
     # 1. Create a School
     school, created = School.objects.get_or_create(
         code="BFA001",
-        defaults={"name": "Bright Future Academy"}
+        defaults={
+            "name": "Bright Future Academy",
+            "status": "Approved",
+            "plan_status": "Active"
+        }
     )
+    
+    # Ensure dedicated database exists
+    create_tenant_database(school)
     if created:
         print(f"Created School: {school.name}")
     else:
-        print(f"School already exists: {school.name}")
+        school.status = "Approved"
+        school.plan_status = "Active"
+        school.save()
+        print(f"School already exists and was set to Approved: {school.name}")
 
-    # 2. Create an Admin User
-    if not User.objects.filter(username="admin").exists():
+    # 2. Create Super Admin User (Hamza)
+    if not User.objects.filter(username="hamza").exists():
         user = User.objects.create_superuser(
-            username="admin",
-            password="adminpassword",
-            email="admin@bfa.com",
-            role="admin",
-            school=school
+            username="hamza",
+            password="hamza123",
+            email="hamza@admin.com",
+            role="superadmin"
         )
-        print(f"Created Superuser: {user.username} (Password: adminpassword)")
+        print(f"Created Super Admin: {user.username} (Password: hamza123)")
     else:
-        # Update existing admin to ensure it's linked to the school and has the right role
-        user = User.objects.get(username="admin")
-        user.school = school
-        user.role = "admin"
+        user = User.objects.get(username="hamza")
+        user.is_superuser = True
+        user.is_staff = True
+        user.role = "superadmin"
+        user.set_password("hamza123")
         user.save()
-        print("Updated Superuser 'admin' link to school.")
+        print("Updated Super Admin 'hamza' credentials.")
 
     # 2b. Create Teacher User
     if not User.objects.filter(username="teacher").exists():

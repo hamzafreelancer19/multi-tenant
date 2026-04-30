@@ -1,38 +1,40 @@
 import logging
+import psycopg2
+from psycopg2 import sql
 from django.conf import settings
-from django.db import connections, transaction
+from django.db import connections
 from django.core.management import call_command
 
 logger = logging.getLogger('tenant')
 
 def run_tenant_migrations(db_name, school_name="Unknown"):
     """
-    Safely executes migrations for a specific tenant database.
-    Supports simulation mode via settings.ENABLE_TENANT_DB_CREATION.
+    Executes migrations for a specific tenant database by injecting it into settings.
     """
-    if not getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
-        logger.info(f"[TENANT SYSTEM] School: {school_name} | Database: {db_name} | Step: MIGRATE | Status: SIMULATED")
-        return True
-
     try:
-        # NOTE: Dynamic database connection must exist in settings.DATABASES 
-        # or be injected at runtime for call_command to work on that database.
-        # Since we are in PREPARATION mode, we ensure isolation.
-        
         logger.info(f"[TENANT SYSTEM] School: {school_name} | Database: {db_name} | Step: MIGRATE | Status: INITIATING")
         
-        # In a real environment, this would run the migrations on the target DB.
-        # call_command('migrate', database=db_name, interactive=False, run_syncdb=True)
+        # Inject the database connection into Django's settings at runtime
+        if db_name not in settings.DATABASES:
+            # Copy default configuration and update the name
+            new_db_config = settings.DATABASES['default'].copy()
+            new_db_config['NAME'] = db_name
+            settings.DATABASES[db_name] = new_db_config
+
+        # Run migrations on the new database
+        call_command('migrate', database=db_name, interactive=False)
         
         logger.info(f"[TENANT SYSTEM] School: {school_name} | Database: {db_name} | Step: MIGRATE | Status: SUCCESS")
         return True
     except Exception as e:
         logger.error(f"[TENANT SYSTEM] School: {school_name} | Database: {db_name} | Step: MIGRATE | Status: FAILED | Error: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 def create_tenant_database(school):
     """
-    Orchestrates the creation and initialization of a tenant's dedicated database.
+    Creates a new PostgreSQL database for the tenant and runs migrations.
     """
     db_name = school.database_name
     if not db_name:
@@ -40,16 +42,38 @@ def create_tenant_database(school):
         return False
 
     # 1. Database Creation Step
-    if not getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
-        logger.info(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: SIMULATED")
-    else:
-        try:
-            # Simulation of real creation to avoid missing postgres infra
-            logger.warning(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: SIMULATED (Infrastructure Placeholder)")
-            # Real creation would happen here via admin connection cursor
-        except Exception as e:
-            logger.error(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: FAILED | Error: {str(e)}")
-            return False
+    try:
+        logger.info(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: INITIATING")
+        
+        default_db = settings.DATABASES['default']
+        
+        # Connect to 'postgres' database to create the new one
+        conn = psycopg2.connect(
+            dbname='postgres',
+            user=default_db['USER'],
+            password=default_db['PASSWORD'],
+            host=default_db['HOST'],
+            port=default_db['PORT']
+        )
+        conn.autocommit = True
+        cursor = conn.cursor()
+        
+        # Check if database already exists
+        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (db_name,))
+        exists = cursor.fetchone()
+        
+        if not exists:
+            cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
+            logger.info(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: SUCCESS")
+        else:
+            logger.info(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: ALREADY EXISTS")
+        
+        cursor.close()
+        conn.close()
+        
+    except Exception as e:
+        logger.error(f"[TENANT SYSTEM] School: {school.name} | Database: {db_name} | Step: CREATE | Status: FAILED | Error: {str(e)}")
+        return False
 
     # 2. Migration Step
     return run_tenant_migrations(db_name, school_name=school.name)
