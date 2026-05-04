@@ -138,8 +138,9 @@ DATABASE_ROUTERS = [
 ]
 
 # SaaS Architecture Control Flags
-ENABLE_TENANT_DB_CREATION = True # Enabled for real multi-tenancy
-TENANT_DB_SWITCHING_ENABLED = True # Enabled for real multi-tenancy
+# SaaS Architecture Control Flags
+ENABLE_TENANT_DB_CREATION = os.getenv('ENABLE_TENANT_DB_CREATION', 'False') == 'True'
+TENANT_DB_SWITCHING_ENABLED = True 
 
 
 # Password validation
