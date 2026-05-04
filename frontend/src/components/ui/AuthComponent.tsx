@@ -202,7 +202,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           fireSideCanons();
           setModalStatus('success');
           setTimeout(() => {
-            if (data.school_domain && window.location.hostname !== data.school_domain) {
+            const isLocalhostTarget = data.school_domain?.includes('localhost');
+            const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+
+            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget)) {
               const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {
@@ -247,7 +250,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           fireSideCanons();
           setModalStatus('success');
           setTimeout(() => {
-            if (data.school_domain && window.location.hostname !== data.school_domain) {
+            const isLocalhostTarget = data.school_domain?.includes('localhost');
+            const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+
+            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget)) {
               const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {

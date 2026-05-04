@@ -32,6 +32,7 @@ SECRET_KEY = 'django-insecure--xujvej22!o+9(65*p_n9!o$uw1ofc*(=+)&9=mw_7i2-q*^^v
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+BASE_DOMAIN = os.getenv('BASE_DOMAIN', 'localhost')
 
 
 # Application definition

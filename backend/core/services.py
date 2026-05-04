@@ -14,10 +14,18 @@ class TenantResolver:
         """
         Resolves tenant strictly from the sanitized Host header.
         """
-        host = request.get_host().split(':')[0].lower() # Sanitized & Lowercased
+        # 1. Check Custom Header (Handy for cross-domain or single-domain SPAs)
+        host = request.headers.get('X-Tenant-Domain')
         
-        # Security: Skip resolution for default localhosts to reduce DB load
-        if host in ['localhost', '127.0.0.1']:
+        # 2. Fallback to Host Header
+        if not host:
+            host = request.get_host().split(':')[0].lower()
+        else:
+            host = host.split(':')[0].lower()
+            
+        # Security: Skip resolution for default localhosts
+        if host in ['localhost', '127.0.0.1'] or host.endswith('.vercel.app'):
+            # If it's the main Vercel or Localhost, don't treat it as a tenant domain itself
             return None
             
         school = School.objects.filter(domain=host).first()

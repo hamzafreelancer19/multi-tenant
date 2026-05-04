@@ -39,13 +39,18 @@ class SignupView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already taken"}, status=400)
 
-        from django.utils.text import slugify
-        
-        # Create the tenant (School) - Default status is 'Pending'
+        # Dynamic Domain Detection
+        current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
+        if 'localhost' in current_host or '127.0.0.1' in current_host:
+            base_domain = 'localhost'
+        else:
+            # If on Vercel or Custom Domain, use the main host as the base
+            base_domain = current_host
+
         domain_slug = slugify(school_name)
         school = School.objects.create(
             name=school_name,
-            domain=f"{domain_slug}.localhost"
+            domain=f"{domain_slug}.{base_domain}"
         )
 
         # SaaS: Auto-create dedicated database if enabled
@@ -134,13 +139,17 @@ class GoogleLoginView(APIView):
                 if not provided_school_name:
                     return Response({"error": "No account found for this Google email. Please register your school first."}, status=404)
 
-                # If they are on the Signup page, they provided a school name
-                school_name = provided_school_name
-                from django.utils.text import slugify
+                # Dynamic Domain Detection
+                current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
+                if 'localhost' in current_host or '127.0.0.1' in current_host:
+                    base_domain = 'localhost'
+                else:
+                    base_domain = current_host
+
                 domain_slug = slugify(school_name)
                 school = School.objects.create(
                     name=school_name,
-                    domain=f"{domain_slug}.localhost"
+                    domain=f"{domain_slug}.{base_domain}"
                 ) # Default is 'Pending'
                 
                 # SaaS: Auto-create dedicated database if enabled
