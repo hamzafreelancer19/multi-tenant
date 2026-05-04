@@ -39,6 +39,7 @@ class SignupView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already taken"}, status=400)
 
+        from django.utils.text import slugify
         # Dynamic Domain Detection
         current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
         if 'localhost' in current_host or '127.0.0.1' in current_host:
