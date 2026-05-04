@@ -204,8 +204,13 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           setTimeout(() => {
             const isLocalhostTarget = data.school_domain?.includes('localhost');
             const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+            const isVercel = window.location.hostname.includes('vercel.app');
 
-            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget)) {
+            if (data.school_domain) {
+              localStorage.setItem("schoolDomain", data.school_domain);
+            }
+
+            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
               const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {
@@ -252,8 +257,13 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           setTimeout(() => {
             const isLocalhostTarget = data.school_domain?.includes('localhost');
             const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+            const isVercel = window.location.hostname.includes('vercel.app');
 
-            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget)) {
+            if (data.school_domain) {
+              localStorage.setItem("schoolDomain", data.school_domain);
+            }
+
+            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
               const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {

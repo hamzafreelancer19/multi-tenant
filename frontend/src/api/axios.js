@@ -30,8 +30,11 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add Tenant Domain header
-    config.headers["X-Tenant-Domain"] = window.location.hostname;
+    // 1. Priority: Domain from localStorage (for single-domain testing like Vercel)
+    const storedDomain = localStorage.getItem("schoolDomain");
+    
+    // 2. Fallback: Actual hostname (for production with subdomains)
+    config.headers["X-Tenant-Domain"] = storedDomain || window.location.hostname;
     
     return config;
   },
