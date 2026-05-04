@@ -29,64 +29,80 @@ class SignupView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        school_name = request.data.get("school_name")
-        username = request.data.get("username")
-        password = request.data.get("password")
+        try:
+            school_name = request.data.get("school_name")
+            username = request.data.get("username")
+            password = request.data.get("password")
 
-        if not school_name or not username or not password:
-            return Response({"error": "Missing school_name, username, or password"}, status=400)
+            if not school_name or not username or not password:
+                return Response({"error": "Missing school_name, username, or password"}, status=400)
 
-        if User.objects.filter(username=username).exists():
-            return Response({"error": "Username already taken"}, status=400)
+            if User.objects.filter(username=username).exists():
+                return Response({"error": "Username already taken"}, status=400)
 
-        from django.utils.text import slugify
-        # Dynamic Domain Detection
-        current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
-        if 'localhost' in current_host or '127.0.0.1' in current_host:
-            base_domain = 'localhost'
-        else:
-            # If on Vercel or Custom Domain, use the main host as the base
-            base_domain = current_host
+            from django.utils.text import slugify
+            # Dynamic Domain Detection
+            current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
+            if 'localhost' in current_host or '127.0.0.1' in current_host:
+                base_domain = 'localhost'
+            else:
+                base_domain = current_host
 
-        domain_slug = slugify(school_name)
-        school = School.objects.create(
-            name=school_name,
-            domain=f"{domain_slug}.{base_domain}"
-        )
+            domain_slug = slugify(school_name)
+            
+            # Check if domain already exists
+            domain_name = f"{domain_slug}.{base_domain}"
+            if School.objects.filter(domain=domain_name).exists():
+                return Response({"error": f"The domain '{domain_name}' is already taken. Please choose a different school name."}, status=400)
 
-        # SaaS: Auto-create dedicated database if enabled
-        from django.conf import settings
-        from core.tenant_db_creator import create_tenant_database
-        if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
-            create_tenant_database(school)
+            school = School.objects.create(
+                name=school_name,
+                domain=domain_name
+            )
 
-        # Create the School Admin
-        user = User.objects.create(
-            username=username,
-            role="admin",
-            school=school
-        )
-        user.set_password(password)
-        user.save()
+            # SaaS: Auto-create dedicated database if enabled
+            from django.conf import settings
+            from core.tenant_db_creator import create_tenant_database
+            if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
+                try:
+                    create_tenant_database(school)
+                except Exception as e:
+                    # Log but don't fail signup if DB creation is blocked in prod
+                    import logging
+                    logger = logging.getLogger('tenant')
+                    logger.error(f"Tenant DB creation failed for {school_name}: {str(e)}")
 
-        # Log Activity (Platform level - set school=None so Super Admin can see it)
-        from core.models import ActivityLog
-        ActivityLog.objects.create(
-            school=None,
-            name=username,
-            action=f"registered '{school_name}' for approval",
-            avatar=username[0].upper() if username else "S"
-        )
+            # Create the School Admin
+            user = User.objects.create(
+                username=username,
+                role="admin",
+                school=school
+            )
+            user.set_password(password)
+            user.save()
 
-        # Notify Super Admins (System-wide notification with school=None)
-        Notification.objects.create(
-            school=None, 
-            message=f"New school registration: {school_name}. Awaiting approval."
-        )
+            # Log Activity
+            from core.models import ActivityLog
+            ActivityLog.objects.create(
+                school=None,
+                name=username,
+                action=f"registered '{school_name}' for approval",
+                avatar=username[0].upper() if username else "S"
+            )
 
-        return Response({
-            "message": "Registration successful! Your school is now pending approval by the platform administrator. You will be able to log in once approved."
-        }, status=201)
+            # Notify Super Admins
+            from core.models import Notification
+            Notification.objects.create(
+                school=None, 
+                message=f"New school registration: {school_name}. Awaiting approval."
+            )
+
+            return Response({
+                "message": "Registration successful! Your school is now pending approval by the platform administrator."
+            }, status=201)
+
+        except Exception as e:
+            return Response({"error": f"Signup Error: {str(e)}"}, status=500)
 
 from rest_framework import viewsets
 from .serializers import UserSerializer
