@@ -45,8 +45,10 @@ class TenantResolver:
             
         user_school = getattr(user, 'school', None)
         
-        # Security: Prevent cross-domain bypass
-        if host and host not in ['localhost', '127.0.0.1'] and not host.endswith('.localhost'):
+        # Security: Prevent cross-domain bypass (but allow main platform domains)
+        is_main_platform = host in ['localhost', '127.0.0.1'] or (host and host.endswith('.vercel.app'))
+        
+        if host and not is_main_platform and not host.endswith('.localhost'):
             if user_school and user_school.domain != host:
                 logger.error(f"SECURITY: Cross-tenant access blocked. User '{user.username}' from '{user_school.domain}' tried accessing '{host}'")
                 return None
