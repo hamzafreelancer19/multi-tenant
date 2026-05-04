@@ -63,10 +63,10 @@ class TenantResolver:
     def validate_school(school, source):
         """
         Standardized validation for school status and availability.
+        Allows 'Approved' and 'Pending' (for initial setup).
         """
-        if school.status != 'Approved':
-            logger.warning(f"SECURITY: Access blocked to suspended tenant '{school.name}' via {source}")
-            # We don't raise exception here to allow middleware to handle the response
+        if school.status not in ['Approved', 'Pending']:
+            logger.warning(f"SECURITY: Access blocked to rejected/suspended tenant '{school.name}' via {source}")
             return False
         return True
 
