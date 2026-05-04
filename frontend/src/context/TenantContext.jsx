@@ -42,12 +42,31 @@ export const TenantProvider = ({ children }) => {
     }
   }, []);
 
+  const setForcedSchool = useCallback(async (slug) => {
+    if (!slug) return;
+    setTenant(prev => ({ ...prev, loading: true }));
+    try {
+      const response = await api.get(`/tenant-info/?domain=${slug}`);
+      if (response.data.school_id) {
+        setTenant(prev => ({
+          ...prev,
+          schoolId: response.data.school_id,
+          schoolName: response.data.school_name,
+          landing: response.data.landing,
+          loading: false,
+        }));
+      }
+    } catch (err) {
+      setTenant(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
+
   useEffect(() => {
     fetchTenantInfo();
   }, [fetchTenantInfo]);
 
   return (
-    <TenantContext.Provider value={{ ...tenant, refreshTenant: fetchTenantInfo }}>
+    <TenantContext.Provider value={{ ...tenant, refreshTenant: fetchTenantInfo, setForcedSchool }}>
       {children}
     </TenantContext.Provider>
   );

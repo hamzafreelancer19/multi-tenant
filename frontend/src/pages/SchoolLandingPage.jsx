@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTenant } from '../context/TenantContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
 import './SchoolLandingPage.css';
@@ -13,7 +13,14 @@ import {
 const SchoolLandingPage = () => {
   const tenant = useTenant();
   const navigate = useNavigate();
+  const { school_slug } = useParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (school_slug) {
+      tenant.setForcedSchool(school_slug);
+    }
+  }, [school_slug]);
 
   // Enrollment State
   const [enrollData, setEnrollData] = useState({

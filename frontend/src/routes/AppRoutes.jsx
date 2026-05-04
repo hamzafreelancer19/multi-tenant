@@ -45,6 +45,7 @@ export default function AppRoutes() {
           path="/" 
           element={tenant.schoolName ? <SchoolLandingPage /> : <LandingPage />} 
         />
+        <Route path="/s/:school_slug" element={<SchoolLandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
