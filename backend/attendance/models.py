@@ -9,7 +9,7 @@ class Attendance(models.Model):
         ('Leave', 'Leave'),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     date = models.DateField()  # Custom date passed from frontend
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Present')

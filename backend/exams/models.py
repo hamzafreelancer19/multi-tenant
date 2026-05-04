@@ -3,7 +3,7 @@ from schools.models import School
 from students.models import Student
 
 class Subject(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, blank=True, null=True)
 
@@ -17,7 +17,7 @@ class Exam(models.Model):
         ('Monthly', 'Monthly Test'),
         ('Other', 'Other'),
     )
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     title = models.CharField(max_length=200)
     class_name = models.CharField(max_length=50, blank=True, null=True)
     exam_type = models.CharField(max_length=20, choices=EXAM_TYPES)

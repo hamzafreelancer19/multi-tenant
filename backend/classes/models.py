@@ -2,7 +2,7 @@ from django.db import models
 from schools.models import School
 
 class SchoolClass(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     name = models.CharField(max_length=50) # e.g. Grade 10
     section = models.CharField(max_length=20, blank=True, null=True) # e.g. Alpha
     room_no = models.CharField(max_length=20, blank=True, null=True)

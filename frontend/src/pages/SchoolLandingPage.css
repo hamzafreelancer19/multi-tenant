@@ -320,11 +320,13 @@ body {
   width: 100%;
   height: 100%;
   animation: slp-rotate-orbit 40s linear infinite;
-  pointer-events: none; /* Allow clicking through to center image if needed */
+  pointer-events: none;
+  /* Allow clicking through to center image if needed */
 }
 
-.slp-orbit-container > * {
-  pointer-events: auto; /* Re-enable pointer events for orbit items */
+.slp-orbit-container>* {
+  pointer-events: auto;
+  /* Re-enable pointer events for orbit items */
 }
 
 .slp-center-img {
@@ -839,19 +841,38 @@ body {
     padding: 30px 20px;
   }
 }
+
 /* ANIMATIONS */
 @keyframes slp-rotate-orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slp-counter-rotate {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(-360deg); }
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
 }
 
 @keyframes slp-float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }

@@ -3,7 +3,7 @@ from schools.models import School
 from students.models import Student
 
 class Book(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     title = models.CharField(max_length=200)
     author = models.CharField(max_length=200)
     isbn = models.CharField(max_length=20, blank=True, null=True)
@@ -15,7 +15,7 @@ class Book(models.Model):
         return self.title
 
 class IssueReturn(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     issue_date = models.DateField(auto_now_add=True)

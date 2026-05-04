@@ -2,7 +2,7 @@ from django.db import models
 from schools.models import School
 
 class Notice(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     title = models.CharField(max_length=200)
     content = models.TextField()
     is_active = models.BooleanField(default=True)

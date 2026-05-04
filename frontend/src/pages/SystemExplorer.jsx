@@ -51,8 +51,8 @@ export default function SystemExplorer() {
     return String(val);
   };
 
-  const filteredData = data.filter(row => 
-    Object.values(row).some(val => 
+  const filteredData = data.filter(row =>
+    Object.values(row).some(val =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -61,39 +61,39 @@ export default function SystemExplorer() {
     <div className="page-container animate-fade-in" style={{ paddingBottom: '40px' }}>
       <div className="page-header" style={{ marginBottom: '24px', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-           <div className="icon-badge" style={{ 
-             background: 'linear-gradient(135deg, var(--accent), var(--purple))', 
-             color: 'white', 
-             boxShadow: '0 8px 24px rgba(var(--accent-rgb), 0.25)',
-             width: '52px', height: '52px' 
-           }}>
-              <Database size={24} />
-           </div>
-           <div>
-              <h1 className="page-title" style={{ fontSize: '22px', marginBottom: '2px' }}>System Database</h1>
-              <p className="page-sub" style={{ fontSize: '13px' }}>Global read-only explorer for platform-wide records</p>
-           </div>
+          <div className="icon-badge" style={{
+            background: 'linear-gradient(135deg, var(--accent), var(--purple))',
+            color: 'white',
+            boxShadow: '0 8px 24px rgba(var(--accent-rgb), 0.25)',
+            width: '52px', height: '52px'
+          }}>
+            <Database size={24} />
+          </div>
+          <div>
+            <h1 className="page-title" style={{ fontSize: '22px', marginBottom: '2px' }}>System Database</h1>
+            <p className="page-sub" style={{ fontSize: '13px' }}>Global read-only explorer for platform-wide records</p>
+          </div>
         </div>
-        
+
         <div className="header-actions" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
-           <div className="search-box glass" style={{ width: '260px', height: '42px', display: 'flex', alignItems: 'center' }}>
-             <Search size={18} style={{ marginLeft: '12px', opacity: 0.6 }} />
-             <input 
-               placeholder="Search metadata..." 
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               style={{ border: 'none', background: 'transparent', width: '100%', padding: '0 12px', fontSize: '14px', outline: 'none' }}
-             />
-           </div>
-           <button 
-             className="btn btn-secondary" 
-             onClick={fetchData} 
-             disabled={loading}
-             style={{ height: '42px', padding: '0 20px', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
-           >
-             <RefreshCw size={16} className={loading ? "spin" : ""} />
-             <span>Sync Database</span>
-           </button>
+          <div className="search-box glass" style={{ width: '260px', height: '42px', display: 'flex', alignItems: 'center' }}>
+            <Search size={18} style={{ marginLeft: '12px', opacity: 0.6 }} />
+            <input
+              placeholder="Search metadata..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', width: '100%', padding: '0 12px', fontSize: '14px', outline: 'none' }}
+            />
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={fetchData}
+            disabled={loading}
+            style={{ height: '42px', padding: '0 20px', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <RefreshCw size={16} className={loading ? "spin" : ""} />
+            <span>Sync Database</span>
+          </button>
         </div>
       </div>
 
@@ -104,7 +104,7 @@ export default function SystemExplorer() {
             <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0 12px 16px', letterSpacing: '1.2px' }}>System Tables</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {tables.map(table => (
-                <button 
+                <button
                   key={table.id}
                   onClick={() => setActiveTable(table.id)}
                   className={`explorer-tab ${activeTable === table.id ? 'active' : ''}`}
@@ -121,16 +121,16 @@ export default function SystemExplorer() {
 
         {/* Data View */}
         <div className="explorer-content" style={{ border: 'none' }}>
-           <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
             {/* Internal Explorer Header */}
             <div className="explorer-table-header" style={{ padding: '16px 20px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Table size={18} color="var(--accent)" />
-                  <span style={{ fontWeight: 700, fontSize: '15px', textTransform: 'capitalize', color: 'var(--text-primary)' }}>{activeTable} Directory</span>
-               </div>
-               <div className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', fontWeight: 800, fontSize: '11px' }}>
-                  {filteredData.length} records
-               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Table size={18} color="var(--accent)" />
+                <span style={{ fontWeight: 700, fontSize: '15px', textTransform: 'capitalize', color: 'var(--text-primary)' }}>{activeTable} Directory</span>
+              </div>
+              <div className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', fontWeight: 800, fontSize: '11px' }}>
+                {filteredData.length} records
+              </div>
             </div>
 
             <div style={{ padding: '0' }}>
@@ -145,7 +145,7 @@ export default function SystemExplorer() {
               {!error && loading && (
                 <div style={{ padding: '120px', textAlign: 'center' }}>
                   <div className="spinner-glow" style={{ margin: '0 auto 20px' }}>
-                     <RefreshCw size={40} className="spin" style={{ color: 'var(--accent)' }} />
+                    <RefreshCw size={40} className="spin" style={{ color: 'var(--accent)' }} />
                   </div>
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Establishing Data Connection...</p>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Querying remote database nodes</p>
@@ -165,12 +165,12 @@ export default function SystemExplorer() {
                     <thead style={{ position: 'sticky', top: 0, zIndex: 5 }}>
                       <tr style={{ background: 'var(--bg-card)' }}>
                         {Object.keys(filteredData[0]).map(key => (
-                          <th key={key} style={{ 
-                            textAlign: 'left', 
-                            padding: '14px 20px', 
-                            fontSize: '11px', 
-                            fontWeight: 800, 
-                            color: 'var(--text-muted)', 
+                          <th key={key} style={{
+                            textAlign: 'left',
+                            padding: '14px 20px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            color: 'var(--text-muted)',
                             textTransform: 'uppercase',
                             letterSpacing: '1px',
                             borderBottom: '2px solid var(--border)'
@@ -185,7 +185,7 @@ export default function SystemExplorer() {
                         <tr key={idx} className="explorer-row" style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
                           {Object.entries(row).map(([key, val], i) => (
                             <td key={i} style={{ padding: '16px 20px', fontSize: '14px', whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }}>
-                              <span style={{ 
+                              <span style={{
                                 color: key.toLowerCase().includes('id') ? 'var(--text-muted)' : 'var(--text-primary)',
                                 fontWeight: key.toLowerCase() === 'name' ? 600 : 400
                               }}>

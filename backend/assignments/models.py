@@ -3,7 +3,7 @@ from schools.models import School
 from teachers.models import Teacher
 
 class Assignment(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     title = models.CharField(max_length=200)
     description = models.TextField()
     class_name = models.CharField(max_length=50)

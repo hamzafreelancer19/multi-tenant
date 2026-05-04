@@ -74,9 +74,9 @@ export default function Subscription() {
       // Robust matching: Try ID first, then fallback to users school name match if ID fails, 
       // or just take the first school if the current user is an admin for only one school.
       const userSchool = user?.school;
-      const mySchool = schools.find(s => s.id === Number(userSchool)) || 
-                       schools.find(s => s.name === userSchool) || 
-                       schools[0];
+      const mySchool = schools.find(s => s.id === Number(userSchool)) ||
+        schools.find(s => s.name === userSchool) ||
+        schools[0];
       setSchool(mySchool);
     } catch (err) {
       console.error("Failed to fetch school info");
@@ -169,54 +169,54 @@ export default function Subscription() {
           )}
           {/* Current Plan Status Card */}
           <div className="card" style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "white", border: "none", padding: 32 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 20 }}>
-            <div>
-              <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Current Plan</div>
-              <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>
-                {school.plan_type === "None" ? "No Plan" : school.plan_type}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 20 }}>
+              <div>
+                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Current Plan</div>
+                <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>
+                  {school.plan_type === "None" ? "No Plan" : school.plan_type}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "6px 14px", borderRadius: 20, background: badge.bg, color: badge.color, width: "fit-content" }}>
+                  {badge.icon} {badge.label}
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "6px 14px", borderRadius: 20, background: badge.bg, color: badge.color, width: "fit-content" }}>
-                {badge.icon} {badge.label}
+              <div style={{ textAlign: "right" }}>
+                {school.plan_amount > 0 && (
+                  <div style={{ fontSize: 28, fontWeight: 800 }}>Rs. {school.plan_amount}</div>
+                )}
+                {school.plan_expiry_date && (
+                  <div style={{ fontSize: 13, opacity: 0.6, marginTop: 4 }}>Expires: {school.plan_expiry_date}</div>
+                )}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              {school.plan_amount > 0 && (
-                <div style={{ fontSize: 28, fontWeight: 800 }}>Rs. {school.plan_amount}</div>
-              )}
-              {school.plan_expiry_date && (
-                <div style={{ fontSize: 13, opacity: 0.6, marginTop: 4 }}>Expires: {school.plan_expiry_date}</div>
-              )}
-            </div>
-          </div>
 
-          {/* Progress Bar - only if active */}
-          {school.plan_status === "Active" && (
-            <div style={{ marginTop: 28 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 10, opacity: 0.8 }}>
-                <span>📅 {daysUsed} days used</span>
-                <span>⏳ {daysLeft} days remaining</span>
+            {/* Progress Bar - only if active */}
+            {school.plan_status === "Active" && (
+              <div style={{ marginTop: 28 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 10, opacity: 0.8 }}>
+                  <span>📅 {daysUsed} days used</span>
+                  <span>⏳ {daysLeft} days remaining</span>
+                </div>
+                <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 10 }}>
+                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #3b82f6, #8b5cf6)", borderRadius: 10, transition: "width 0.5s ease" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <button
+                    onClick={() => setShowRenewForm(!showRenewForm)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "white", cursor: "pointer", fontWeight: 600, fontSize: 14 }}
+                  >
+                    <RefreshCw size={16} /> {showRenewForm ? "Cancel Renewal" : "Renew / Upgrade Plan"}
+                  </button>
+                </div>
               </div>
-              <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 10 }}>
-                <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #3b82f6, #8b5cf6)", borderRadius: 10, transition: "width 0.5s ease" }} />
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                <button
-                  onClick={() => setShowRenewForm(!showRenewForm)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "white", cursor: "pointer", fontWeight: 600, fontSize: 14 }}
-                >
-                  <RefreshCw size={16} /> {showRenewForm ? "Cancel Renewal" : "Renew / Upgrade Plan"}
-                </button>
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Pending message */}
-          {school.plan_status === "Pending" && (
-            <div style={{ marginTop: 20, padding: 14, background: "rgba(245,158,11,0.15)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-              <AlertTriangle size={16} style={{ color: "#f59e0b", flexShrink: 0 }} />
-              <span>Your <strong>{school.plan_type}</strong> plan is awaiting approval. Transaction ID: <strong>{school.transaction_id}</strong></span>
-            </div>
-          )}
+            {/* Pending message */}
+            {school.plan_status === "Pending" && (
+              <div style={{ marginTop: 20, padding: 14, background: "rgba(245,158,11,0.15)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                <AlertTriangle size={16} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                <span>Your <strong>{school.plan_type}</strong> plan is awaiting approval. Transaction ID: <strong>{school.transaction_id}</strong></span>
+              </div>
+            )}
           </div>
         </>
       )}

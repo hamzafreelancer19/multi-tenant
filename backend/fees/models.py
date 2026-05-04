@@ -10,7 +10,7 @@ class Fee(models.Model):
         ('Overdue', 'Overdue'),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     amount = models.IntegerField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')

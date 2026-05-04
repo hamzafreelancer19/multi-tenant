@@ -11,7 +11,7 @@ class Staff(models.Model):
         ('Other', 'Other'),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     name = models.CharField(max_length=200)
     role = models.CharField(max_length=50, choices=STAFF_ROLES)
     phone = models.CharField(max_length=20)

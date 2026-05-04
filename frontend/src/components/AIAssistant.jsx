@@ -45,7 +45,7 @@ export default function AIAssistant() {
   return (
     <>
       {/* Floating Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
         style={{
           position: "fixed",
@@ -102,7 +102,7 @@ export default function AIAssistant() {
               </div>
               <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>AI Assistant</h3>
             </div>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               style={{ background: "transparent", border: "none", color: "white", cursor: "pointer" }}
             >
@@ -168,7 +168,7 @@ export default function AIAssistant() {
             display: "flex",
             gap: 8
           }}>
-            <input 
+            <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me to add a student..."
@@ -183,7 +183,7 @@ export default function AIAssistant() {
               }}
               disabled={loading}
             />
-            <button 
+            <button
               type="submit"
               disabled={!input.trim() || loading}
               style={{

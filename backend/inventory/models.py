@@ -2,7 +2,7 @@ from django.db import models
 from schools.models import School
 
 class InventoryItem(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     item_name = models.CharField(max_length=200)
     category = models.CharField(max_length=100)
     quantity = models.IntegerField(default=0)

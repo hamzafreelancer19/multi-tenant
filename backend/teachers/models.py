@@ -2,7 +2,7 @@ from django.db import models
 from schools.models import School
 
 class Teacher(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     name = models.CharField(max_length=100)
     subject = models.CharField(max_length=100)
     email = models.EmailField(blank=True, null=True)

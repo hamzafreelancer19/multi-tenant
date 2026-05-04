@@ -104,11 +104,23 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=f"postgres://postgres:hamza123@localhost:5432/school_db",
+#         conn_max_age=0
+#     )
+# }
+
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"postgres://postgres:hamza123@localhost:5432/school_db",
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'LmnycnuIwDVqrhRZmHDPVmnTIsKSVmwQ',
+        'HOST': 'switchyard.proxy.rlwy.net',
+        'PORT': '26790',
+    }
 }
 
 # Future: Tenant databases will be injected dynamically at runtime
@@ -188,9 +200,10 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS
+# CORS & CSRF
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,https://multi-tenant-production-6364.up.railway.app').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,https://multi-tenant-production-6364.up.railway.app').split(',')
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-tenant-domain',

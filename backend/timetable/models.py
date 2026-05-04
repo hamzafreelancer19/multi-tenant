@@ -13,7 +13,7 @@ class Timetable(models.Model):
         ('Sunday', 'Sunday'),
     )
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, db_constraint=False)
     class_name = models.CharField(max_length=50)
     subject = models.CharField(max_length=100)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
