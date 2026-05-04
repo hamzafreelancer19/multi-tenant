@@ -71,6 +71,30 @@ class TenantResolver:
         return True
 
     @staticmethod
+    def resolve_from_token(request):
+        """
+        Resolves tenant by decoding the JWT token in the Authorization header.
+        Crucial for middleware-level resolution when session auth is not used.
+        """
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return None
+            
+        try:
+            token = auth_header.split(' ')[1]
+            from rest_framework_simplejwt.tokens import AccessToken
+            decoded_token = AccessToken(token)
+            school_id = decoded_token.get('school_id')
+            
+            if school_id:
+                school = School.objects.filter(id=school_id).first()
+                if school and TenantResolver.validate_school(school, "JWTToken"):
+                    return school
+        except Exception:
+            pass # Invalid token or missing claim
+        return None
+
+    @staticmethod
     def get_context(request):
         """
         The master resolution method following the strict priority rule.
@@ -80,7 +104,12 @@ class TenantResolver:
         if domain_school and TenantResolver.validate_school(domain_school, request.get_host()):
             return domain_school
             
-        # 2. User-based resolution (Fallback)
+        # 2. Token-based resolution (For JWT authenticated requests)
+        token_school = TenantResolver.resolve_from_token(request)
+        if token_school:
+            return token_school
+            
+        # 3. User-based resolution (Fallback for session-based auth)
         user_school = TenantResolver.resolve_from_user(request.user, request.get_host().split(':')[0])
         if user_school and TenantResolver.validate_school(user_school, "UserContext"):
             return user_school
