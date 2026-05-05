@@ -134,6 +134,7 @@ select {
 ───────────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
+  height: 100vh;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -141,9 +142,10 @@ select {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  overflow-y: auto;
+  overflow: hidden;
   transition: width var(--transition);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
 
@@ -218,6 +220,26 @@ select {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.sidebar-nav:hover::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
 }
 
 .nav-section-label {
