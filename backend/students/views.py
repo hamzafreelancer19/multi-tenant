@@ -7,6 +7,10 @@ from core.utils import get_current_school
 from core.plan_limits import check_student_limit
 
 
+from django.contrib.auth import get_user_model
+User = get_user_model()
+from django.utils.text import slugify
+
 class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
 
@@ -34,20 +38,41 @@ class StudentViewSet(viewsets.ModelViewSet):
         random_roll = f"R-{random.randint(1000, 9999)}"
         student = serializer.save(school=school, roll_no=random_roll)
 
-        # Create Activity Log & Notification (non-blocking)
+        # Create User account for Student
         try:
+            # Pattern: [roll_no]@[school_name].com
+            school_slug = slugify(school.name)
+            username = f"{student.roll_no}@{school_slug}.com"
+            
+            # Ensure unique username (should be unique due to roll_no but just in case)
+            while User.objects.filter(username=username).exists():
+                new_roll = f"R-{random.randint(1000, 9999)}"
+                student.roll_no = new_roll
+                student.save()
+                username = f"{new_roll}@{school_slug}.com"
+
+            user = User.objects.create(
+                username=username,
+                email=username,
+                role="student",
+                school=school
+            )
+            user.set_password("Student@123") # Default password
+            user.save()
+
             ActivityLog.objects.create(
                 school=school,
                 name=student.name,
-                action=f"enrolled in {student.class_name}",
+                action=f"enrolled in {student.class_name} (User: {username})",
                 avatar=student.name[0].upper() if student.name else "S"
             )
             Notification.objects.create(
                 school=school,
-                message=f"New student {student.name} was added to {student.class_name}."
+                message=f"New student {student.name} was added to {student.class_name}. Login: {username}"
             )
         except Exception as e:
-            print(f"[Warning] Could not create activity log: {e}")
+            print(f"[Warning] Could not create student user: {e}")
+
 
     from rest_framework.decorators import action
     from rest_framework.response import Response

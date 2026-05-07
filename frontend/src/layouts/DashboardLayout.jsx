@@ -49,15 +49,15 @@ const navItems = [
   { to: "/attendance", icon: <ClipboardCheck size={20} />, label: "Attendance", roles: ["admin", "teacher"], plan: "Basic" },
   
   // Business Plan Features
-  { to: "/fees", icon: <CreditCard size={20} />, label: "Fees", roles: ["admin", "accountant"], plan: "Business" },
-  { to: "/exams", icon: <ClipboardCheck size={20} />, label: "Exams", roles: ["admin", "teacher"], plan: "Business" },
-  { to: "/notices", icon: <Bell size={20} />, label: "Notice Board", roles: ["admin", "teacher"], plan: "Business" },
+  { to: "/fees", icon: <CreditCard size={20} />, label: "Fees", roles: ["admin", "accountant", "student"], plan: "Business" },
+  { to: "/exams", icon: <ClipboardCheck size={20} />, label: "Exams", roles: ["admin", "teacher", "student"], plan: "Business" },
+  { to: "/notices", icon: <Bell size={20} />, label: "Notice Board", roles: ["admin", "teacher", "student"], plan: "Business" },
   
   // Pro Plan Features
-  { to: "/timetable", icon: <Clock size={20} />, label: "Class Schedules", roles: ["admin", "teacher"], plan: "Pro" },
-  { to: "/assignments", icon: <ClipboardList size={20} />, label: "Homework", roles: ["admin", "teacher"], plan: "Pro" },
-  { to: "/library", icon: <BookIcon size={20} />, label: "Library", roles: ["admin", "teacher"], plan: "Pro" },
-  { to: "/transport", icon: <Bus size={20} />, label: "Transport", roles: ["admin", "teacher"], plan: "Pro" },
+  { to: "/timetable", icon: <Clock size={20} />, label: "Class Schedules", roles: ["admin", "teacher", "student"], plan: "Pro" },
+  { to: "/assignments", icon: <ClipboardList size={20} />, label: "Homework", roles: ["admin", "teacher", "student"], plan: "Pro" },
+  { to: "/library", icon: <BookIcon size={20} />, label: "Library", roles: ["admin", "teacher", "student"], plan: "Pro" },
+  { to: "/transport", icon: <Bus size={20} />, label: "Transport", roles: ["admin", "teacher", "student"], plan: "Pro" },
   { to: "/staff", icon: <Users size={20} />, label: "Staff & Payroll", roles: ["admin"], plan: "Pro" },
   { to: "/inventory", icon: <Package size={20} />, label: "Inventory & Stock", roles: ["admin"], plan: "Pro" },
   { to: "/certificates", icon: <FileBadge size={20} />, label: "ID Cards & Certificates", roles: ["admin", "teacher"], plan: "Pro" },
@@ -66,6 +66,7 @@ const navItems = [
   { to: "/landing-settings", icon: <LayoutDashboard size={20} />, label: "Public Landing Page", roles: ["admin"], plan: "None" },
   { to: "/settings", icon: <School size={20} />, label: "School Settings", roles: ["admin"], plan: "None" },
 ];
+
 
 export default function DashboardLayout() {
   const navigate = useNavigate();

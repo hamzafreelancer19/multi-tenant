@@ -101,7 +101,7 @@ export default function AppRoutes() {
           <Route
             path="/fees"
             element={
-              <RoleRoute allowedRoles={["admin", "accountant"]}>
+              <RoleRoute allowedRoles={["admin", "accountant", "student"]}>
                 <Fees />
               </RoleRoute>
             }
@@ -109,7 +109,7 @@ export default function AppRoutes() {
           <Route
             path="/exams"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Exams />
               </RoleRoute>
             }
@@ -117,7 +117,7 @@ export default function AppRoutes() {
           <Route
             path="/notices"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Notices />
               </RoleRoute>
             }
@@ -125,7 +125,7 @@ export default function AppRoutes() {
           <Route
             path="/timetable"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Timetable />
               </RoleRoute>
             }
@@ -133,7 +133,7 @@ export default function AppRoutes() {
           <Route
             path="/assignments"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Assignments />
               </RoleRoute>
             }
@@ -141,7 +141,7 @@ export default function AppRoutes() {
           <Route
             path="/library"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Library />
               </RoleRoute>
             }
@@ -149,11 +149,12 @@ export default function AppRoutes() {
           <Route
             path="/transport"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
                 <Transport />
               </RoleRoute>
             }
           />
+
           <Route
             path="/staff"
             element={

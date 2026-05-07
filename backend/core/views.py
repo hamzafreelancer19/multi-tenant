@@ -39,6 +39,44 @@ class DashboardStatsView(APIView):
             return Response({"error": "No school context found"}, status=400)
         today = timezone.now().date()
 
+        if user.role == 'teacher':
+            from assignments.models import Assignment
+            from notices.models import Notice
+            total_assignments = Assignment.objects.filter(school=school).count()
+            total_notices = Notice.objects.filter(school=school).count()
+            total_students = Student.objects.filter(school=school).count()
+            
+            return Response({
+                "role": "teacher",
+                "assignments": total_assignments,
+                "notices": total_notices,
+                "students": total_students,
+                "attendance": 0 # Placeholder
+            })
+
+        if user.role == 'student':
+            # Try to find student record by email
+            student_obj = Student.objects.filter(school=school, email=user.username).first()
+            if student_obj:
+                my_attendance = Attendance.objects.filter(school=school, student_id=student_obj.id)
+                present_days = my_attendance.filter(status='Present').count()
+                total_days = my_attendance.count()
+                att_rate = round((present_days / total_days) * 100) if total_days > 0 else 0
+                
+                my_fees = Fee.objects.filter(school=school, student_id=student_obj.id)
+                pending_fees = my_fees.exclude(status='Paid').count()
+                
+                from assignments.models import Assignment
+                total_homework = Assignment.objects.filter(school=school, class_name=student_obj.class_name).count()
+                
+                return Response({
+                    "role": "student",
+                    "attendance": att_rate,
+                    "pending_fees": pending_fees,
+                    "homework": total_homework,
+                    "class_name": student_obj.class_name
+                })
+
         total_students = Student.objects.filter(school=school).count()
         total_teachers = Teacher.objects.filter(school=school).count()
 
@@ -57,6 +95,7 @@ class DashboardStatsView(APIView):
             "attendance": attendance_rate,
             "fees_collected": fees_collected,
         })
+
 
 from datetime import timedelta
 

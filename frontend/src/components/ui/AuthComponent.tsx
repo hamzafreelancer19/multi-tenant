@@ -210,14 +210,19 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
               localStorage.setItem("schoolDomain", data.school_domain);
             }
 
+            // Determine redirect path based on role
+            let targetPath = "/dashboard";
+            if (userProfile.role === 'superadmin') targetPath = "/schools";
+
             if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
-              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
+              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {
-              navigate("/dashboard");
+              navigate(targetPath);
             }
           }, 1500);
         }, TEXT_LOOP_INTERVAL * 2000);
+
       } catch (err: any) {
         setModalStatus('closed');
         let errorMsg = err.response?.data?.error || "Google login failed.";
@@ -263,14 +268,19 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
               localStorage.setItem("schoolDomain", data.school_domain);
             }
 
+            // Determine redirect path based on role
+            let targetPath = "/dashboard";
+            if (userProfile.role === 'superadmin') targetPath = "/schools";
+
             if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
-              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}/dashboard?token=${data.access}&refresh=${data.refresh}`;
+              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
             } else {
-              navigate("/dashboard");
+              navigate(targetPath);
             }
           }, 1500);
         }, TEXT_LOOP_INTERVAL * 2000);
+
       } else {
         await signupUser({ school_name: schoolName, username: email, password });
         setTimeout(() => {

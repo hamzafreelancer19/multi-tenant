@@ -130,6 +130,64 @@ export default function Dashboard() {
       color: "orange",
       desc: "data used",
     },
+  ] : role === 'teacher' ? [
+    {
+      label: "My Students",
+      value: statsData.students,
+      icon: <Users size={22} />,
+      color: "blue",
+      desc: "enrolled in school",
+    },
+    {
+      label: "Active Homework",
+      value: statsData.assignments,
+      icon: <BookOpen size={22} />,
+      color: "purple",
+      desc: "pending review",
+    },
+    {
+      label: "Notice Board",
+      value: statsData.notices,
+      icon: <Bell size={22} />,
+      color: "green",
+      desc: "published updates",
+    },
+    {
+      label: "System Status",
+      value: "Active",
+      icon: <RefreshCw size={22} />,
+      color: "orange",
+      desc: "all systems nominal",
+    },
+  ] : role === 'student' ? [
+    {
+      label: "My Attendance",
+      value: `${statsData.attendance}%`,
+      icon: <ClipboardCheck size={22} />,
+      color: "blue",
+      desc: "overall presence",
+    },
+    {
+      label: "Pending Fees",
+      value: statsData.pending_fees,
+      icon: <DollarSign size={22} />,
+      color: "purple",
+      desc: "unpaid months",
+    },
+    {
+      label: "Assignments",
+      value: statsData.homework,
+      icon: <BookOpen size={22} />,
+      color: "green",
+      desc: "assigned to your class",
+    },
+    {
+      label: "Class",
+      value: statsData.class_name || "N/A",
+      icon: <GraduationCap size={22} />,
+      color: "orange",
+      desc: "current enrollment",
+    },
   ] : [
     {
       label: "Total Students",
@@ -160,6 +218,7 @@ export default function Dashboard() {
       desc: "paid records",
     },
   ];
+
 
   const today = new Date().toLocaleDateString("en-PK", {
     weekday: "long", year: "numeric", month: "long", day: "numeric"
