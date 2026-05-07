@@ -74,7 +74,7 @@ export default function DashboardLayout() {
   const tenant = useTenant();
   const [notifications, setNotifications] = useState([]);
   
-  const brandName = tenant?.schoolName || "EduSaaS";
+  const brandName = tenant?.schoolName || "Classora";
   const [showNotifs, setShowNotifs] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [isCollapsed, setIsCollapsed] = useState(false);

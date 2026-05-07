@@ -34,7 +34,7 @@ const CertificateGenerator = () => {
   
   // Customization State
   const [customSettings, setCustomSettings] = useState({
-    schoolName: "EduSaaS Premium Academy",
+    schoolName: "Classora Premium Academy",
     primaryColor: "var(--accent)",
     academicYear: "2024-2025",
     principalName: "Dr. Hamza Ahmed",

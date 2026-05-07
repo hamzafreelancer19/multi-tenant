@@ -17,7 +17,7 @@ export default function LandingPage() {
   const loggedIn = isAuthenticated();
   const tenant = useTenant();
 
-  const brandName = tenant?.schoolName || "EduSaaS";
+  const brandName = tenant?.schoolName || "Classora";
 
   useEffect(() => {
     if (loggedIn) {
@@ -286,7 +286,7 @@ export default function LandingPage() {
             <div className="sazzad-aurora"></div>
             <div className="sazzad-content">
               <Quote className="lp-quote-icon" size={40} />
-              <p className="lp-testi-text">"EduSaaS has completely revolutionized how we handle student records. The interface is intuitive and our staff learned it in days."</p>
+              <p className="lp-testi-text">"Classora has completely revolutionized how we handle student records. The interface is intuitive and our staff learned it in days."</p>
               <div className="lp-testi-author">
                 <div className="lp-testi-avatar"><img src="https://i.pravatar.cc/150?img=47" alt="User" style={{ width: '100%' }} /></div>
                 <div>
@@ -336,7 +336,7 @@ export default function LandingPage() {
             <div className="lp-cta-glow"></div>
             <div className="lp-cta-content">
               <h2 className="lp-cta-title">Start Managing Your School Today</h2>
-              <p className="lp-cta-desc">Join 500+ schools worldwide that have digitized their entire campus operations with EduSaaS.</p>
+              <p className="lp-cta-desc">Join 500+ schools worldwide that have digitized their entire campus operations with Classora.</p>
               <div className="lp-cta-actions">
                 <button className="lp-btn-premium" onClick={() => navigate(loggedIn ? "/dashboard" : "/login")}>
                   {loggedIn ? "Go to Dashboard" : "Get Started Now"}
@@ -397,7 +397,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="lp-footer-bottom">
-          &copy; {new Date().getFullYear()} EduSaaS. Precision in Academic Management.
+          &copy; {new Date().getFullYear()} Classora. Precision in Academic Management.
         </div>
       </GradientBackground>
     </div>

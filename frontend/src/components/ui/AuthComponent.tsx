@@ -144,7 +144,7 @@ interface AuthComponentProps {
   brandName?: string;
 }
 
-export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandName = "EduSaaS" }: AuthComponentProps) => {
+export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandName = "Classora" }: AuthComponentProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

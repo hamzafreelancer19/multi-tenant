@@ -238,7 +238,7 @@ export default function Subscription() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
               <div style={{ padding: 14, background: "var(--bg-hover)", borderRadius: 10 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>ACCOUNT NAME</div>
-                <div style={{ fontWeight: 700 }}>EduSaaS Pakistan</div>
+                <div style={{ fontWeight: 700 }}>Classora Pakistan</div>
               </div>
               <div style={{ padding: 14, background: "var(--bg-hover)", borderRadius: 10 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>EASYPAISA NUMBER</div>
