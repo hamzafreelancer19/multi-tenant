@@ -99,6 +99,10 @@ class TenantResolver:
         """
         The master resolution method following the strict priority rule.
         """
+        # 0. SUPERADMIN BYPASS: Super admins are global and should not be locked to a tenant context
+        if request.user.is_authenticated and getattr(request.user, 'role', None) == 'superadmin':
+            return None
+
         # 1. Domain-based resolution (Primary)
         domain_school = TenantResolver.resolve_from_host(request)
         if domain_school and TenantResolver.validate_school(domain_school, request.get_host()):
