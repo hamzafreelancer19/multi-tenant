@@ -199,29 +199,35 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         setUser(userProfile);
 
         setTimeout(() => {
-          fireSideCanons();
-          setModalStatus('success');
-          setTimeout(() => {
-            const isLocalhostTarget = data.school_domain?.includes('localhost');
-            const isCurrentlyProduction = !window.location.hostname.includes('localhost');
-            const isVercel = window.location.hostname.includes('vercel.app');
+          localStorage.removeItem("schoolDomain");
+          const isLocalhostTarget = data.school_domain?.includes('localhost');
+          const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+          const isVercel = window.location.hostname.includes('vercel.app');
 
-            if (data.school_domain) {
-              localStorage.setItem("schoolDomain", data.school_domain);
-            }
+          let targetPath = userProfile.role === 'superadmin' ? "/schools" : "/dashboard";
 
-            // Determine redirect path based on role
-            let targetPath = "/dashboard";
-            if (userProfile.role === 'superadmin') targetPath = "/schools";
-
-            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
-              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
+          if (userProfile.role === 'superadmin') {
+            const currentHost = window.location.hostname;
+            const parts = currentHost.split('.');
+            if (parts.length > (currentHost.includes('localhost') ? 1 : 2) && !isVercel) {
+              const baseDomain = currentHost.includes('localhost') ? 'localhost' : parts.slice(-2).join('.');
+              const targetUrl = `${window.location.protocol}//${baseDomain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
-            } else {
-              navigate(targetPath);
+              return;
             }
-          }, 1500);
-        }, TEXT_LOOP_INTERVAL * 2000);
+          }
+
+          if (data.school_domain) {
+            localStorage.setItem("schoolDomain", data.school_domain);
+          }
+
+          if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
+            const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
+            window.location.href = targetUrl;
+          } else {
+            navigate(targetPath);
+          }
+        }, 1500);
 
       } catch (err: any) {
         setModalStatus('closed');
@@ -257,29 +263,35 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         setUser(userProfile);
 
         setTimeout(() => {
-          fireSideCanons();
-          setModalStatus('success');
-          setTimeout(() => {
-            const isLocalhostTarget = data.school_domain?.includes('localhost');
-            const isCurrentlyProduction = !window.location.hostname.includes('localhost');
-            const isVercel = window.location.hostname.includes('vercel.app');
+          localStorage.removeItem("schoolDomain");
+          const isLocalhostTarget = data.school_domain?.includes('localhost');
+          const isCurrentlyProduction = !window.location.hostname.includes('localhost');
+          const isVercel = window.location.hostname.includes('vercel.app');
 
-            if (data.school_domain) {
-              localStorage.setItem("schoolDomain", data.school_domain);
-            }
+          let targetPath = userProfile.role === 'superadmin' ? "/schools" : "/dashboard";
 
-            // Determine redirect path based on role
-            let targetPath = "/dashboard";
-            if (userProfile.role === 'superadmin') targetPath = "/schools";
-
-            if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
-              const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
+          if (userProfile.role === 'superadmin') {
+            const currentHost = window.location.hostname;
+            const parts = currentHost.split('.');
+            if (parts.length > (currentHost.includes('localhost') ? 1 : 2) && !isVercel) {
+              const baseDomain = currentHost.includes('localhost') ? 'localhost' : parts.slice(-2).join('.');
+              const targetUrl = `${window.location.protocol}//${baseDomain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
               window.location.href = targetUrl;
-            } else {
-              navigate(targetPath);
+              return;
             }
-          }, 1500);
-        }, TEXT_LOOP_INTERVAL * 2000);
+          }
+
+          if (data.school_domain) {
+            localStorage.setItem("schoolDomain", data.school_domain);
+          }
+
+          if (data.school_domain && window.location.hostname !== data.school_domain && !(isCurrentlyProduction && isLocalhostTarget) && !isVercel) {
+            const targetUrl = `${window.location.protocol}//${data.school_domain}${window.location.port ? ':' + window.location.port : ''}${targetPath}?token=${data.access}&refresh=${data.refresh}`;
+            window.location.href = targetUrl;
+          } else {
+            navigate(targetPath);
+          }
+        }, 1500);
 
       } else {
         await signupUser({ school_name: schoolName, username: email, password });
