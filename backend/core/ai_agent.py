@@ -11,7 +11,6 @@ from fees.models import Fee
 
 # Initialize Groq client
 def get_groq_client():
-    # Try from settings first, then environment
     api_key = getattr(settings, 'GROQ_API_KEY', None) or os.getenv("GROQ_API_KEY")
     if not api_key:
         return None
@@ -54,12 +53,11 @@ def process_ai_message(message, school_id):
     # 1. Fetch current context data for the school
     stats = get_dashboard_stats(school_id)
     
-    # 2. Build the system prompt with limited data access
+    # 2. Build the system prompt
     system_prompt = (
         "You are 'Classora AI', a professional assistant for the Classora School Management System. "
         "Your task is to help school staff with information and management tasks. "
         "You only have access to the specific statistics and data provided in this prompt. "
-        "You CANNOT perform direct database writes (like adding students) yourself, but you can guide the user. "
         "\n\n--- SCHOOL STATS ---\n"
         f"- Total Students: {stats['total_students']}\n"
         f"- Total Teachers: {stats['total_teachers']}\n"
@@ -69,13 +67,12 @@ def process_ai_message(message, school_id):
         "\n--- GUIDELINES ---\n"
         "1. Answer in the language the user uses (English, Urdu, or Roman Urdu).\n"
         "2. Be extremely helpful but maintain school-only scope.\n"
-        "3. If asked about things you don't know (like specific student names not in search), ask the user to provide more details.\n"
-        "4. If asked to 'add' or 'delete' something, explain that you are a read-only assistant and they should use the dashboard forms."
+        "3. If asked to 'add' or 'delete' something, explain that you are a read-only assistant."
     )
 
     try:
         completion = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
