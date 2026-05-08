@@ -19,3 +19,15 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notif: {self.message}"
+
+class GlobalSetting(models.Model):
+    name = models.CharField(max_length=100, default="System Configuration")
+    groq_api_key = models.CharField(max_length=255, blank=True, null=True, help_text="Global Groq API Key for AI Assistant")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Global Setting"
+        verbose_name_plural = "Global Settings"
+
+    def __str__(self):
+        return self.name

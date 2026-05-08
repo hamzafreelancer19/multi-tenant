@@ -23,7 +23,14 @@ def get_groq_client(school_id=None):
         except School.DoesNotExist:
             pass
 
-    # 2. Fallback to settings/env if no school-specific key
+    # 2. Try to get Global Key from Admin Panel (GlobalSetting)
+    if not api_key:
+        from core.models import GlobalSetting
+        gs = GlobalSetting.objects.first()
+        if gs and gs.groq_api_key:
+            api_key = gs.groq_api_key
+
+    # 3. Fallback to settings/env
     if not api_key:
         api_key = getattr(settings, 'GROQ_API_KEY', None) or os.getenv("GROQ_API_KEY")
     
