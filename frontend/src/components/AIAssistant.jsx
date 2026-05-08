@@ -75,36 +75,44 @@ export default function AIAssistant() {
           position: "fixed",
           bottom: 24,
           right: 24,
-          width: 350,
-          height: 500,
-          background: "var(--bg-paper)",
-          borderRadius: 16,
-          boxShadow: "0 12px 40px rgba(0,0,0,0.3)",
-          border: "1px solid rgba(168, 85, 247, 0.3)",
+          width: 380,
+          height: 550,
+          background: "#ffffff", // Solid white background
+          backgroundColor: "#ffffff",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderRadius: 24,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(168, 85, 247, 0.1)",
           display: "flex",
           flexDirection: "column",
-          zIndex: 9999,
+          zIndex: 100000, // Very high z-index
           overflow: "hidden",
-          animation: "slide-up 0.3s ease-out"
+          animation: "slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)"
         }}>
           {/* Header */}
           <div style={{
             background: "linear-gradient(135deg, #a855f7, #ec4899)",
-            padding: "16px",
+            padding: "20px 24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            color: "white"
+            color: "white",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ background: "rgba(255,255,255,0.2)", padding: 6, borderRadius: "50%" }}>
-                <Bot size={20} />
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ background: "rgba(255,255,255,0.25)", padding: 8, borderRadius: "12px" }}>
+                <Bot size={22} />
               </div>
-              <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>AI Assistant</h3>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Classora AI</h3>
+                <div style={{ fontSize: "0.7rem", opacity: 0.9, display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} /> Online Assistant
+                </div>
+              </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              style={{ background: "transparent", border: "none", color: "white", cursor: "pointer" }}
+              style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", padding: 6, borderRadius: "50%" }}
             >
               <X size={20} />
             </button>
@@ -113,39 +121,41 @@ export default function AIAssistant() {
           {/* Messages */}
           <div style={{
             flex: 1,
-            padding: 16,
+            padding: "24px 20px",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
-            background: "var(--bg-base)"
+            gap: 16,
+            background: "#f9fafb" // Solid light grey background for chat area
           }}>
             {messages.map(m => (
               <div key={m.id} style={{
                 display: "flex",
                 alignItems: "flex-start",
-                gap: 8,
+                gap: 10,
                 alignSelf: m.sender === "user" ? "flex-end" : "flex-start",
                 flexDirection: m.sender === "user" ? "row-reverse" : "row",
-                maxWidth: "85%"
+                maxWidth: "90%"
               }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  background: m.sender === "user" ? "var(--primary)" : "linear-gradient(135deg, #a855f7, #ec4899)",
-                  display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0
+                  width: 32, height: 32, borderRadius: "10px",
+                  background: m.sender === "user" ? "#9333ea" : "linear-gradient(135deg, #a855f7, #ec4899)",
+                  display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0,
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
                 }}>
-                  {m.sender === "user" ? <User size={14} /> : <Bot size={14} />}
+                  {m.sender === "user" ? <User size={16} /> : <Bot size={16} />}
                 </div>
                 <div style={{
-                  background: m.sender === "user" ? "var(--primary)" : "var(--bg-paper)",
-                  color: m.sender === "user" ? "white" : "var(--text)",
-                  padding: "10px 14px",
-                  borderRadius: 14,
-                  borderTopRightRadius: m.sender === "user" ? 4 : 14,
-                  borderTopLeftRadius: m.sender === "ai" ? 4 : 14,
-                  fontSize: "0.9rem",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  border: m.sender === "ai" ? "1px solid var(--border)" : "none",
+                  background: m.sender === "user" ? "#9333ea" : "#ffffff",
+                  color: m.sender === "user" ? "white" : "#1f2937",
+                  padding: "12px 16px",
+                  borderRadius: 18,
+                  borderTopRightRadius: m.sender === "user" ? 4 : 18,
+                  borderTopLeftRadius: m.sender === "ai" ? 4 : 18,
+                  fontSize: "0.95rem",
+                  lineHeight: 1.5,
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.06)",
+                  border: m.sender === "ai" ? "1px solid #e5e7eb" : "none",
                   whiteSpace: "pre-wrap"
                 }}>
                   {m.text}
