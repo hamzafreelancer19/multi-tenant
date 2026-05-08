@@ -92,8 +92,23 @@ const SchoolLandingPage = () => {
     { name: "Elena Rodriguez", role: "Mother of Sofia (5y)", img: "https://i.pravatar.cc/150?u=elena", quote: "Best investment for my child's future. The progress she made in 3 months is incredible." }
   ];
 
+  // Helper function to hex to rgb for shadows
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#5D5DFF');
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '93, 93, 255';
+  };
+
+  const primaryColor = tenant.landing?.primary_color || '#5D5DFF';
+  const primaryRgb = hexToRgb(primaryColor);
+
   return (
-    <div className={`slp-wrapper ${mobileMenuOpen ? 'mobile-menu-active' : ''}`} style={{ '--primary': tenant.landing?.primary_color || '#5D5DFF' }}>
+    <div 
+      className={`slp-wrapper ${mobileMenuOpen ? 'mobile-menu-active' : ''}`} 
+      style={{ 
+        '--primary': primaryColor,
+        '--primary-rgb': primaryRgb
+      }}
+    >
       {/* Navbar */}
       <nav className="slp-nav">
         <div className="slp-logo">
