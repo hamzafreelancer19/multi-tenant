@@ -143,6 +143,8 @@ export default function DashboardLayout() {
     try {
       await markNotificationAsRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      // Auto-close if needed, or just let them read. User asked for auto-back.
+      setShowNotifs(false); 
     } catch (err) {
       console.error("Failed to mark notification as read");
     }
@@ -152,6 +154,7 @@ export default function DashboardLayout() {
     try {
       await markAllNotificationsAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setShowNotifs(false);
     } catch (err) {
       console.error("Failed to mark all as read");
     }

@@ -2004,8 +2004,11 @@ select {
   right: -10px;
   width: 360px;
   max-height: 520px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2036,7 +2039,7 @@ select {
 .notif-title {
   font-weight: 700;
   font-size: 1.1rem;
-  color: var(--text);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -2106,7 +2109,7 @@ select {
 
 .notif-item-msg {
   font-size: 0.88rem;
-  color: var(--text);
+  color: var(--text-primary);
   margin: 0 0 4px;
   line-height: 1.4;
   font-weight: 500;
@@ -2206,8 +2209,11 @@ select {
   right: -10px;
   width: 360px;
   max-height: 520px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2238,7 +2244,7 @@ select {
 .notif-title {
   font-weight: 700;
   font-size: 1.1rem;
-  color: var(--text);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -2308,7 +2314,7 @@ select {
 
 .notif-item-msg {
   font-size: 0.88rem;
-  color: var(--text);
+  color: var(--text-primary);
   margin: 0 0 4px;
   line-height: 1.4;
   font-weight: 500;
