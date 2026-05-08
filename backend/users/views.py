@@ -146,64 +146,70 @@ class GoogleLoginView(APIView):
             if not email:
                 return Response({"error": "No email found in Google profile"}, status=400)
 
-            # Look up the user
-            user = User.objects.filter(username=email).first()
+            # Dynamic School/Tenant Detection
+            school = get_current_school(request)
             
-            if not user:
+            # Look up the user for THIS specific school
+            user = User.objects.filter(username=email, school=school).first() if school else None
+            
+            # If not found for THIS school, but we are on a specific school domain
+            if not user and school:
+                # Check if we should auto-register this user for this school
+                # (Only if they are trying to access their own school or registering)
                 provided_school_name = request.data.get('school_name', '').strip()
                 
-                # If they try to log in via Google on the Login page but an account doesn't exist
+                # If they are on a school domain but no account exists yet
                 if not provided_school_name:
-                    return Response({"error": "No account found for this Google email. Please register your school first."}, status=404)
+                    # Check if this email exists ANYWHERE else to see if we should just create a new record
+                    # Django usernames must be unique, so we'll use email + school_id if email is taken
+                    base_username = email
+                    if User.objects.filter(username=email).exists():
+                        base_username = f"{email}_{school.id}"
 
-                # Dynamic Domain Detection
-                current_host = request.headers.get('X-Tenant-Domain') or request.get_host().split(':')[0]
-                if 'localhost' in current_host or '127.0.0.1' in current_host:
-                    base_domain = 'localhost'
+                    user = User.objects.create(
+                        username=base_username,
+                        email=email,
+                        role="admin",
+                        school=school
+                    )
+                    user.set_unusable_password()
+                    user.save()
                 else:
-                    base_domain = current_host
+                    # This is a new school registration
+                    from django.utils.text import slugify
+                    domain_slug = slugify(provided_school_name)
+                    
+                    # Create new school
+                    new_school = School.objects.create(
+                        name=provided_school_name,
+                        domain=f"{domain_slug}.{request.get_host().split(':')[0]}"
+                    )
+                    
+                    # Create user record (handling duplicate username across tenants)
+                    base_username = email
+                    if User.objects.filter(username=email).exists():
+                        base_username = f"{email}_s{new_school.id}"
 
-                domain_slug = slugify(school_name)
-                school = School.objects.create(
-                    name=school_name,
-                    domain=f"{domain_slug}.{base_domain}"
-                ) # Default is 'Pending'
-                
-                # SaaS: Auto-create dedicated database if enabled
-                from django.conf import settings
-                from core.tenant_db_creator import create_tenant_database
-                if getattr(settings, 'ENABLE_TENANT_DB_CREATION', False):
-                    create_tenant_database(school)
+                    user = User.objects.create(
+                        username=base_username,
+                        email=email,
+                        role="admin",
+                        school=new_school
+                    )
+                    user.set_unusable_password()
+                    user.save()
+            
+            # Final check: If still no user (e.g. no school detected)
+            if not user:
+                return Response({"error": "No school context detected. Please login from your school's unique URL."}, status=400)
 
-                user = User.objects.create(
-                    username=email,
-                    role="admin",
-                    school=school
-                )
-                user.set_unusable_password()
-                user.save()
-                
-                from core.models import ActivityLog, Notification
-                ActivityLog.objects.create(
-                    school=None,
-                    name=email,
-                    action=f"registered '{school_name}' via Google Login for approval",
-                    avatar=email[0].upper()
-                )
-
-                # Notify Super Admins
-                Notification.objects.create(
-                    school=None, 
-                    message=f"New school registration via Google: {school_name}. Awaiting approval."
-                )
-
-            # Check if user can login (from MyTokenObtainPairSerializer validation logic)
+            # Check if user can login
             if user.role != 'superadmin':
                 if not user.school:
                     return Response({"error": "No school assigned to this user."}, status=403)
-                if user.school.status != 'Approved':
+                if user.school.status != 'Approved' and user.school.status != 'Pending':
                     return Response({
-                        "error": f"Your school '{user.school.name}' is {user.school.status}. Please wait for approval."
+                        "error": f"Your school '{user.school.name}' is {user.school.status}."
                     }, status=403)
 
             # Generate tokens
