@@ -10,8 +10,23 @@ from teachers.models import Teacher
 from fees.models import Fee
 
 # Initialize Groq client
-def get_groq_client():
-    api_key = getattr(settings, 'GROQ_API_KEY', None) or os.getenv("GROQ_API_KEY")
+def get_groq_client(school_id=None):
+    api_key = None
+    
+    # 1. Try to get key from specific school in DB
+    if school_id:
+        from schools.models import School
+        try:
+            school = School.objects.get(id=school_id)
+            if school.ai_api_key:
+                api_key = school.ai_api_key
+        except School.DoesNotExist:
+            pass
+
+    # 2. Fallback to settings/env if no school-specific key
+    if not api_key:
+        api_key = getattr(settings, 'GROQ_API_KEY', None) or os.getenv("GROQ_API_KEY")
+    
     if not api_key:
         return None
     return Groq(api_key=api_key)
@@ -46,7 +61,7 @@ def process_ai_message(message, school_id):
     if not school_id:
         return "⚠️ School context nahi mila. Please login dobara karein."
     
-    client = get_groq_client()
+    client = get_groq_client(school_id)
     if not client:
         return "⚠️ AI Assistant ki API Key missing hai. Please admin se rabta karein."
 

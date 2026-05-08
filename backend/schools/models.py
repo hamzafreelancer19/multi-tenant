@@ -55,6 +55,12 @@ class School(models.Model):
         blank=True,
         help_text="Name of the dedicated database for this school"
     )
+    ai_api_key = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Groq API Key for this school's AI Assistant"
+    )
 
     def save(self, *args, **kwargs):
         if not self.code:
