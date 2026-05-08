@@ -69,6 +69,10 @@ INSTALLED_APPS = [
     'inventory',
 ]
 
+# Groq AI Settings
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

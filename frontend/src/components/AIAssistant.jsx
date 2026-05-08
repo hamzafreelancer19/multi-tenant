@@ -5,7 +5,7 @@ import api from "../api/axios";
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main aapka AI School Assistant hoon.\n\nMain yeh sab kuch kar sakta hoon:\n• Students add karna\n• Fee jama karna\n• School stats dekhna\n• Unpaid fees check karna\n\n'help' likh kar poori list dekh saktay hain!" }
+    { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora AI Assistant hoon. Main aapke school ka data analyze kar sakta hoon aur management mein aapki help kar sakta hoon.\n\nMujhse school stats, fees, ya asatza ke baare mein kuch bhi poochein!" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
