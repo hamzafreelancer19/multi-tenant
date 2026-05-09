@@ -1,3 +1,12 @@
+import json
+import os
+from django.db.models import Sum, Count, Q
+from django.conf import settings
+from groq import Groq
+
+from students.models import Student
+from teachers.models import Teacher
+from fees.models import Fee
 from notices.models import Notice
 from attendance.models import Attendance
 from django.utils import timezone

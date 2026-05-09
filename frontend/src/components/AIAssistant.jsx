@@ -320,6 +320,23 @@ export default function AIAssistant() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 600px) {
+          .ai-chat-window {
+            width: 100% !important;
+            height: 100% !important;
+            bottom: 0 !important;
+            right: 0 !important;
+            border-radius: 0 !important;
+          }
+          .ai-fab {
+            width: 56px !important;
+            height: 56px !important;
+            bottom: 16px !important;
+            right: 16px !important;
+          }
+        }
       `}</style>
     </>
   );
