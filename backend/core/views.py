@@ -228,6 +228,7 @@ class AIChatView(APIView):
                 })
         
         school_id = school.id if school else None
+        history = request.data.get("history", [])
         # process_ai_message now returns a dict {"reply": "...", "action": {...}}
-        result = process_ai_message(message, school_id)
+        result = process_ai_message(message, school_id, history)
         return Response(result)

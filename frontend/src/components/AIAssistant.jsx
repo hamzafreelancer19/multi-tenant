@@ -40,7 +40,10 @@ export default function AIAssistant({ toggleTheme }) {
     setLoading(true);
 
     try {
-      const res = await api.post("/ai/chat/", { message: userMsg });
+      const res = await api.post("/ai/chat/", { 
+        message: userMsg,
+        history: messages // Pass existing messages for context
+      });
       const { reply, action } = res.data;
       
       setMessages(prev => [...prev, { id: Date.now(), sender: "ai", text: reply || "Done." }]);

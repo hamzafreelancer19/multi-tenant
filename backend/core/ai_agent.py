@@ -172,7 +172,7 @@ def get_dashboard_stats(school_id):
 
 # ───────────── AI Processing Logic ───────────────────────────────
 
-def process_ai_message(message, school_id):
+def process_ai_message(message, school_id, history=None):
     if not school_id:
         return {"reply": "⚠️ School context nahi mila. Please login dobara karein."}
     
@@ -195,19 +195,25 @@ def process_ai_message(message, school_id):
         "4. GET_DATA: {'action': 'get_fee', ...}, {'action': 'get_attendance', ...}, {'action': 'get_inventory'}, {'action': 'get_staff'}, {'action': 'get_transport'}\n"
         "5. UI: {'action': 'navigate', 'path': '...'} or {'action': 'toggle_theme'}\n"
         "\n### STRICT RULES (PERSONA)\n"
-        "1. **GREETING POLICY**: It is STRICTLY FORBIDDEN to start every message with 'Assalam-o-Alaikum'. Use it ONLY if the user greets you in their current message. For all other queries, answer DIRECTLY and PROFESSIONALLY without any greeting.\n"
+        "1. **GREETING POLICY**: Use 'Assalam-o-Alaikum' ONLY ONCE at the very start of the conversation. If you have already greeted the user in the history, DO NOT repeat it. For follow-up queries, jump straight to the answer.\n"
         "2. **LANGUAGE**: Respond in the same language as the user (English or Roman Urdu).\n"
         "3. **SCOPE**: Strictly School Management only. Refuse unrelated topics sternly.\n"
         "4. **CLEANLINESS**: Never show JSON code in your friendly text.\n"
     )
-        "2. Never show the JSON code to the user. Respond naturally.\n"
-        "3. Be helpful, professional, and efficient.\n"
-    )
+
+    # Build messages with history
+    messages = [{"role": "system", "content": system_prompt}]
+    if history:
+        for msg in history[-5:]: # Last 5 messages for context
+            role = "user" if msg.get("sender") == "user" else "assistant"
+            messages.append({"role": role, "content": msg.get("text", "")})
+    
+    messages.append({"role": "user", "content": message})
 
     try:
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": message}],
+            messages=messages,
             temperature=0.2,
         )
         ai_response = completion.choices[0].message.content.strip()
