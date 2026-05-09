@@ -183,27 +183,20 @@ def process_ai_message(message, school_id):
     stats = get_dashboard_stats(school_id)
     
     system_prompt = (
-        "You are 'Classora AI', a helpful assistant for the School Admin Panel. You help administrators manage their school's data efficiently.\n\n"
-        "### CAPABILITIES (JSON ACTIONS)\n"
-        "To perform an action, output a JSON command on the FIRST LINE of your response:\n"
+        "You are 'Classora AI', a professional and helpful school management assistant.\n\n"
+        "### ACTIONS\n"
+        "If the user asks to perform a task, you MUST start your response with a JSON command on the first line, followed by a double newline, and then your natural friendly response.\n"
         "1. ADD_STUDENT: {'action': 'add_student', 'name': '...', 'class': '...', 'phone': '...'}\n"
         "2. ADD_TEACHER: {'action': 'add_teacher', 'name': '...', 'subject': '...', 'phone': '...'}\n"
-        "3. DELETE_STUDENT/TEACHER: {'action': 'delete_student', 'name': '...'} or {'action': 'delete_teacher', 'name': '...'}\n"
-        "4. ADD_NOTICE: {'action': 'add_notice', 'title': '...', 'content': '...'}\n"
-        "5. ADD_EXAM: {'action': 'add_exam', 'title': '...', 'class': '...', 'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}\n"
-        "6. GET_DATA: {'action': 'get_fee', 'name': '...'} or {'action': 'get_attendance', 'class': '...'} or {'action': 'get_inventory'} or {'action': 'get_staff'} or {'action': 'get_transport'}\n"
-        "7. NAVIGATION: {'action': 'navigate', 'path': '/dashboard/students'} - Use this to open dashboard pages.\n"
-        "8. THEME TOGGLE: {'action': 'toggle_theme'} - Use this ONLY if the user asks to change/toggle Dark or Light mode.\n"
-        "\n### NAVIGATION PATHS\n"
-        "- Students: /dashboard/students, Teachers: /dashboard/teachers, Attendance: /dashboard/attendance\n"
-        "- Fees: /dashboard/fees, Exams: /dashboard/exams, Inventory: /dashboard/inventory, Notices: /dashboard/notices\n"
-        "- Staff: /dashboard/staff, Transport: /dashboard/transport\n"
+        "3. DELETE: {'action': 'delete_student', 'name': '...'} or {'action': 'delete_teacher', 'name': '...'}\n"
+        "4. NOTICE: {'action': 'add_notice', 'title': '...', 'content': '...'}\n"
+        "5. EXAM: {'action': 'add_exam', 'title': '...', 'class': '...', 'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}\n"
+        "6. DATA: {'action': 'get_fee', 'name': '...'} or {'action': 'get_attendance', 'class': '...'} or {'action': 'get_inventory'} or {'action': 'get_staff'} or {'action': 'get_transport'}\n"
+        "7. UI: {'action': 'navigate', 'path': '/dashboard/students'} or {'action': 'toggle_theme'}\n"
         "\n### RULES\n"
-        "1. You are strictly restricted to School Administration. If the user asks about ANYTHING unrelated to school management (personal questions, jokes, politics, etc.), you must respond sternly in Roman Urdu, telling them to focus on school tasks (e.g., 'Main sirf school management ke liye hoon. Faltu baatein mat karein aur kaam ki baat karein.').\n"
-        "2. Do not engage in casual chat. Be a serious, efficient administrator.\n"
-        "3. For theme requests, ONLY use 'toggle_theme'. Do not suggest changing specific colors.\n"
-        "4. ALWAYS start with the JSON command if an action is requested.\n"
-        "5. Use Roman Urdu for the reply to keep it relatable but maintain a strict, professional tone.\n"
+        "1. Strictly School Management only. Refuse unrelated topics sternly in Roman Urdu.\n"
+        "2. Keep the JSON on the first line. Do NOT show JSON to the user in your text.\n"
+        "3. Respond naturally in Roman Urdu. Be helpful and professional.\n"
     )
 
     try:
@@ -212,14 +205,21 @@ def process_ai_message(message, school_id):
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": message}],
             temperature=0.2,
         )
-        ai_response = completion.choices[0].message.content
+        ai_response = completion.choices[0].message.content.strip()
         
         response_data = {"reply": ai_response, "action": None}
         
-        if ai_response.strip().startswith('{'):
+        if ai_response.startswith('{'):
             try:
-                lines = ai_response.split('\n')
-                command = json.loads(lines[0].replace("'", '"'))
+                # Split at first double newline or first single newline if no double
+                parts = ai_response.split('\n\n', 1)
+                if len(parts) < 2:
+                    parts = ai_response.split('\n', 1)
+                
+                json_part = parts[0]
+                text_part = parts[1] if len(parts) > 1 else ""
+                
+                command = json.loads(json_part.replace("'", '"'))
                 action = command.get('action')
                 result_msg = ""
                 
@@ -246,19 +246,22 @@ def process_ai_message(message, school_id):
                     result_msg = get_staff_info(school_id)
                 elif action == 'get_transport':
                     result_msg = get_transport_info(school_id)
-                
-                # UI Actions (Passed to frontend)
                 elif action in ['navigate', 'toggle_theme']:
                     response_data["action"] = command
                 
-                friendly_text = "\n".join(lines[1:])
-                response_data["reply"] = f"{result_msg}\n\n{friendly_text}".strip() if result_msg else friendly_text.strip()
-                if not response_data["reply"]:
-                    response_data["reply"] = ai_response # Fallback
+                # Clean Reply
+                if result_msg:
+                    response_data["reply"] = f"{result_msg}\n\n{text_part}".strip()
+                else:
+                    response_data["reply"] = text_part.strip() or "Task complete ho gaya hai."
                 
+                # If theme or navigate, we might need to keep the command for frontend
+                if action in ['navigate', 'toggle_theme']:
+                    response_data["action"] = command
+
             except Exception as e:
-                response_data["reply"] = f"⚠️ AI command error: {str(e)}\n\n{ai_response}"
+                response_data["reply"] = ai_response.split('\n', 1)[-1] if '\n' in ai_response else ai_response
         
         return response_data
     except Exception as e:
-        return {"reply": f"❌ AI Error: {str(e)}"}
+        return {"reply": f"❌ Error: {str(e)}"}
