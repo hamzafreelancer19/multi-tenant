@@ -366,8 +366,8 @@ export default function DashboardLayout() {
         </div>
       </main>
       {/* Only show AI Assistant for Business and Pro plans */}
-      {role !== 'superadmin' && (planType === "Business" || planType === "Pro") && <AIAssistant />}
-      {role === 'superadmin' && <AIAssistant />}
+      {role !== 'superadmin' && (planType === "Business" || planType === "Pro") && <AIAssistant toggleTheme={toggleTheme} />}
+      {role === 'superadmin' && <AIAssistant toggleTheme={toggleTheme} />}
     </div>
   );
 }

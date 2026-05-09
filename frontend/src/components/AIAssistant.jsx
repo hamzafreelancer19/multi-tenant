@@ -3,11 +3,11 @@ import { Bot, X, Send, User, Sparkles, Loader2, BarChart3, Bell, Package, Wallet
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
-export default function AIAssistant() {
+export default function AIAssistant({ toggleTheme }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora AI Assistant hoon. Main aapke school ka data analyze kar sakta hoon aur management mein aapki help kar sakta hoon.\n\nMujhse school stats, fees, inventory ya notices ke baare mein kuch bhi poochein!" }
+    { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora AI Assistant hoon. Main aapke school admin panel ke data aur settings mein help kar sakta hoon.\n\nMujhse school stats, fees, ya attendance ke baare mein poochein!" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,8 +15,8 @@ export default function AIAssistant() {
 
   const suggestions = [
     { label: "School Stats", icon: <BarChart3 size={14} />, prompt: "Show me school stats" },
-    { label: "Post Notice", icon: <Bell size={14} />, prompt: "Add a notice: Tomorrow is a holiday for Iqbal Day." },
-    { label: "Inventory", icon: <Package size={14} />, prompt: "What is the current inventory status?" },
+    { label: "Post Notice", icon: <Bell size={14} />, prompt: "Add a notice: Tomorrow is a holiday." },
+    { label: "Inventory", icon: <Package size={14} />, prompt: "What is the inventory status?" },
     { label: "Fee Status", icon: <Wallet size={14} />, prompt: "Check fee status for Hamza" },
   ];
 
@@ -48,12 +48,14 @@ export default function AIAssistant() {
       // Handle UI Actions
       if (action) {
         if (action.action === "navigate" && action.path) {
-          setTimeout(() => {
-            navigate(action.path);
-          }, 1000);
-        } else if (action.action === "theme" && action.color) {
-          document.documentElement.style.setProperty("--accent", action.color);
-          document.documentElement.style.setProperty("--purple", action.color + "dd"); // Slightly different for gradient
+          // Security: Only allow internal dashboard paths
+          if (action.path.startsWith("/dashboard") || action.path.startsWith("/students") || action.path.startsWith("/teachers") || action.path.startsWith("/fees")) {
+            setTimeout(() => {
+              navigate(action.path);
+            }, 1000);
+          }
+        } else if (action.action === "toggle_theme") {
+          toggleTheme();
         }
       }
     } catch (err) {
