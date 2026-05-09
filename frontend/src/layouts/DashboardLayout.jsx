@@ -365,7 +365,9 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
-      <AIAssistant />
+      {/* Only show AI Assistant for Business and Pro plans */}
+      {role !== 'superadmin' && (planType === "Business" || planType === "Pro") && <AIAssistant />}
+      {role === 'superadmin' && <AIAssistant />}
     </div>
   );
 }

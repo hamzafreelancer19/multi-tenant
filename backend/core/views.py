@@ -219,7 +219,15 @@ class AIChatView(APIView):
             return Response({"error": "Message is required"}, status=400)
             
         school = get_current_school(request)
-        school_id = school.id if school else None
         
-        reply = process_ai_message(message, school_id)
-        return Response({"reply": reply})
+        # Enforce Plan Restriction for AI Assistant
+        if school:
+            if school.plan_type not in ['Business', 'Pro']:
+                return Response({
+                    "reply": "⚠️ AI Assistant aapke current plan (Basic) par available nahi hai. Please Business ya Pro plan par upgrade karein taake aap is feature ka faida utha sakein."
+                })
+        
+        school_id = school.id if school else None
+        # process_ai_message now returns a dict {"reply": "...", "action": {...}}
+        result = process_ai_message(message, school_id)
+        return Response(result)

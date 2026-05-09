@@ -18,7 +18,7 @@ const plans = [
     color: "#3b82f6",
     colorSoft: "rgba(59,130,246,0.1)",
     features: ["Student Management", "Teacher Profiles", "Attendance Tracking", "Admission Requests", "School Profile"],
-    locked: ["Fees & Payments", "Exams & Results", "Notice Board", "Library", "Bus Tracking"],
+    locked: ["AI Assistant", "Fees & Payments", "Exams & Results", "Notice Board", "Library", "Bus Tracking"],
   },
   {
     id: "Business",
@@ -28,7 +28,7 @@ const plans = [
     color: "#8b5cf6",
     colorSoft: "rgba(139,92,246,0.1)",
     popular: true,
-    features: ["All Basic Features", "Fee & Salary Management", "Exams & Marksheets", "Notice Board", "SMS/WhatsApp Alerts"],
+    features: ["All Basic Features", "AI Assistant", "Fee & Salary Management", "Exams & Marksheets", "Notice Board", "SMS/WhatsApp Alerts"],
     locked: ["Library System", "Bus Routes", "Timetable & Homework"],
   },
   {
@@ -38,7 +38,7 @@ const plans = [
     price: 6000,
     color: "#f59e0b",
     colorSoft: "rgba(245,158,11,0.1)",
-    features: ["Everything Included", "Library Management", "Transport & Fleet", "Timetables & Homework", "AI Performance Predictor", "24/7 Priority Support"],
+    features: ["Everything Included", "Classora AI Assistant", "Library Management", "Transport & Fleet", "Timetables & Homework", "AI Performance Predictor", "24/7 Priority Support"],
     locked: [],
   },
 ];
