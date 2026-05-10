@@ -48,8 +48,21 @@ class SchoolAdmin(admin.ModelAdmin):
         ('Subscription Details', {
             'fields': ('plan_type', 'plan_status', 'plan_amount', 'transaction_id', 'plan_start_date', 'plan_expiry_date')
         }),
+        ('Branding & Assets', {
+            'fields': ('logo', 'favicon', 'dashboard_primary_color', 'dashboard_secondary_color', 'dashboard_accent_color')
+        }),
+        ('Landing Page Design', {
+            'fields': (
+                'landing_primary_color', 'landing_secondary_color', 
+                'landing_hero_title', 'landing_hero_subtitle', 
+                'landing_hero_image_url', 'landing_center_image_url',
+                'landing_about_text', 'landing_contact_email', 'landing_contact_phone',
+                'landing_show_stats', 'landing_features', 'landing_testimonials', 
+                'landing_programs', 'landing_languages'
+            )
+        }),
         ('Infrastructure', {
-            'fields': ('database_name',),
+            'fields': ('database_name', 'ai_api_key'),
             'classes': ('collapse',)
         }),
     )

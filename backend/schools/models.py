@@ -38,7 +38,6 @@ class School(models.Model):
     landing_hero_title = models.CharField(max_length=255, blank=True, null=True)
     landing_hero_subtitle = models.TextField(blank=True, null=True)
     landing_about_text = models.TextField(blank=True, null=True)
-    landing_primary_color = models.CharField(max_length=20, default="#3b82f6") # Default blue-500
     landing_contact_email = models.EmailField(blank=True, null=True)
     landing_contact_phone = models.CharField(max_length=20, blank=True, null=True)
     landing_show_stats = models.BooleanField(default=True)
@@ -48,6 +47,19 @@ class School(models.Model):
     landing_testimonials = models.JSONField(default=list, blank=True)
     landing_programs = models.JSONField(default=list, blank=True)
     landing_languages = models.JSONField(default=list, blank=True)
+    
+    # Global Branding
+    logo = models.ImageField(upload_to='school_logos/', blank=True, null=True)
+    favicon = models.ImageField(upload_to='school_favicons/', blank=True, null=True)
+    
+    # Landing Page Colors
+    landing_primary_color = models.CharField(max_length=20, default="#3b82f6", help_text="Primary color for landing page (e.g. #3b82f6)")
+    landing_secondary_color = models.CharField(max_length=20, default="#1e40af", help_text="Secondary color for landing page")
+    
+    # Dashboard Colors
+    dashboard_primary_color = models.CharField(max_length=20, default="#3b82f6", help_text="Primary color for admin dashboard")
+    dashboard_secondary_color = models.CharField(max_length=20, default="#1e293b", help_text="Sidebar/Background color for dashboard")
+    dashboard_accent_color = models.CharField(max_length=20, default="#10b981", help_text="Accent color for buttons/highlights")
 
     database_name = models.CharField(
         max_length=100,

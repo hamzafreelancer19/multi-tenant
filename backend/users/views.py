@@ -241,11 +241,25 @@ class TenantInfoView(APIView):
             return Response({
                 "school_id": school.id,
                 "school_name": school.name,
+                "branding": {
+                    "logo": school.logo.url if school.logo else None,
+                    "favicon": school.favicon.url if school.favicon else None,
+                    "dashboard": {
+                        "primary_color": school.dashboard_primary_color,
+                        "secondary_color": school.dashboard_secondary_color,
+                        "accent_color": school.dashboard_accent_color,
+                    },
+                    "landing": {
+                        "primary_color": school.landing_primary_color,
+                        "secondary_color": school.landing_secondary_color,
+                    }
+                },
                 "landing": {
                     "hero_title": school.landing_hero_title or f"Welcome to {school.name}",
                     "hero_subtitle": school.landing_hero_subtitle or "Providing quality education for a brighter future.",
                     "about": school.landing_about_text or f"{school.name} is dedicated to excellence in education.",
                     "primary_color": school.landing_primary_color,
+                    "secondary_color": school.landing_secondary_color,
                     "contact_email": school.landing_contact_email or "info@school.com",
                     "contact_phone": school.landing_contact_phone or "+123456789",
                     "show_stats": school.landing_show_stats,
