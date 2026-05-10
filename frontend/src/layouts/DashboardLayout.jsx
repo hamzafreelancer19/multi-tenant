@@ -168,7 +168,9 @@ export default function DashboardLayout() {
   };
 
   const dashboardBranding = tenant.branding?.dashboard || {};
-  const logoUrl = tenant.branding?.logo ? `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}` : null;
+  const logoUrl = tenant.branding?.logo 
+    ? (tenant.branding.logo.startsWith('http') ? tenant.branding.logo : `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}`) 
+    : null;
 
   return (
     <div 

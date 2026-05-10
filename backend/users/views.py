@@ -251,8 +251,8 @@ class TenantInfoView(APIView):
                 "school_id": school.id,
                 "school_name": school.name,
                 "branding": {
-                    "logo": school.logo.url if school.logo else None,
-                    "favicon": school.favicon.url if school.favicon else None,
+                    "logo": request.build_absolute_uri(school.logo.url) if school.logo and hasattr(school.logo, 'url') and school.logo.name else None,
+                    "favicon": request.build_absolute_uri(school.favicon.url) if school.favicon and hasattr(school.favicon, 'url') and school.favicon.name else None,
                     "dashboard": {
                         "primary_color": school.dashboard_primary_color,
                         "secondary_color": school.dashboard_secondary_color,

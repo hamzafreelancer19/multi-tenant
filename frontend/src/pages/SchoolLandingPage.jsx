@@ -101,7 +101,9 @@ const SchoolLandingPage = () => {
   const primaryColor = tenant.branding?.landing?.primary_color || tenant.landing?.primary_color || '#5D5DFF';
   const secondaryColor = tenant.branding?.landing?.secondary_color || '#1e40af';
   const primaryRgb = hexToRgb(primaryColor);
-  const logoUrl = tenant.branding?.logo ? `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}` : null;
+  const logoUrl = tenant.branding?.logo 
+    ? (tenant.branding.logo.startsWith('http') ? tenant.branding.logo : `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}`) 
+    : null;
 
   return (
     <div 
