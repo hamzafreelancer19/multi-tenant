@@ -198,6 +198,12 @@ class SystemDatabaseView(APIView):
                     row[field.name] = str(val)
                 elif hasattr(val, 'isoformat'):
                     row[field.name] = val.isoformat()
+                elif hasattr(val, 'url'):
+                    # Handle ImageField/FileField
+                    try:
+                        row[field.name] = val.url if val and val.name else None
+                    except ValueError:
+                        row[field.name] = None
                 else:
                     row[field.name] = val
             results.append(row)
