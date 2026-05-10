@@ -36,12 +36,16 @@ class SignupView(APIView):
             password = request.data.get("password")
 
             if not school_name or not username or not email or not password:
-                return Response({"error": "Missing school_name, username, email, or password"}, status=400)
+                missing = [f for f in ["school_name", "username", "email", "password"] if not request.data.get(f)]
+                print(f"Signup Error: Missing fields: {missing}")
+                return Response({"error": f"Missing fields: {', '.join(missing)}"}, status=400)
 
             if User.objects.filter(username=username).exists():
+                print(f"Signup Error: Username '{username}' already taken")
                 return Response({"error": "Username already taken"}, status=400)
             
             if User.objects.filter(email=email).exists():
+                print(f"Signup Error: Email '{email}' already registered")
                 return Response({"error": "Email already registered"}, status=400)
 
             from django.utils.text import slugify
