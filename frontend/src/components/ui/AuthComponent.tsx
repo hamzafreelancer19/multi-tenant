@@ -145,13 +145,14 @@ interface AuthComponentProps {
 }
 
 export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandName = "Classora" }: AuthComponentProps) => {
-  const [email, setEmail] = useState("");
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [authStep, setAuthStep] = useState(mode === "signup" ? "school" : "email");
+  const [authStep, setAuthStep] = useState(mode === "signup" ? "school" : "usernameOrEmail");
   const [modalStatus, setModalStatus] = useState<'closed' | 'loading' | 'error' | 'success'>('closed');
   const [modalErrorMessage, setModalErrorMessage] = useState('');
   const [inlineError, setInlineError] = useState('');
@@ -166,13 +167,15 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
   // Clear inline error when typing
   useEffect(() => {
     if (inlineError) setInlineError('');
-  }, [email, password, schoolName]);
+  }, [usernameOrEmail, userEmail, password, schoolName]);
 
-  const isEmailValid = mode === 'login' ? email.length >= 3 : /\S+@\S+\.\S+/.test(email);
+  const isIdentifierValid = usernameOrEmail.length >= 3;
+  const isEmailValid = /\S+@\S+\.\S+/.test(userEmail);
   const isPasswordValid = password.length >= 6;
   const isConfirmPasswordValid = confirmPassword.length >= 6;
   const isSchoolValid = schoolName.length >= 2;
 
+  const identifierInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
@@ -256,7 +259,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
     setModalStatus('loading');
     try {
       if (mode === "login") {
-        const data = await loginUser({ username: email, password });
+        const data = await loginUser({ username: usernameOrEmail, password });
         setToken(data.access);
         setRefreshToken(data.refresh);
         const userProfile = await getUserProfile();
@@ -294,7 +297,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         }, 1500);
 
       } else {
-        await signupUser({ school_name: schoolName, username: email, password });
+        await signupUser({ school_name: schoolName, username: usernameOrEmail, email: userEmail, password });
         setTimeout(() => {
           fireSideCanons();
           setModalStatus('success');
@@ -312,7 +315,12 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
 
   const handleProgressStep = () => {
     if (authStep === 'school') {
-      if (isSchoolValid) setAuthStep("email");
+      if (isSchoolValid) setAuthStep("usernameOrEmail");
+    } else if (authStep === 'usernameOrEmail') {
+      if (isIdentifierValid) {
+        if (mode === 'signup') setAuthStep("email");
+        else setAuthStep("password");
+      }
     } else if (authStep === 'email') {
       if (isEmailValid) setAuthStep("password");
     } else if (authStep === 'password') {
@@ -334,8 +342,12 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
 
   const handleGoBack = () => {
     if (authStep === 'confirmPassword') setAuthStep('password');
-    else if (authStep === 'password') setAuthStep('email');
-    else if (authStep === 'email' && mode === 'signup') setAuthStep('school');
+    else if (authStep === 'password') {
+      if (mode === 'signup') setAuthStep('email');
+      else setAuthStep('usernameOrEmail');
+    }
+    else if (authStep === 'email') setAuthStep('usernameOrEmail');
+    else if (authStep === 'usernameOrEmail' && mode === 'signup') setAuthStep('school');
   };
 
   const closeModal = () => {
@@ -344,7 +356,8 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
   };
 
   useEffect(() => {
-    if (authStep === 'email') setTimeout(() => emailInputRef.current?.focus(), 500);
+    if (authStep === 'usernameOrEmail') setTimeout(() => identifierInputRef.current?.focus(), 500);
+    else if (authStep === 'email') setTimeout(() => emailInputRef.current?.focus(), 500);
     else if (authStep === 'password') setTimeout(() => passwordInputRef.current?.focus(), 500);
     else if (authStep === 'confirmPassword') setTimeout(() => confirmPasswordInputRef.current?.focus(), 500);
     else if (authStep === 'school') setTimeout(() => schoolInputRef.current?.focus(), 500);
@@ -500,21 +513,43 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
                 <BlurFade inView delay={0.3} className="mt-8 text-center"><button type="button" onClick={() => navigate("/login")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline mt-3" style={{ marginTop: "20px" }}>Already have an account? Sign In</button></BlurFade>
               </motion.div>}
 
-              {(authStep === 'email' || authStep === 'password') && <motion.div key="e-p-fields" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col gap-12 text-slate-900">
-                <div className="relative w-full" >
-                  <AnimatePresence >
-                    {email.length > 0 && <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10"><label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Username / Email</label></motion.div>}
-                  </AnimatePresence>
-                  <div className="glass-input-wrap w-full"><div className="glass-input relative z-10 flex w-full items-center gap-1 rounded-full pl-4 pr-2 py-2 shadow-sm backdrop-blur-md bg-white/40 border border-white/60" >
-                    <span className="glass-input-text-area"></span>
-                    <div className="flex-shrink-0 flex items-center justify-center relative z-10 mr-1"><Mail className="h-5 w-5 text-slate-800 opacity-70" /></div>
-                    <input ref={emailInputRef} type="text" placeholder="Username / Email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={handleKeyDown} className="relative z-10 h-full min-w-0 flex-grow bg-transparent text-slate-900 placeholder:text-slate-500 focus:outline-none py-2 text-base font-medium" />
-                    <div className={cn("relative z-10 flex-shrink-0 transition-all duration-300", (isEmailValid && authStep === 'email') ? "w-10 opacity-100" : "w-0 opacity-0")}>
-                      <button type="button" onClick={handleProgressStep} className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-900 hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all"><ArrowRight className="w-5 h-5" /></button>
-                    </div>
-                  </div></div>
-                </div>
+              {(authStep === 'usernameOrEmail' || authStep === 'email' || authStep === 'password') && <motion.div key="e-p-fields" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col gap-12 text-slate-900">
+                
+                {/* Username / Identifier Step */}
+                {(authStep === 'usernameOrEmail') && (
+                  <div className="relative w-full" >
+                    <AnimatePresence >
+                      {usernameOrEmail.length > 0 && <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10"><label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{mode === 'signup' ? 'Username' : 'Username / Email'}</label></motion.div>}
+                    </AnimatePresence>
+                    <div className="glass-input-wrap w-full"><div className="glass-input relative z-10 flex w-full items-center gap-1 rounded-full pl-4 pr-2 py-2 shadow-sm backdrop-blur-md bg-white/40 border border-white/60" >
+                      <span className="glass-input-text-area"></span>
+                      <div className="flex-shrink-0 flex items-center justify-center relative z-10 mr-1"><Mail className="h-5 w-5 text-slate-800 opacity-70" /></div>
+                      <input ref={identifierInputRef} type="text" placeholder={mode === 'signup' ? "Choose Username" : "Username / Email"} value={usernameOrEmail} onChange={(e) => setUsernameOrEmail(e.target.value)} onKeyDown={handleKeyDown} className="relative z-10 h-full min-w-0 flex-grow bg-transparent text-slate-900 placeholder:text-slate-500 focus:outline-none py-2 text-base font-medium" />
+                      <div className={cn("relative z-10 flex-shrink-0 transition-all duration-300", (isIdentifierValid && authStep === 'usernameOrEmail') ? "w-10 opacity-100" : "w-0 opacity-0")}>
+                        <button type="button" onClick={handleProgressStep} className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-900 hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all"><ArrowRight className="w-5 h-5" /></button>
+                      </div>
+                    </div></div>
+                  </div>
+                )}
 
+                {/* Email Step (Signup Only) */}
+                {authStep === 'email' && (
+                  <div className="relative w-full" >
+                    <AnimatePresence >
+                      {userEmail.length > 0 && <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10"><label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Email Address</label></motion.div>}
+                    </AnimatePresence>
+                    <div className="glass-input-wrap w-full"><div className="glass-input relative z-10 flex w-full items-center gap-1 rounded-full pl-4 pr-2 py-2 shadow-sm backdrop-blur-md bg-white/40 border border-white/60" >
+                      <span className="glass-input-text-area"></span>
+                      <div className="flex-shrink-0 flex items-center justify-center relative z-10 mr-1"><Mail className="h-5 w-5 text-slate-800 opacity-70" /></div>
+                      <input ref={emailInputRef} type="email" placeholder="Email Address" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} onKeyDown={handleKeyDown} className="relative z-10 h-full min-w-0 flex-grow bg-transparent text-slate-900 placeholder:text-slate-500 focus:outline-none py-2 text-base font-medium" />
+                      <div className={cn("relative z-10 flex-shrink-0 transition-all duration-300", (isEmailValid && authStep === 'email') ? "w-10 opacity-100" : "w-0 opacity-0")}>
+                        <button type="button" onClick={handleProgressStep} className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-900 hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all"><ArrowRight className="w-5 h-5" /></button>
+                      </div>
+                    </div></div>
+                  </div>
+                )}
+
+                {/* Password Step */}
                 <AnimatePresence mode="wait" >
                   {authStep === "password" && <motion.div key="p-field" initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="relative w-full mt-4" >
                     <AnimatePresence>
@@ -534,8 +569,8 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
                 </AnimatePresence>
 
                 <div className="flex flex-col gap-4 mt-8">
-                  {(authStep === 'password' || (authStep === 'email' && mode === 'signup')) && <BlurFade inView delay={0.2}><button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full" style={{ marginTop: "2rem" }}><ArrowLeft className="w-3 h-3" /> Go back</button></BlurFade>}
-                  {authStep === 'email' && mode === 'login' && <BlurFade inView delay={0.2} className="text-center pt-2"><button type="button" onClick={() => navigate("/signup")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline" style={{ marginTop: "2rem" }}>New School? Register here</button></BlurFade>}
+                  {(authStep === 'password' || authStep === 'email' || (authStep === 'usernameOrEmail' && mode === 'signup')) && <BlurFade inView delay={0.2}><button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full" style={{ marginTop: "2rem" }}><ArrowLeft className="w-3 h-3" /> Go back</button></BlurFade>}
+                  {authStep === 'usernameOrEmail' && mode === 'login' && <BlurFade inView delay={0.2} className="text-center pt-2"><button type="button" onClick={() => navigate("/signup")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline" style={{ marginTop: "2rem" }}>New School? Register here</button></BlurFade>}
                 </div>
               </motion.div>}
 

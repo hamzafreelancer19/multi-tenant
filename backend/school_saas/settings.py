@@ -136,7 +136,10 @@ TENANT_DATABASES = {
         'NAME': 'example_db',
     }
 }
-
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 DATABASE_ROUTERS = [
     'core.db_router.TenantDatabaseRouter'
 ]

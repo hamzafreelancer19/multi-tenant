@@ -32,13 +32,17 @@ class SignupView(APIView):
         try:
             school_name = request.data.get("school_name")
             username = request.data.get("username")
+            email = request.data.get("email")
             password = request.data.get("password")
 
-            if not school_name or not username or not password:
-                return Response({"error": "Missing school_name, username, or password"}, status=400)
+            if not school_name or not username or not email or not password:
+                return Response({"error": "Missing school_name, username, email, or password"}, status=400)
 
             if User.objects.filter(username=username).exists():
                 return Response({"error": "Username already taken"}, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return Response({"error": "Email already registered"}, status=400)
 
             from django.utils.text import slugify
             # Dynamic Domain Detection
@@ -75,6 +79,7 @@ class SignupView(APIView):
             # Create the School Admin
             user = User.objects.create(
                 username=username,
+                email=email,
                 role="admin",
                 school=school
             )
