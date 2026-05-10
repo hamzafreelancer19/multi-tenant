@@ -65,6 +65,26 @@ export const TenantProvider = ({ children }) => {
     fetchTenantInfo();
   }, [fetchTenantInfo]);
 
+  // Apply Branding Colors to CSS Variables
+  useEffect(() => {
+    if (tenant.branding) {
+      const root = document.documentElement;
+      
+      // Dashboard Colors
+      if (tenant.branding.dashboard) {
+        root.style.setProperty('--dashboard-primary', tenant.branding.dashboard.primary_color);
+        root.style.setProperty('--dashboard-secondary', tenant.branding.dashboard.secondary_color);
+        root.style.setProperty('--dashboard-accent', tenant.branding.dashboard.accent_color);
+      }
+      
+      // Landing Colors
+      if (tenant.branding.landing) {
+        root.style.setProperty('--landing-primary', tenant.branding.landing.primary_color);
+        root.style.setProperty('--landing-secondary', tenant.branding.landing.secondary_color);
+      }
+    }
+  }, [tenant.branding]);
+
   return (
     <TenantContext.Provider value={{ ...tenant, refreshTenant: fetchTenantInfo, setForcedSchool }}>
       {children}

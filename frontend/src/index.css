@@ -44,6 +44,39 @@
   --glass-blur: blur(25px);
 }
 
+/* Dashboard Branding Overrides */
+.layout {
+  --accent: var(--dashboard-primary, #3b82f6);
+  --purple: var(--dashboard-accent, #8b5cf6);
+  --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-hover: color-mix(in srgb, var(--accent) 80%, black);
+  --gradient-primary: linear-gradient(135deg, var(--accent), var(--purple));
+}
+
+.layout .sidebar {
+  background: var(--dashboard-secondary, var(--glass-bg));
+  color: white; /* Sidebar usually looks better dark with light text */
+}
+
+.layout .sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.layout .sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.layout .sidebar .nav-link-active {
+  background: var(--accent);
+  color: white;
+}
+
+.layout .sidebar .logo-title {
+  -webkit-text-fill-color: white;
+  color: white;
+}
+
 .dark {
   /* --- DARK MODE --- */
   --bg-base: #0d1117;

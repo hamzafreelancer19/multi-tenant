@@ -167,8 +167,18 @@ export default function DashboardLayout() {
     navigate("/");
   };
 
+  const dashboardBranding = tenant.branding?.dashboard || {};
+  const logoUrl = tenant.branding?.logo ? `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}` : null;
+
   return (
-    <div className="layout">
+    <div 
+      className="layout"
+      style={{
+        '--dashboard-primary': dashboardBranding.primary_color || '#3b82f6',
+        '--dashboard-secondary': dashboardBranding.secondary_color || '#1e293b',
+        '--dashboard-accent': dashboardBranding.accent_color || '#10b981',
+      }}
+    >
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
@@ -178,7 +188,11 @@ export default function DashboardLayout() {
       <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">
-            <School size={24} />
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <School size={24} />
+            )}
           </div>
           <div>
             <div className="logo-title">{brandName}</div>

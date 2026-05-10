@@ -98,14 +98,17 @@ const SchoolLandingPage = () => {
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '93, 93, 255';
   };
 
-  const primaryColor = tenant.landing?.primary_color || '#5D5DFF';
+  const primaryColor = tenant.branding?.landing?.primary_color || tenant.landing?.primary_color || '#5D5DFF';
+  const secondaryColor = tenant.branding?.landing?.secondary_color || '#1e40af';
   const primaryRgb = hexToRgb(primaryColor);
+  const logoUrl = tenant.branding?.logo ? `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}` : null;
 
   return (
     <div 
       className={`slp-wrapper ${mobileMenuOpen ? 'mobile-menu-active' : ''}`} 
       style={{ 
         '--primary': primaryColor,
+        '--secondary': secondaryColor,
         '--primary-rgb': primaryRgb
       }}
     >
@@ -113,7 +116,11 @@ const SchoolLandingPage = () => {
       <nav className="slp-nav">
         <div className="slp-logo">
           <div className="slp-logo-icon">
-            <Globe size={28} />
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <Globe size={28} />
+            )}
           </div>
           <span className="slp-logo-text uppercase">
             {tenant.schoolName || 'ALPINE'}
