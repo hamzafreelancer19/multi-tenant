@@ -54,12 +54,12 @@
 }
 
 .layout .sidebar {
-  background: var(--dashboard-secondary, var(--glass-bg));
-  color: white; /* Sidebar usually looks better dark with light text */
+  background: var(--dashboard-secondary, #1e293b);
+  color: white; 
 }
 
 .layout .sidebar .nav-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .layout .sidebar .nav-link:hover {

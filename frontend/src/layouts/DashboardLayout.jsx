@@ -178,7 +178,7 @@ export default function DashboardLayout() {
       style={{
         '--dashboard-primary': dashboardBranding.primary_color || '#3b82f6',
         '--dashboard-secondary': dashboardBranding.secondary_color || '#1e293b',
-        '--dashboard-accent': dashboardBranding.accent_color || '#10b981',
+        '--dashboard-accent': dashboardBranding.accent_color || '#8b5cf6',
       }}
     >
       {/* Mobile Overlay */}
