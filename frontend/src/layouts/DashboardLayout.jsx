@@ -176,9 +176,9 @@ export default function DashboardLayout() {
     <div 
       className="layout"
       style={{
-        '--dashboard-primary': dashboardBranding.primary_color || '#3b82f6',
-        '--dashboard-secondary': dashboardBranding.secondary_color || '#1e293b',
-        '--dashboard-accent': dashboardBranding.accent_color || '#8b5cf6',
+        '--dashboard-primary': dashboardBranding.primary_color || '#5D5DFF',
+        '--dashboard-secondary': dashboardBranding.secondary_color || '#1e1b4b',
+        '--dashboard-accent': dashboardBranding.accent_color || '#EC4899',
       }}
     >
       {/* Mobile Overlay */}

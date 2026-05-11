@@ -13,7 +13,7 @@ const LandingPageSettings = () => {
     hero_title: '',
     hero_subtitle: '',
     about: '',
-    primary_color: '#3b82f6',
+    primary_color: '#5D5DFF',
     contact_email: '',
     contact_phone: '',
     show_stats: true,
@@ -31,7 +31,7 @@ const LandingPageSettings = () => {
         hero_title: tenant.landing.hero_title || '',
         hero_subtitle: tenant.landing.hero_subtitle || '',
         about: tenant.landing.about || '',
-        primary_color: tenant.landing.primary_color || '#3b82f6',
+        primary_color: tenant.landing.primary_color || '#5D5DFF',
         contact_email: tenant.landing.contact_email || '',
         contact_phone: tenant.landing.contact_phone || '',
         show_stats: tenant.landing.show_stats !== undefined ? tenant.landing.show_stats : true,
@@ -211,7 +211,7 @@ const LandingPageSettings = () => {
 
           {/* Programs Management */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#8b5cf6' }}>
+            <div className="lps-card-title" style={{ color: '#EC4899' }}>
               <GraduationCap size={24} /> Offered Programs
             </div>
             <div className="space-y-4">
@@ -241,7 +241,7 @@ const LandingPageSettings = () => {
 
           {/* Languages Management */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#3b82f6' }}>
+            <div className="lps-card-title" style={{ color: '#5D5DFF' }}>
               <Globe size={24} /> Language Orbit
             </div>
             <div className="space-y-4">

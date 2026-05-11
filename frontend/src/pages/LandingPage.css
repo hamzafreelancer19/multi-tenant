@@ -124,12 +124,12 @@
 .lp-btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   color: white;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
 }
 
 .lp-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.4);
 }
 
 .lp-btn-secondary {
@@ -224,7 +224,7 @@
   box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.4);
   transform: rotateY(-15deg) rotateX(8deg);
   transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 8px solid #1e293b;
+  border: 8px solid #1e1b4b;
   /* Bold border requested */
   overflow: hidden;
   position: relative;
@@ -236,7 +236,7 @@
 
 .lp-mock-header {
   height: 48px;
-  background: #1e293b;
+  background: #1e1b4b;
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -502,7 +502,7 @@
 }
 
 .lp-cta-glass-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
   border-radius: 40px;
   padding: clamp(40px, 8vw, 80px);
   position: relative;

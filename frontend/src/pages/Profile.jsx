@@ -22,7 +22,7 @@ export default function Profile() {
 
       <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginTop: '32px' }}>
         {/* Profile Card */}
-        <PremiumCard className="glass-panel" auroraColor="#8b5cf6" style={{ padding: '32px', textAlign: 'center', height: 'fit-content' }}>
+        <PremiumCard className="glass-panel" auroraColor="#EC4899" style={{ padding: '32px', textAlign: 'center', height: 'fit-content' }}>
           <div style={{
             width: '100px', height: '100px',
             borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--purple))',
@@ -50,7 +50,7 @@ export default function Profile() {
         </PremiumCard>
 
         {/* Details Section */}
-        <PremiumCard className="glass-panel" auroraColor="#3b82f6" style={{ padding: '32px' }}>
+        <PremiumCard className="glass-panel" auroraColor="#5D5DFF" style={{ padding: '32px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             General Information
           </h3>

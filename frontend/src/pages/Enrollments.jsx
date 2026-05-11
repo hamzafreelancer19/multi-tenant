@@ -126,7 +126,7 @@ export default function Enrollments() {
                 <tr key={e.id} className="table-row">
                   <td>
                     <div className="table-name-cell">
-                      <div className="table-avatar" style={{ background: e.status === 'Pending' ? '#f59e0b20' : '#8b5cf620', color: e.status === 'Pending' ? '#f59e0b' : '#8b5cf6' }}>
+                      <div className="table-avatar" style={{ background: e.status === 'Pending' ? '#f59e0b20' : '#EC489920', color: e.status === 'Pending' ? '#f59e0b' : '#EC4899' }}>
                         <User size={18} />
                       </div>
                       <div>

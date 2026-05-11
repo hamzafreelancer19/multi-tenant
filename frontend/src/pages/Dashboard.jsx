@@ -395,7 +395,7 @@ export default function Dashboard() {
         )}
 
         {/* Recent Activity - REALTIME */}
-        <PremiumCard className="card" auroraColor="#8b5cf6">
+        <PremiumCard className="card" auroraColor="#EC4899">
           <div className="card-header">
             <h3 className="card-title">
               <TrendingUp size={18} /> Recent Activity
@@ -428,7 +428,7 @@ export default function Dashboard() {
         </PremiumCard>
 
         {/* Conditional Card: Recent Students (School Admin) OR Active Schools (Super Admin) */}
-        <PremiumCard className="card" auroraColor="#3b82f6">
+        <PremiumCard className="card" auroraColor="#5D5DFF">
           <div className="card-header">
             <h3 className="card-title">
               {isSuperadmin ? <School size={18} /> : <Users size={18} />}

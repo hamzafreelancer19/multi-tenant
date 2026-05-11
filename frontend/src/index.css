@@ -3,14 +3,14 @@
 
 :root {
   /* --- PREMIUM COLOR PALETTE (From Landing Page) --- */
-  --accent: #3b82f6;
-  --accent-rgb: 59, 130, 246;
-  --accent-soft: rgba(59, 130, 246, 0.1);
-  --accent-hover: #2563eb;
+  --accent: #5D5DFF;
+  --accent-rgb: 93, 93, 255;
+  --accent-soft: rgba(93, 93, 255, 0.1);
+  --accent-hover: #4b4bcf;
   
-  --purple: #8b5cf6;
-  --purple-rgb: 139, 92, 246;
-  --purple-soft: rgba(139, 92, 246, 0.12);
+  --purple: #EC4899;
+  --purple-rgb: 236, 72, 153;
+  --purple-soft: rgba(236, 72, 153, 0.12);
   
   --gradient-primary: linear-gradient(135deg, var(--accent), var(--purple));
   --gradient-surface: linear-gradient(180deg, #fdfdfd 0%, #f5f7fa 100%);
@@ -46,15 +46,15 @@
 
 /* Dashboard Branding Overrides */
 .layout {
-  --accent: var(--dashboard-primary, #3b82f6);
-  --purple: var(--dashboard-accent, #8b5cf6);
+  --accent: var(--dashboard-primary, #5D5DFF);
+  --purple: var(--dashboard-accent, #EC4899);
   --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
   --accent-hover: color-mix(in srgb, var(--accent) 80%, black);
   --gradient-primary: linear-gradient(135deg, var(--accent), var(--purple));
 }
 
 .layout .sidebar {
-  background: var(--dashboard-secondary, #1e293b);
+  background: var(--dashboard-secondary, #1e1b4b);
   color: white; 
 }
 
@@ -90,7 +90,7 @@
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
 
-  --accent: #3b82f6;
+  --accent: #5D5DFF;
   --accent-soft: rgba(59, 130, 246, 0.2);
   --accent-hover: #2563eb;
   /* Green/Red/Yellow vars stay relative but soft backgrounds can be tweaked */

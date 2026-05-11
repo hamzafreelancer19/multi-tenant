@@ -261,7 +261,7 @@ export default function AIAssistant({ toggleTheme }) {
                   borderRadius: "18px",
                   border: "1px solid #e2e8f0",
                   background: "#f8fafc",
-                  color: "#1e293b",
+                  color: "#1e1b4b",
                   outline: "none",
                   fontSize: "0.95rem",
                   transition: "all 0.2s"

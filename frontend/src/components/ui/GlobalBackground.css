@@ -22,7 +22,7 @@
   left: -10%;
   width: 70vw;
   height: 70vw;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.3), transparent 70%);
   animation: aurora-float 20s infinite alternate ease-in-out;
 }
 
@@ -31,7 +31,7 @@
   right: -10%;
   width: 60vw;
   height: 60vw;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.25), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--purple-rgb), 0.25), transparent 70%);
   animation: aurora-float 25s infinite alternate-reverse ease-in-out;
   animation-delay: -5s;
 }
@@ -48,12 +48,12 @@
 
 /* Dark Mode Adjustments */
 .dark .aurora-1 {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.2), transparent 70%);
   opacity: 0.6;
 }
 
 .dark .aurora-2 {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--purple-rgb), 0.15), transparent 70%);
   opacity: 0.5;
 }
 

@@ -15,7 +15,7 @@ const plans = [
     name: "Basic Plan",
     icon: <Zap size={28} />,
     price: 1500,
-    color: "#3b82f6",
+    color: "#5D5DFF",
     colorSoft: "rgba(59,130,246,0.1)",
     features: ["Student Management", "Teacher Profiles", "Attendance Tracking", "Admission Requests", "School Profile"],
     locked: ["AI Assistant", "Fees & Payments", "Exams & Results", "Notice Board", "Library", "Bus Tracking"],
@@ -25,7 +25,7 @@ const plans = [
     name: "Business Plan",
     icon: <Building2 size={28} />,
     price: 3500,
-    color: "#8b5cf6",
+    color: "#EC4899",
     colorSoft: "rgba(139,92,246,0.1)",
     popular: true,
     features: ["All Basic Features", "AI Assistant", "Fee & Salary Management", "Exams & Marksheets", "Notice Board", "SMS/WhatsApp Alerts"],
@@ -168,7 +168,7 @@ export default function Subscription() {
             </div>
           )}
           {/* Current Plan Status Card */}
-          <div className="card" style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "white", border: "none", padding: 32 }}>
+          <div className="card" style={{ background: "linear-gradient(135deg, #0f172a, #1e1b4b)", color: "white", border: "none", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 20 }}>
               <div>
                 <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Current Plan</div>
@@ -197,7 +197,7 @@ export default function Subscription() {
                   <span>⏳ {daysLeft} days remaining</span>
                 </div>
                 <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 10 }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #3b82f6, #8b5cf6)", borderRadius: 10, transition: "width 0.5s ease" }} />
+                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #5D5DFF, #EC4899)", borderRadius: 10, transition: "width 0.5s ease" }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                   <button

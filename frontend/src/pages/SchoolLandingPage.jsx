@@ -77,7 +77,7 @@ const SchoolLandingPage = () => {
     { icon: <Users size={32} />, title: "Prof Teachers", color: "#5D5DFF", bg: "#EEF2FF", desc: "Certified native speakers with a passion for early childhood development." },
     { icon: <Award size={32} />, title: "Modern Curriculum", color: "#EC4899", bg: "#FDF2F8", desc: "A scientifically-proven curriculum tailored for different age groups." },
     { icon: <Clock size={32} />, title: "Flex Schedule", color: "#F59E0B", bg: "#FFFBEB", desc: "Classes available 24/7 to fit your busy family lifestyle." },
-    { icon: <CheckCircle size={32} />, title: "Int'l Certification", color: "#3B82F6", bg: "#EFF6FF", desc: "Gain recognized certificates to track your child's global progress." }
+    { icon: <CheckCircle size={32} />, title: "Int'l Certification", color: "#5D5DFF", bg: "#EFF6FF", desc: "Gain recognized certificates to track your child's global progress." }
   ];
 
   const programs = (tenant.landing?.programs && tenant.landing.programs.length > 0) ? tenant.landing.programs : [
