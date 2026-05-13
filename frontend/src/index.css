@@ -2,59 +2,65 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* --- PREMIUM COLOR PALETTE (From Landing Page) --- */
-  --accent: #5D5DFF;
-  --accent-rgb: 93, 93, 255;
-  --accent-soft: rgba(93, 93, 255, 0.1);
-  --accent-hover: #4b4bcf;
+  /* --- EDU SAAS PREMIUM COLOR PALETTE --- */
+  --accent: #F15A24;
+  --accent-rgb: 241, 90, 36;
+  --accent-soft: #FFF0EB;
+  --accent-hover: #d94e1c;
   
-  --purple: #EC4899;
-  --purple-rgb: 236, 72, 153;
-  --purple-soft: rgba(236, 72, 153, 0.12);
+  --secondary: #0F172A;
+  --secondary-rgb: 15, 23, 42;
   
-  --gradient-primary: linear-gradient(135deg, var(--accent), var(--purple));
-  --gradient-surface: linear-gradient(180deg, #fdfdfd 0%, #f5f7fa 100%);
-  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  --green: #22C55E;
+  --green-soft: rgba(34, 197, 94, 0.1);
+  --red: #EF4444;
+  --red-soft: rgba(239, 68, 68, 0.1);
+  --orange: #F15A24;
+  --orange-soft: #FFF0EB;
 
-  /* --- LIGHT MODE REFINEMENT --- */
-  --bg-base: #fdfdfd;
-  --bg-surface: #f5f7fa;
-  --bg-card: rgba(255, 255, 255, 0.7);
-  --bg-hover: rgba(59, 130, 246, 0.05);
-  
-  --border: rgba(0, 0, 0, 0.06);
-  --border-focus: rgba(59, 130, 246, 0.3);
-  --border-glass: rgba(255, 255, 255, 0.5);
+  --gradient-primary: linear-gradient(135deg, #F15A24, #FF8C42);
+  --gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2));
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  /* --- UI SURFACES --- */
+  --bg-base: #F8FAFC;
+  --bg-surface: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-hover: rgba(241, 90, 36, 0.05);
+  
+  --border: #E2E8F0;
+  --border-focus: rgba(241, 90, 36, 0.3);
+  --border-glass: rgba(255, 255, 255, 0.8);
+
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
   --text-muted: #94a3b8;
 
   --sidebar-w: 260px;
   --sidebar-collapsed-w: 80px;
   --radius: 20px;
   --radius-sm: 12px;
-  --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --shadow-premium: 0 20px 40px -10px rgba(15, 23, 42, 0.05), 0 10px 10px -5px rgba(15, 23, 42, 0.02);
   --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* --- GLASS TOKENS --- */
-  --glass-bg: rgba(255, 255, 255, 0.4);
-  --glass-bg-dark: rgba(15, 23, 42, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-blur: blur(25px);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-dark: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-blur: blur(20px);
 }
 
 /* Dashboard Branding Overrides */
 .layout {
-  --accent: var(--dashboard-primary, #5D5DFF);
-  --purple: var(--dashboard-accent, #EC4899);
-  --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
-  --accent-hover: color-mix(in srgb, var(--accent) 80%, black);
-  --gradient-primary: linear-gradient(135deg, var(--accent), var(--purple));
+  --accent: var(--dashboard-primary, #F15A24);
+  --secondary: var(--dashboard-accent, #0F172A);
+  --accent-soft: #FFF0EB;
+  --accent-hover: color-mix(in srgb, var(--accent) 85%, black);
+  --gradient-primary: linear-gradient(135deg, var(--accent), #FF8C42);
 }
 
 .layout .sidebar {
-  background: var(--dashboard-secondary, #1e1b4b);
+  background: var(--dashboard-secondary, #0F172A);
   color: white; 
 }
 
@@ -79,21 +85,20 @@
 
 .dark {
   /* --- DARK MODE --- */
-  --bg-base: #0d1117;
-  --bg-surface: #161b22;
-  --bg-card: #1c2230;
-  --bg-hover: #242d3d;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(99, 179, 237, 0.5);
+  --bg-base: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-card: #1e293b;
+  --bg-hover: rgba(241, 90, 36, 0.1);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(241, 90, 36, 0.5);
 
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --text-muted: #6e7681;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-  --accent: #5D5DFF;
-  --accent-soft: rgba(59, 130, 246, 0.2);
-  --accent-hover: #2563eb;
-  /* Green/Red/Yellow vars stay relative but soft backgrounds can be tweaked */
+  --accent: #F15A24;
+  --accent-soft: rgba(241, 90, 36, 0.15);
+  --accent-hover: #d94e1c;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
@@ -362,7 +367,7 @@ select {
 .avatar {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -376,7 +381,7 @@ select {
 .avatar-sm {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -597,8 +602,8 @@ select {
 }
 
 .stat-purple .stat-icon {
-  background: var(--purple-soft);
-  color: var(--purple);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .stat-green .stat-icon {
@@ -686,7 +691,7 @@ select {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -792,7 +797,7 @@ select {
 
 .score-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   border-radius: 10px;
   transition: width 0.6s ease;
 }

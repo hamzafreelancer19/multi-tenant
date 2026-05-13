@@ -106,14 +106,14 @@ export default function Dashboard() {
       label: "Platform Schools",
       value: statsData.total_schools || 0,
       icon: <School size={22} />,
-      color: "blue",
+      color: "orange",
       desc: "active tenants",
     },
     {
       label: "Total Users",
       value: statsData.total_users || 0,
       icon: <Users size={22} />,
-      color: "purple",
+      color: "navy",
       desc: "platform accounts",
     },
     {
@@ -127,7 +127,7 @@ export default function Dashboard() {
       label: "Cloud Storage",
       value: "1.2 TB",
       icon: <BookOpen size={22} />,
-      color: "orange",
+      color: "red",
       desc: "data used",
     },
   ] : role === 'teacher' ? [
@@ -135,14 +135,14 @@ export default function Dashboard() {
       label: "My Students",
       value: statsData.students,
       icon: <Users size={22} />,
-      color: "blue",
+      color: "orange",
       desc: "enrolled in school",
     },
     {
       label: "Active Homework",
       value: statsData.assignments,
       icon: <BookOpen size={22} />,
-      color: "purple",
+      color: "navy",
       desc: "pending review",
     },
     {
@@ -156,7 +156,7 @@ export default function Dashboard() {
       label: "System Status",
       value: "Active",
       icon: <RefreshCw size={22} />,
-      color: "orange",
+      color: "red",
       desc: "all systems nominal",
     },
   ] : role === 'student' ? [
@@ -164,14 +164,14 @@ export default function Dashboard() {
       label: "My Attendance",
       value: `${statsData.attendance}%`,
       icon: <ClipboardCheck size={22} />,
-      color: "blue",
+      color: "orange",
       desc: "overall presence",
     },
     {
       label: "Pending Fees",
       value: statsData.pending_fees,
       icon: <DollarSign size={22} />,
-      color: "purple",
+      color: "navy",
       desc: "unpaid months",
     },
     {
@@ -185,7 +185,7 @@ export default function Dashboard() {
       label: "Class",
       value: statsData.class_name || "N/A",
       icon: <GraduationCap size={22} />,
-      color: "orange",
+      color: "red",
       desc: "current enrollment",
     },
   ] : [
@@ -193,14 +193,14 @@ export default function Dashboard() {
       label: "Total Students",
       value: statsData.students,
       icon: <Users size={22} />,
-      color: "blue",
+      color: "orange",
       desc: "enrolled students",
     },
     {
       label: "Total Teachers",
       value: statsData.teachers,
       icon: <GraduationCap size={22} />,
-      color: "purple",
+      color: "navy",
       desc: "faculty members",
     },
     {
@@ -214,7 +214,7 @@ export default function Dashboard() {
       label: "Fees Collected (Records)",
       value: statsData.fees_collected,
       icon: <DollarSign size={22} />,
-      color: "orange",
+      color: "red",
       desc: "paid records",
     },
   ];
@@ -238,8 +238,8 @@ export default function Dashboard() {
           <div className="card sub-alert-mobile" style={{ 
             flex: 1, 
             margin: "0 24px", 
-            background: "rgba(196, 166, 247, 0.05)",
-            border: `1px dashed ${schoolData.plan_status === "Pending" ? "#f59e0b" : "#ef4444"}`,
+            background: "var(--accent-soft)",
+            border: `1px dashed ${schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"}`,
             padding: "12px 20px",
             display: "flex",
             alignItems: "center",
@@ -250,9 +250,9 @@ export default function Dashboard() {
               <div style={{ 
                 width: 36, height: 36, 
                 borderRadius: "50%", 
-                background: schoolData.plan_status === "Pending" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
+                background: schoolData.plan_status === "Pending" ? "var(--accent-soft)" : "var(--red-soft)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: schoolData.plan_status === "Pending" ? "#f59e0b" : "#ef4444"
+                color: schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"
               }}>
                 <Zap size={20} />
               </div>
@@ -269,7 +269,7 @@ export default function Dashboard() {
             </div>
             <button 
               className="primary-btn" 
-              style={{ padding: "8px 16px", fontSize: "0.8rem", background: schoolData.plan_status === "Pending" ? "#f59e0b" : "var(--accent)" }}
+              style={{ padding: "8px 16px", fontSize: "0.8rem", background: schoolData.plan_status === "Pending" ? "var(--secondary)" : "var(--accent)" }}
               onClick={() => navigate("/subscription")}
             >
               {schoolData.plan_status === "Pending" ? "View Status" : "Upgrade Now"}
@@ -302,10 +302,10 @@ export default function Dashboard() {
             key={s.label} 
             className={`stat-card stat-${s.color}`}
             auroraColor={
-              s.color === "blue" ? "#60a5fa" :
-              s.color === "purple" ? "#C4A6F7" :
-              s.color === "green" ? "#34d399" :
-              s.color === "orange" ? "#fbbf24" : "#C4A6F7"
+              s.color === "orange" ? "#F15A24" :
+              s.color === "navy" ? "#0F172A" :
+              s.color === "green" ? "#22C55E" :
+              s.color === "red" ? "#EF4444" : "#F15A24"
             }
           >
             <div className="stat-icon">{s.icon}</div>
@@ -334,7 +334,7 @@ export default function Dashboard() {
               </h3>
               {pendingEnrollments.length > 0 && (
                 <span style={{
-                  fontSize: "0.7rem", background: "#f59e0b", color: "#fff",
+                  fontSize: "0.7rem", background: "var(--accent)", color: "#fff",
                   borderRadius: 99, padding: "2px 8px"
                 }}>{pendingEnrollments.length} NEW</span>
               )}
@@ -342,7 +342,7 @@ export default function Dashboard() {
             <div className="activity-list">
               {pendingEnrollments.length > 0 ? (
                 pendingEnrollments.map((e) => (
-                  <div key={e.id} className="activity-item" style={{ borderLeft: "3px solid #f59e0b", paddingLeft: 12 }}>
+                  <div key={e.id} className="activity-item" style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 12 }}>
                     <div className="activity-info">
                       <p className="activity-name">{e.student_name} ({e.student_age}y)</p>
                       <p className="activity-action">Father: {e.father_name} · {e.father_phone}</p>
@@ -350,14 +350,6 @@ export default function Dashboard() {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button 
                         className="icon-btn-sm" 
-                        style={{ color: "#10B981" }}
-                        onClick={async () => {
-                          if (window.confirm(`Accept enrollment for ${e.student_name}?`)) {
-                            await api.post(`/enrollments/${e.id}/accept/`);
-                            fetchAll();
-                          }
-                        }}
-                      >
                         <Zap size={14} fill="currentColor" />
                       </button>
                       <button 
@@ -395,7 +387,7 @@ export default function Dashboard() {
         )}
 
         {/* Recent Activity - REALTIME */}
-        <PremiumCard className="card" auroraColor="#EC4899">
+        <PremiumCard className="card" auroraColor="var(--secondary)">
           <div className="card-header">
             <h3 className="card-title">
               <TrendingUp size={18} /> Recent Activity
@@ -428,7 +420,7 @@ export default function Dashboard() {
         </PremiumCard>
 
         {/* Conditional Card: Recent Students (School Admin) OR Active Schools (Super Admin) */}
-        <PremiumCard className="card" auroraColor="#5D5DFF">
+        <PremiumCard className="card" auroraColor="var(--accent)">
           <div className="card-header">
             <h3 className="card-title">
               {isSuperadmin ? <School size={18} /> : <Users size={18} />}

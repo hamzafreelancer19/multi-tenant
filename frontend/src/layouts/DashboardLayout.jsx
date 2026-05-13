@@ -176,9 +176,9 @@ export default function DashboardLayout() {
     <div 
       className="layout"
       style={{
-        '--dashboard-primary': dashboardBranding.primary_color || '#5D5DFF',
-        '--dashboard-secondary': dashboardBranding.secondary_color || '#1e1b4b',
-        '--dashboard-accent': dashboardBranding.accent_color || '#EC4899',
+        '--dashboard-primary': dashboardBranding.primary_color || '#F15A24',
+        '--dashboard-secondary': dashboardBranding.secondary_color || '#0F172A',
+        '--dashboard-accent': dashboardBranding.accent_color || '#FF8C42',
       }}
     >
       {/* Mobile Overlay */}
@@ -229,8 +229,8 @@ export default function DashboardLayout() {
                     <span className="nav-icon">{item.icon}</span>
                     <span>{item.label}</span>
                     <div style={{ marginLeft: "auto", display: 'flex', alignItems: 'center', gap: 4 }}>
-                       <span style={{ fontSize: 9, fontWeight: 900, background: '#fef2f2', color: '#ef4444', padding: '2px 6px', borderRadius: 6 }}>{item.plan}</span>
-                       <Lock size={12} color="#ef4444" />
+                       <span style={{ fontSize: 9, fontWeight: 900, background: 'var(--red-soft)', color: 'var(--red)', padding: '2px 6px', borderRadius: 6 }}>{item.plan}</span>
+                       <Lock size={12} color="var(--red)" />
                     </div>
                   </div>
                 );
@@ -336,8 +336,8 @@ export default function DashboardLayout() {
                           className={`notif-item ${!n.is_read ? 'notif-item-unread' : ''}`}
                         >
                           <div className="notif-item-icon" style={{
-                            background: n.message.includes('registration') ? 'var(--blue-soft)' : 'var(--accent-soft)',
-                            color: n.message.includes('registration') ? 'var(--blue)' : 'var(--accent)'
+                            background: n.message.includes('registration') ? 'rgba(34, 197, 94, 0.1)' : 'var(--accent-soft)',
+                            color: n.message.includes('registration') ? 'var(--green)' : 'var(--accent)'
                           }}>
                             {n.message.includes('registration') ? <School size={18} /> : <Bell size={18} />}
                           </div>

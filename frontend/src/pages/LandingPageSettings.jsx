@@ -13,7 +13,7 @@ const LandingPageSettings = () => {
     hero_title: '',
     hero_subtitle: '',
     about: '',
-    primary_color: '#5D5DFF',
+    primary_color: '#F15A24',
     contact_email: '',
     contact_phone: '',
     show_stats: true,
@@ -31,7 +31,7 @@ const LandingPageSettings = () => {
         hero_title: tenant.landing.hero_title || '',
         hero_subtitle: tenant.landing.hero_subtitle || '',
         about: tenant.landing.about || '',
-        primary_color: tenant.landing.primary_color || '#5D5DFF',
+        primary_color: tenant.landing.primary_color || '#F15A24',
         contact_email: tenant.landing.contact_email || '',
         contact_phone: tenant.landing.contact_phone || '',
         show_stats: tenant.landing.show_stats !== undefined ? tenant.landing.show_stats : true,
@@ -63,7 +63,7 @@ const LandingPageSettings = () => {
   };
 
   const addFeature = () => {
-    setSettings({...settings, features: [...settings.features, { title: '', desc: '', color: '#5D5DFF', bg: '#EEF2FF' }]});
+    setSettings({...settings, features: [...settings.features, { title: '', desc: '', color: '#F15A24', bg: '#FFF0EB' }]});
   };
 
   const removeFeature = (index) => {
@@ -81,7 +81,7 @@ const LandingPageSettings = () => {
   };
 
   const addProgram = () => {
-    setSettings({...settings, programs: [...settings.programs, { title: '', age: '', price: '', badge: '', desc: '', color: '#5D5DFF' }]});
+    setSettings({...settings, programs: [...settings.programs, { title: '', age: '', price: '', badge: '', desc: '', color: '#F15A24' }]});
   };
 
   const removeProgram = (index) => {
@@ -117,7 +117,7 @@ const LandingPageSettings = () => {
           
           {/* Hero Section */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#6366f1' }}><Layout size={24} /> Hero Content</div>
+            <div className="lps-card-title" style={{ color: '#F15A24' }}><Layout size={24} /> Hero Content</div>
             <div className="lps-form-group">
               <label className="lps-label">Main Title</label>
               <input type="text" value={settings.hero_title} onChange={(e) => setSettings({...settings, hero_title: e.target.value})} className="lps-input" />
@@ -130,7 +130,7 @@ const LandingPageSettings = () => {
 
           {/* Features Management */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#10b981' }}>
+            <div className="lps-card-title" style={{ color: '#22C55E' }}>
               <Award size={24} /> School Highlights (Bento Grid)
             </div>
             <div className="space-y-4">
@@ -158,7 +158,7 @@ const LandingPageSettings = () => {
 
           {/* Testimonials */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#f43f5e' }}>
+            <div className="lps-card-title" style={{ color: '#EF4444' }}>
               <Heart size={24} /> Parent Testimonials
             </div>
             <div className="space-y-4">
@@ -211,7 +211,7 @@ const LandingPageSettings = () => {
 
           {/* Programs Management */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#EC4899' }}>
+            <div className="lps-card-title" style={{ color: '#F15A24' }}>
               <GraduationCap size={24} /> Offered Programs
             </div>
             <div className="space-y-4">
@@ -241,7 +241,7 @@ const LandingPageSettings = () => {
 
           {/* Languages Management */}
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#5D5DFF' }}>
+            <div className="lps-card-title" style={{ color: '#0F172A' }}>
               <Globe size={24} /> Language Orbit
             </div>
             <div className="space-y-4">
@@ -265,7 +265,7 @@ const LandingPageSettings = () => {
 
         <div className="lps-col-side">
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#ec4899' }}><Palette size={24} /> Identity</div>
+            <div className="lps-card-title" style={{ color: '#F15A24' }}><Palette size={24} /> Identity</div>
             <div className="lps-form-group">
               <label className="lps-label">Hero Image (URL or Upload)</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -305,7 +305,7 @@ const LandingPageSettings = () => {
                       }}
                     />
                   </label>
-                  {loading && <div style={{ width: '40px', height: '4px', background: '#6366f1', borderRadius: '10px' }} />}
+                  {loading && <div style={{ width: '40px', height: '4px', background: '#F15A24', borderRadius: '10px' }} />}
                 </div>
               </div>
             </div>
@@ -323,7 +323,7 @@ const LandingPageSettings = () => {
           </section>
 
           <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#f59e0b' }}><Mail size={24} /> Contact</div>
+            <div className="lps-card-title" style={{ color: '#F15A24' }}><Mail size={24} /> Contact</div>
             <div className="lps-form-group">
               <label className="lps-label">Email</label>
               <input type="email" value={settings.contact_email} onChange={(e) => setSettings({...settings, contact_email: e.target.value})} className="lps-input" />
@@ -345,7 +345,7 @@ const LandingPageSettings = () => {
           </section>
 
           <section className="lps-card">
-             <div className="lps-card-title" style={{ color: '#0ea5e9' }}><FileText size={24} /> About Summary</div>
+             <div className="lps-card-title" style={{ color: '#0F172A' }}><FileText size={24} /> About Summary</div>
              <textarea value={settings.about} onChange={(e) => setSettings({...settings, about: e.target.value})} className="lps-input" style={{ minHeight: '150px' }} />
           </section>
         </div>

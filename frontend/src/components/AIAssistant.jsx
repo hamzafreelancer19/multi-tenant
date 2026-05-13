@@ -82,10 +82,10 @@ export default function AIAssistant({ toggleTheme }) {
           width: 64,
           height: 64,
           borderRadius: "50%",
-          background: "linear-gradient(135deg, #6366f1, #a855f7, #ec4899)",
+          background: "linear-gradient(135deg, #F15A24, #FF8C42)",
           color: "white",
           border: "none",
-          boxShadow: "0 10px 40px rgba(99, 102, 241, 0.4)",
+          boxShadow: "0 10px 40px rgba(241, 90, 36, 0.4)",
           display: isOpen ? "none" : "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -107,7 +107,7 @@ export default function AIAssistant({ toggleTheme }) {
           height: 600,
           background: "#ffffff",
           borderRadius: 28,
-          boxShadow: "0 25px 70px rgba(0,0,0,0.3), 0 0 0 1px rgba(168, 85, 247, 0.1)",
+          boxShadow: "0 25px 70px rgba(0,0,0,0.3), 0 0 0 1px rgba(241, 90, 36, 0.1)",
           display: "flex",
           flexDirection: "column",
           zIndex: 100000,
@@ -116,7 +116,7 @@ export default function AIAssistant({ toggleTheme }) {
         }}>
           {/* Header */}
           <div style={{
-            background: "linear-gradient(135deg, #6366f1, #a855f7)",
+            background: "linear-gradient(135deg, #F15A24, #FF8C42)",
             padding: "24px",
             display: "flex",
             alignItems: "center",
@@ -172,14 +172,14 @@ export default function AIAssistant({ toggleTheme }) {
               }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: "12px",
-                  background: m.sender === "user" ? "#4f46e5" : "linear-gradient(135deg, #6366f1, #a855f7)",
+                  background: m.sender === "user" ? "#F15A24" : "linear-gradient(135deg, #F15A24, #FF8C42)",
                   display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0,
-                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)"
+                  boxShadow: "0 4px 12px rgba(241, 90, 36, 0.2)"
                 }}>
                   {m.sender === "user" ? <User size={18} /> : <Bot size={18} />}
                 </div>
                 <div style={{
-                  background: m.sender === "user" ? "#4f46e5" : "#ffffff",
+                  background: m.sender === "user" ? "#F15A24" : "#ffffff",
                   color: m.sender === "user" ? "white" : "#334155",
                   padding: "14px 18px",
                   borderRadius: 20,
@@ -187,7 +187,7 @@ export default function AIAssistant({ toggleTheme }) {
                   borderBottomLeftRadius: m.sender === "ai" ? 4 : 20,
                   fontSize: "0.95rem",
                   lineHeight: 1.6,
-                  boxShadow: m.sender === "ai" ? "0 4px 20px rgba(0,0,0,0.04)" : "0 4px 15px rgba(79, 70, 229, 0.15)",
+                  boxShadow: m.sender === "ai" ? "0 4px 20px rgba(0,0,0,0.04)" : "0 4px 15px rgba(241, 90, 36, 0.15)",
                   border: m.sender === "ai" ? "1px solid #f1f5f9" : "none",
                   whiteSpace: "pre-wrap"
                 }}>
@@ -232,7 +232,7 @@ export default function AIAssistant({ toggleTheme }) {
                     transition: "all 0.2s",
                     boxShadow: "0 2px 5px rgba(0,0,0,0.02)"
                   }}
-                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.color = "#6366f1"; }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#F15A24"; e.currentTarget.style.color = "#F15A24"; }}
                   onMouseOut={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#64748b"; }}
                 >
                   {s.icon} {s.label}
@@ -266,7 +266,7 @@ export default function AIAssistant({ toggleTheme }) {
                   fontSize: "0.95rem",
                   transition: "all 0.2s"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "#a855f7"}
+                onFocus={(e) => e.target.style.borderColor = "#F15A24"}
                 onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                 disabled={loading}
               />
@@ -275,7 +275,7 @@ export default function AIAssistant({ toggleTheme }) {
               type="submit"
               disabled={!input.trim() || loading}
               style={{
-                background: input.trim() && !loading ? "linear-gradient(135deg, #6366f1, #a855f7)" : "#f1f5f9",
+                background: input.trim() && !loading ? "linear-gradient(135deg, #F15A24, #FF8C42)" : "#f1f5f9",
                 color: input.trim() && !loading ? "white" : "#cbd5e1",
                 border: "none",
                 borderRadius: "16px",
@@ -286,7 +286,7 @@ export default function AIAssistant({ toggleTheme }) {
                 justifyContent: "center",
                 cursor: input.trim() && !loading ? "pointer" : "not-allowed",
                 transition: "all 0.3s",
-                boxShadow: input.trim() && !loading ? "0 4px 15px rgba(99, 102, 241, 0.3)" : "none"
+                boxShadow: input.trim() && !loading ? "0 4px 15px rgba(241, 90, 36, 0.3)" : "none"
               }}
             >
               <Send size={22} />

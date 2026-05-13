@@ -15,8 +15,8 @@ const plans = [
     name: "Basic Plan",
     icon: <Zap size={28} />,
     price: 1500,
-    color: "#5D5DFF",
-    colorSoft: "rgba(59,130,246,0.1)",
+    color: "#F15A24",
+    colorSoft: "rgba(241, 90, 36, 0.1)",
     features: ["Student Management", "Teacher Profiles", "Attendance Tracking", "Admission Requests", "School Profile"],
     locked: ["AI Assistant", "Fees & Payments", "Exams & Results", "Notice Board", "Library", "Bus Tracking"],
   },
@@ -25,8 +25,8 @@ const plans = [
     name: "Business Plan",
     icon: <Building2 size={28} />,
     price: 3500,
-    color: "#EC4899",
-    colorSoft: "rgba(139,92,246,0.1)",
+    color: "#FF8C42",
+    colorSoft: "rgba(255, 140, 66, 0.1)",
     popular: true,
     features: ["All Basic Features", "AI Assistant", "Fee & Salary Management", "Exams & Marksheets", "Notice Board", "SMS/WhatsApp Alerts"],
     locked: ["Library System", "Bus Routes", "Timetable & Homework"],
@@ -36,8 +36,8 @@ const plans = [
     name: "Ultimate Pro",
     icon: <Rocket size={28} />,
     price: 6000,
-    color: "#f59e0b",
-    colorSoft: "rgba(245,158,11,0.1)",
+    color: "#0F172A",
+    colorSoft: "rgba(15, 23, 42, 0.1)",
     features: ["Everything Included", "Classora AI Assistant", "Library Management", "Transport & Fleet", "Timetables & Homework", "AI Performance Predictor", "24/7 Priority Support"],
     locked: [],
   },
@@ -119,9 +119,9 @@ export default function Subscription() {
 
   const getPlanStatusBadge = () => {
     const s = school?.plan_status;
-    if (s === "Active") return { label: "Active", color: "#10b981", bg: "rgba(16,185,129,0.1)", icon: <CheckCircle2 size={14} /> };
-    if (s === "Pending") return { label: "Pending Approval", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", icon: <Clock size={14} /> };
-    return { label: "Inactive", color: "#ef4444", bg: "rgba(239,68,68,0.1)", icon: <XCircle size={14} /> };
+    if (s === "Active") return { label: "Active", color: "#22C55E", bg: "rgba(34,197,94,0.1)", icon: <CheckCircle2 size={14} /> };
+    if (s === "Pending") return { label: "Pending Approval", color: "#F15A24", bg: "rgba(241,90,36,0.1)", icon: <Clock size={14} /> };
+    return { label: "Inactive", color: "#EF4444", bg: "rgba(239,68,68,0.1)", icon: <XCircle size={14} /> };
   };
 
   const badge = getPlanStatusBadge();
@@ -159,16 +159,16 @@ export default function Subscription() {
       ) : (
         <>
           {school.status === "Pending" && (
-            <div className="card" style={{ background: "rgba(245,158,11,0.05)", border: "1px dashed #f59e0b", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <Clock size={20} style={{ color: "#f59e0b" }} />
+            <div className="card" style={{ background: "#FFF0EB", border: "1px dashed #F15A24", padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+              <Clock size={20} style={{ color: "#F15A24" }} />
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.85rem", color: "#b45309" }}>School Registration Approval Pending</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.85rem", color: "#F15A24" }}>School Registration Approval Pending</p>
                 <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>You can still choose a plan and submit payment. Your account will be fully activated once both the school and payment are approved.</p>
               </div>
             </div>
           )}
           {/* Current Plan Status Card */}
-          <div className="card" style={{ background: "linear-gradient(135deg, #0f172a, #1e1b4b)", color: "white", border: "none", padding: 32 }}>
+          <div className="card" style={{ background: "linear-gradient(135deg, #0F172A, #1e293b)", color: "white", border: "none", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 20 }}>
               <div>
                 <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Current Plan</div>
@@ -197,7 +197,7 @@ export default function Subscription() {
                   <span>⏳ {daysLeft} days remaining</span>
                 </div>
                 <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 10 }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #5D5DFF, #EC4899)", borderRadius: 10, transition: "width 0.5s ease" }} />
+                  <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #F15A24, #FF8C42)", borderRadius: 10, transition: "width 0.5s ease" }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                   <button
@@ -212,8 +212,8 @@ export default function Subscription() {
 
             {/* Pending message */}
             {school.plan_status === "Pending" && (
-              <div style={{ marginTop: 20, padding: 14, background: "rgba(245,158,11,0.15)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                <AlertTriangle size={16} style={{ color: "#f59e0b", flexShrink: 0 }} />
+              <div style={{ marginTop: 20, padding: 14, background: "rgba(241, 90, 36, 0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                <AlertTriangle size={16} style={{ color: "#F15A24", flexShrink: 0 }} />
                 <span>Your <strong>{school.plan_type}</strong> plan is awaiting approval. Transaction ID: <strong>{school.transaction_id}</strong></span>
               </div>
             )}
@@ -225,9 +225,9 @@ export default function Subscription() {
       {(school && (school.plan_status === "Inactive" || school.plan_status === "Pending" || school.plan_status === "None" || !school.plan_status || showRenewForm)) && (
         <>
           {/* Payment Instructions */}
-          <div className="card" style={{ border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.03)" }}>
+          <div className="card" style={{ border: "1px solid rgba(241, 90, 36, 0.3)", background: "rgba(241, 90, 36, 0.03)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, background: "rgba(59,130,246,0.1)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
+              <div style={{ width: 40, height: 40, background: "rgba(241, 90, 36, 0.1)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
                 <CreditCard size={20} />
               </div>
               <div>

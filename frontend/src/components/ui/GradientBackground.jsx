@@ -3,7 +3,7 @@ import { cn } from "../../lib/utils";
 
 /**
  * GradientBackground component provides a radial gradient background.
- * Based on the specified theme: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%)
+ * Based on the specified theme: radial-gradient(125% 125% at 50% 10%, #fff 40%, #F15A24 100%)
  */
 export default function GradientBackground({ 
   children, 
@@ -15,7 +15,7 @@ export default function GradientBackground({
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
-          background: "radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%)",
+          background: "radial-gradient(125% 125% at 50% 10%, #fff 40%, #F15A24 100%)",
         }}
       />
       

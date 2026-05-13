@@ -74,16 +74,16 @@ const SchoolLandingPage = () => {
   ];
 
   const features = (tenant.landing?.features && tenant.landing.features.length > 0) ? tenant.landing.features : [
-    { icon: <Users size={32} />, title: "Prof Teachers", color: "#5D5DFF", bg: "#EEF2FF", desc: "Certified native speakers with a passion for early childhood development." },
-    { icon: <Award size={32} />, title: "Modern Curriculum", color: "#EC4899", bg: "#FDF2F8", desc: "A scientifically-proven curriculum tailored for different age groups." },
-    { icon: <Clock size={32} />, title: "Flex Schedule", color: "#F59E0B", bg: "#FFFBEB", desc: "Classes available 24/7 to fit your busy family lifestyle." },
-    { icon: <CheckCircle size={32} />, title: "Int'l Certification", color: "#5D5DFF", bg: "#EFF6FF", desc: "Gain recognized certificates to track your child's global progress." }
+    { icon: <Users size={32} />, title: "Prof Teachers", color: "#F15A24", bg: "#FFF0EB", desc: "Certified native speakers with a passion for early childhood development." },
+    { icon: <Award size={32} />, title: "Modern Curriculum", color: "#FF8C42", bg: "#FFF0EB", desc: "A scientifically-proven curriculum tailored for different age groups." },
+    { icon: <Clock size={32} />, title: "Flex Schedule", color: "#0F172A", bg: "rgba(15, 23, 42, 0.05)", desc: "Classes available 24/7 to fit your busy family lifestyle." },
+    { icon: <CheckCircle size={32} />, title: "Int'l Certification", color: "#F15A24", bg: "#FFF0EB", desc: "Gain recognized certificates to track your child's global progress." }
   ];
 
   const programs = (tenant.landing?.programs && tenant.landing.programs.length > 0) ? tenant.landing.programs : [
-    { title: "Kids Academy", age: "AGES 3-7 YEARS", price: "200", badge: "MOST POPULAR", bg: "#5D5DFF", desc: "Building strong foundations in reading, writing, and conversational flow." },
-    { title: "Junior Explorers", age: "AGES 8-12 YEARS", price: "250", bg: "#EC4899", desc: "Mastering complex grammar and advanced vocabulary through projects." },
-    { title: "Teen Fluency", age: "AGES 13-17 YEARS", price: "300", bg: "#5D5DFF", desc: "Achieving near-native fluency and cultural immersion for future leaders." }
+    { title: "Kids Academy", age: "AGES 3-7 YEARS", price: "200", badge: "MOST POPULAR", bg: "#F15A24", desc: "Building strong foundations in reading, writing, and conversational flow." },
+    { title: "Junior Explorers", age: "AGES 8-12 YEARS", price: "250", bg: "#FF8C42", desc: "Mastering complex grammar and advanced vocabulary through projects." },
+    { title: "Teen Fluency", age: "AGES 13-17 YEARS", price: "300", bg: "#0F172A", desc: "Achieving near-native fluency and cultural immersion for future leaders." }
   ];
 
   const testimonials = (tenant.landing?.testimonials && tenant.landing.testimonials.length > 0) ? tenant.landing.testimonials : [
@@ -94,12 +94,12 @@ const SchoolLandingPage = () => {
 
   // Helper function to hex to rgb for shadows
   const hexToRgb = (hex) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#5D5DFF');
-    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '93, 93, 255';
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#F15A24');
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '241, 90, 36';
   };
 
-  const primaryColor = tenant.branding?.landing?.primary_color || tenant.landing?.primary_color || '#5D5DFF';
-  const secondaryColor = tenant.branding?.landing?.secondary_color || '#1e40af';
+  const primaryColor = tenant.branding?.landing?.primary_color || tenant.landing?.primary_color || '#F15A24';
+  const secondaryColor = tenant.branding?.landing?.secondary_color || '#0F172A';
   const primaryRgb = hexToRgb(primaryColor);
   const logoUrl = tenant.branding?.logo 
     ? (tenant.branding.logo.startsWith('http') ? tenant.branding.logo : `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}`) 
@@ -189,7 +189,7 @@ const SchoolLandingPage = () => {
           <motion.div
             animate={{ y: [0, 15, 0] }}
             transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
-            style={{ position: 'absolute', bottom: '20%', right: '5%', background: 'white', padding: '12px 24px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: '900', fontSize: '14px', color: '#EC4899' }}
+            style={{ position: 'absolute', bottom: '20%', right: '5%', background: 'white', padding: '12px 24px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: '900', fontSize: '14px', color: '#F15A24' }}
           >
             Hello! ✌️
           </motion.div>
@@ -206,7 +206,7 @@ const SchoolLandingPage = () => {
         <div className="slp-features-grid">
           {features.map((feature, i) => (
             <div key={i} className="slp-feature-card">
-              <div className="slp-feature-icon" style={{ backgroundColor: feature.bg || '#EEF2FF', color: feature.color || 'var(--primary)' }}>
+              <div className="slp-feature-icon" style={{ backgroundColor: feature.bg || '#FFF0EB', color: feature.color || 'var(--primary)' }}>
                 {feature.icon || <Sparkles size={32} />}
               </div>
               <h3>{feature.title}</h3>
@@ -246,7 +246,7 @@ const SchoolLandingPage = () => {
             <h2 style={{ fontSize: '50px', fontWeight: 900, marginBottom: '10px' }}>Our Tailored Programs</h2>
             <p style={{ color: '#64748B', fontWeight: 600 }}>The perfect fit for every stage of development.</p>
           </div>
-          <button className="slp-btn-text" style={{ color: '#5D5DFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button className="slp-btn-text" style={{ color: '#F15A24', display: 'flex', alignItems: 'center', gap: '8px' }}>
             All Courses <ChevronRight size={20} />
           </button>
         </div>
@@ -263,8 +263,8 @@ const SchoolLandingPage = () => {
               <p style={{ color: '#64748B', lineHeight: 1.6, marginBottom: '40px' }}>{program.desc || "Building strong foundations in reading, writing, and conversational flow through interactive games and stories."}</p>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '30px', borderTop: '1px solid #F1F5F9' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontSize: '32px', fontWeight: 900, color: '#1E1B4B', tracking: '-1px' }}>${program.price}</span>
+                <div style={{ display: 'flex', alignItems: baseline, gap: '4px' }}>
+                  <span style={{ fontSize: '32px', fontWeight: 900, color: '#0F172A', tracking: '-1px' }}>${program.price}</span>
                   <span style={{ fontSize: '14px', fontWeight: 800, color: '#94A3B8' }}>/mo</span>
                 </div>
                 <button className="slp-btn-more">Learn More</button>
@@ -393,7 +393,7 @@ const SchoolLandingPage = () => {
             Start their journey today with a 7-day free trial. <br /> No commitments, just pure learning fun.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '30px' }}>
-            <button style={{ padding: '20px 50px', background: 'white', color: '#5D5DFF', border: 'none', borderRadius: '50px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>Enroll Today</button>
+            <button style={{ padding: '20px 50px', background: 'white', color: '#F15A24', border: 'none', borderRadius: '50px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>Enroll Today</button>
             <button style={{ padding: '20px 50px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '50px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Speak to Advisor</button>
           </div>
         </div>

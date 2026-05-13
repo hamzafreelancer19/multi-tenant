@@ -126,7 +126,7 @@ export default function Enrollments() {
                 <tr key={e.id} className="table-row">
                   <td>
                     <div className="table-name-cell">
-                      <div className="table-avatar" style={{ background: e.status === 'Pending' ? '#f59e0b20' : '#EC489920', color: e.status === 'Pending' ? '#f59e0b' : '#EC4899' }}>
+                      <div className="table-avatar" style={{ background: e.status === 'Pending' ? 'var(--accent-soft)' : 'var(--secondary-soft)', color: e.status === 'Pending' ? 'var(--accent)' : 'var(--secondary)' }}>
                         <User size={18} />
                       </div>
                       <div>
@@ -158,7 +158,7 @@ export default function Enrollments() {
                         <>
                           <button
                             className="icon-btn-sm"
-                            style={{ color: "#10B981" }}
+                            style={{ color: "#22C55E" }}
                             title="Accept"
                             onClick={() => handleAccept(e.id, e.student_name)}
                           >

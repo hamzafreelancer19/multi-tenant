@@ -47,8 +47,8 @@
 
 .lps-save-btn:hover {
     transform: translateY(-2px);
-    background: #1e1b4b;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    background: #0f172a;
+    box-shadow: 0 15px 30px rgba(241, 90, 36, 0.15);
 }
 
 .lps-grid {
@@ -115,9 +115,9 @@
 
 .lps-input:focus {
     background: white;
-    border-color: #6366f1;
+    border-color: #F15A24;
     outline: none;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 4px rgba(241, 90, 36, 0.1);
 }
 
 .lps-textarea {
