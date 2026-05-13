@@ -89,7 +89,7 @@ const Inventory = () => {
         .inv-card { background: white; border-radius: 28px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.01); transition: 0.3s; }
         .inv-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .tab-btn { padding: 12px 24px; border-radius: 14px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        .tab-active { background: var(--accent); color: white; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2); }
+        .tab-active { background: var(--accent); color: white; box-shadow: 0 10px 20px rgba(var(--accent-rgb), 0.2); }
         .tab-inactive { background: white; color: var(--text-secondary); }
         .btn-premium { background: var(--gradient-primary) !important; color: white !important; font-weight: 800 !important; padding: 12px 24px !important; border-radius: 14px !important; border: none !important; cursor: pointer !important; display: flex; align-items: center; gap: 8px; }
       `}</style>
@@ -127,7 +127,7 @@ const Inventory = () => {
              filteredItems.map(item => (
                <div key={item.id} className="inv-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                     <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', background: '#f5f3ff', padding: '4px 10px', borderRadius: 8, textTransform: 'uppercase' }}>{item.category}</span>
+                     <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '4px 10px', borderRadius: 8, textTransform: 'uppercase' }}>{item.category}</span>
                      <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => { setEditingId(item.id); setItemData(item); setShowItemModal(true); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Edit size={16} /></button>
                         <button style={{ background: 'none', border: 'none', color: '#fee2e2', cursor: 'pointer' }}><Trash2 size={16} /></button>
