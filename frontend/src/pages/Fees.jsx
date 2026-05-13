@@ -124,9 +124,9 @@ export default function Fees() {
             key={i} 
             className={`stat-card stat-${s.color}`}
             auroraColor={
-              s.color === "green" ? "#10b981" :
-              s.color === "orange" ? "#fbbf24" :
-              s.color === "red" ? "#ef4444" : "#C4A6F7"
+              s.color === "green" ? "var(--green)" :
+              s.color === "orange" ? "var(--accent)" :
+              s.color === "red" ? "var(--red)" : "var(--secondary)"
             }
           >
             <div className="stat-icon">{s.icon}</div>
@@ -199,7 +199,7 @@ export default function Fees() {
       )}
 
       {/* Table */}
-      <PremiumCard className="card table-card" auroraColor="#C4A6F7">
+      <PremiumCard className="card table-card" auroraColor="var(--accent)">
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
             <Loader2 className="spin" size={32} />
@@ -281,7 +281,7 @@ export default function Fees() {
                           <span className="badge-status badge-active">Paid</span>
                         ) : (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span className="badge-status badge-inactive" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>Unpaid</span>
+                            <span className="badge-status badge-inactive">Unpaid</span>
                             <button 
                               title={s.phone ? "Send WhatsApp Reminder" : "No phone number added"}
                               disabled={!s.phone}

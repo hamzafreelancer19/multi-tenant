@@ -62,7 +62,7 @@ export default function SystemExplorer() {
       <div className="page-header" style={{ marginBottom: '24px', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="icon-badge" style={{
-            background: 'linear-gradient(135deg, var(--accent), var(--purple))',
+            background: 'var(--gradient-primary)',
             color: 'white',
             boxShadow: '0 8px 24px rgba(var(--accent-rgb), 0.25)',
             width: '52px', height: '52px'

@@ -108,7 +108,7 @@ export default function Schools() {
       <div 
         className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{ 
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(241, 90, 36, 0.15) 0%, transparent 70%)',
           filter: 'blur(80px)',
           animation: 'float 15s infinite alternate ease-in-out'
         }}
@@ -116,7 +116,7 @@ export default function Schools() {
       <div 
         className="absolute bottom-[20%] left-[-10%] w-[400px] h-[400px] rounded-full pointer-events-none z-0"
         style={{ 
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(15, 23, 42, 0.1) 0%, transparent 70%)',
           filter: 'blur(100px)',
           animation: 'float 20s infinite alternate-reverse ease-in-out',
           animationDelay: '-5s'

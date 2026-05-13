@@ -128,7 +128,7 @@ export default function Users() {
                 <tr key={u.id} className="table-row">
                   <td>
                     <div className="table-name-cell">
-                      <div className="table-avatar" style={{ background: u.role === 'superadmin' ? 'var(--purple-soft)' : 'var(--accent-soft)', color: u.role === 'superadmin' ? 'var(--purple)' : 'var(--accent)' }}>
+                      <div className="table-avatar" style={{ background: u.role === 'superadmin' ? 'var(--secondary-soft)' : 'var(--accent-soft)', color: u.role === 'superadmin' ? 'var(--secondary)' : 'var(--accent)' }}>
                         {u.role === 'superadmin' ? <Shield size={16} /> : <UserIcon size={16} />}
                       </div>
                       <p className="table-name">{u.username}</p>

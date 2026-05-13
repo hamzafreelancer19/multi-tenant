@@ -210,8 +210,8 @@ input:checked + .lps-slider:before {
 }
 
 .lps-success-msg {
-    background: #ecfdf5;
-    color: #059669;
+    background: var(--green-soft);
+    color: var(--green);
     padding: 16px 24px;
     border-radius: 16px;
     font-weight: 700;

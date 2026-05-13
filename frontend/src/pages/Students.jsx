@@ -259,7 +259,7 @@ export default function Students() {
                       <span className="badge-status badge-active">Paid</span>
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span className="badge-status badge-inactive" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>Unpaid</span>
+                        <span className="badge-status badge-inactive">Unpaid</span>
                             <button 
                               title={s.phone ? "Send WhatsApp Reminder" : "No phone number added"}
                               disabled={!s.phone}
