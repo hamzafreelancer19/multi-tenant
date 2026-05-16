@@ -12,7 +12,21 @@ import {
   School,
   Zap,
   X,
+  TrendingDown,
 } from "lucide-react";
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  Legend
+} from 'recharts';
 import { getDashboardStats, getActivities } from "../api/dashboardApi";
 import { getStudents } from "../api/studentsApi";
 import { getUser, getRole } from "../store/authStore";
@@ -28,6 +42,24 @@ function timeAgo(dateStr) {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 }
+
+const revenueData = [
+  { name: 'Jan', revenue: 4000, expenses: 2400 },
+  { name: 'Feb', revenue: 3000, expenses: 1398 },
+  { name: 'Mar', revenue: 2000, expenses: 9800 },
+  { name: 'Apr', revenue: 2780, expenses: 3908 },
+  { name: 'May', revenue: 1890, expenses: 4800 },
+  { name: 'Jun', revenue: 2390, expenses: 3800 },
+  { name: 'Jul', revenue: 3490, expenses: 4300 },
+];
+
+const attendanceData = [
+  { name: 'Mon', present: 85, absent: 15 },
+  { name: 'Tue', present: 88, absent: 12 },
+  { name: 'Wed', present: 92, absent: 8 },
+  { name: 'Thu', present: 90, absent: 10 },
+  { name: 'Fri', present: 78, absent: 22 },
+];
 
 
 export default function Dashboard() {
@@ -480,6 +512,78 @@ export default function Dashboard() {
           )}
         </div>
       </PremiumCard>
+
+      {/* Analytics Section - NEW */}
+      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 450px), 1fr))", gap: "24px", marginTop: "24px" }}>
+        
+        {/* Revenue Chart */}
+        <PremiumCard className="card" auroraColor="#3b82f6" style={{ height: "400px" }}>
+          <div className="card-header">
+            <h3 className="card-title">
+              <TrendingUp size={18} /> Revenue vs Expenses
+            </h3>
+            <div style={{ display: "flex", gap: 12, fontSize: "0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#F15A24" }}></div>
+                <span>Revenue</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0F172A" }}></div>
+                <span>Expenses</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ width: '100%', height: '300px', marginTop: "20px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F15A24" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#F15A24" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0F172A" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#0F172A" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ background: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+                  itemStyle={{ fontWeight: 600 }}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#F15A24" fillOpacity={1} fill="url(#colorRev)" strokeWidth={3} />
+                <Area type="monotone" dataKey="expenses" stroke="#0F172A" fillOpacity={1} fill="url(#colorExp)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </PremiumCard>
+
+        {/* Attendance Bar Chart */}
+        <PremiumCard className="card" auroraColor="#22c55e" style={{ height: "400px" }}>
+          <div className="card-header">
+            <h3 className="card-title">
+              <ClipboardCheck size={18} /> Weekly Attendance
+            </h3>
+          </div>
+          <div style={{ width: '100%', height: '300px', marginTop: "20px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={attendanceData}>
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  cursor={{fill: 'var(--accent-soft)', opacity: 0.4}}
+                  contentStyle={{ background: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+                />
+                <Bar dataKey="present" fill="#F15A24" radius={[6, 6, 0, 0]} barSize={30} />
+                <Bar dataKey="absent" fill="#0F172A" radius={[6, 6, 0, 0]} barSize={30} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PremiumCard>
+
+      </div>
+
 
     </div>
     </div >
