@@ -327,7 +327,7 @@ select {
 }
 
 .nav-link-active .nav-icon {
-  color: var(--accent);
+  color: white;
 }
 
 .nav-chevron {
