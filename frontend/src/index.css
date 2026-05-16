@@ -601,14 +601,14 @@ select {
   flex-shrink: 0;
 }
 
-.stat-blue .stat-icon {
-  background: var(--accent-soft);
-  color: var(--accent);
+.stat-navy .stat-icon {
+  background: rgba(15, 23, 42, 0.1);
+  color: var(--secondary);
 }
 
-.stat-purple .stat-icon {
-  background: var(--accent-soft);
-  color: var(--accent);
+.stat-red .stat-icon {
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .stat-green .stat-icon {
