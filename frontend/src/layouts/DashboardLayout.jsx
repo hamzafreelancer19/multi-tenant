@@ -4,6 +4,7 @@ import { logout, getRole, getUser, setUser, isDemoMode } from "../store/authStor
 import { getUserProfile } from "../auth/authService";
 import api from "../api/axios";
 import { useTenant } from "../context/TenantContext";
+import BrandLogo from "../components/ui/BrandLogo";
 import {
   LayoutDashboard,
   Users,
@@ -190,16 +191,11 @@ export default function DashboardLayout() {
       <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-logo">
           {brandName === "Classora" ? (
-             <img 
-                src="/logo.png" 
-                alt="Classora" 
-                style={{ 
-                  height: '32px', 
-                  width: isCollapsed ? '32px' : '150px', 
-                  objectFit: isCollapsed ? 'cover' : 'contain',
-                  objectPosition: 'left',
-                  transition: 'width 0.3s ease'
-                }} 
+             <BrandLogo 
+                size="md" 
+                color="white" 
+                collapsed={isCollapsed} 
+                className="pl-1"
              />
           ) : (
             <>

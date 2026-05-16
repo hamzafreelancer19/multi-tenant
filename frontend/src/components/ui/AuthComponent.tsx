@@ -16,6 +16,7 @@ import { setToken, setRefreshToken, setUser } from "@/store/authStore";
 import BackgroundGlow from "./BackgroundGlow";
 import { useGoogleLogin } from '@react-oauth/google';
 import { useTenant } from "@/context/TenantContext";
+import BrandLogo from "./BrandLogo";
 
 // --- CONFETTI LOGIC ---
 import type { Options as ConfettiOptions, GlobalOptions as ConfettiGlobalOptions, CreateTypes as ConfettiInstance } from "canvas-confetti";
@@ -441,7 +442,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
       <div className="fixed top-4 left-4 z-20 flex items-center gap-2">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           {effectiveBrandName === "Classora" ? (
-            <img src="/logo.png" alt="Classora Logo" style={{ height: '32px', objectFit: 'contain' }} />
+            <BrandLogo size="md" color="#0F172A" />
           ) : (
             <>
               {logo}

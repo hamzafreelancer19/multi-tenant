@@ -8,6 +8,7 @@ import {
 import { isAuthenticated, setDemoMode } from "../store/authStore";
 import BackgroundGlow from "../components/ui/BackgroundGlow";
 import GradientBackground from "../components/ui/GradientBackground";
+import BrandLogo from "../components/ui/BrandLogo";
 import { useTenant } from "../context/TenantContext";
 import "./LandingPage.css";
 
@@ -38,7 +39,7 @@ export default function LandingPage() {
       <nav className={`lp-navbar ${isMobileMenuOpen ? 'active' : ''}`}>
         <div className="lp-logo">
           {brandName === "Classora" ? (
-            <img src="/logo.png" alt="Classora Logo" style={{ height: '36px', objectFit: 'contain' }} />
+            <BrandLogo size="md" color="#ffffff" />
           ) : (
             <>
               <div className="logo-icon">
@@ -364,7 +365,7 @@ export default function LandingPage() {
           <div className="lp-footer-brand">
             <div className="lp-logo">
               {brandName === "Classora" ? (
-                <img src="/logo.png" alt="Classora Logo" style={{ height: '36px', objectFit: 'contain' }} />
+                <BrandLogo size="md" color="#ffffff" />
               ) : (
                 <>
                   <div className="logo-icon">
