@@ -466,6 +466,12 @@
 
 .lp-price-card .sazzad-content {
   padding: 48px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-price-card .sazzad-content button {
+  margin-top: auto;
 }
 
 .lp-price-highlight {
