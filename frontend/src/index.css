@@ -60,45 +60,26 @@
 }
 
 .layout .sidebar {
-  background: #c0c0c0; /* silver */
-  color: #1e293b; 
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--dashboard-secondary, #0B1121);
+  color: white; 
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .layout .sidebar .nav-link {
-  color: #475569;
-}
-
-.layout .sidebar .nav-link:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #0f172a;
-}
-
-.layout .sidebar .nav-link-active {
-  background: #3b82f6; /* Blue for active matching with silver */
-  color: white;
-}
-
-.layout .sidebar .logo-title {
-  -webkit-text-fill-color: #0f172a;
-  color: #0f172a;
-}
-
-.dark .layout .sidebar {
-  background: var(--glass-bg-dark);
-  color: white;
-}
-
-.dark .layout .sidebar .nav-link {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.dark .layout .sidebar .nav-link:hover {
+.layout .sidebar .nav-link:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.dark .layout .sidebar .logo-title {
+.layout .sidebar .nav-link-active {
+  background: var(--accent);
+  color: white;
+}
+
+.layout .sidebar .logo-title {
   -webkit-text-fill-color: white;
   color: white;
 }
