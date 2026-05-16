@@ -62,7 +62,7 @@ export default function Dashboard() {
       // API already returns newest first (ordered by -id), take first 5
       const all = Array.isArray(studentsRes.data) ? studentsRes.data : [];
       setRecentStudents(all.slice(0, 5));
-      
+
       const allEnroll = Array.isArray(enrollRes.data) ? enrollRes.data : [];
       setPendingEnrollments(allEnroll.filter(e => e.status === 'Pending').slice(0, 5));
 
@@ -235,9 +235,9 @@ export default function Dashboard() {
 
         {/* Subscription Alert for Admins */}
         {role === "admin" && schoolData && schoolData.plan_status !== "Active" && (
-          <div className="card sub-alert-mobile" style={{ 
-            flex: 1, 
-            margin: "0 24px", 
+          <div className="card sub-alert-mobile" style={{
+            flex: 1,
+            margin: "0 24px",
             background: "var(--accent-soft)",
             border: `1px dashed ${schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"}`,
             padding: "12px 20px",
@@ -247,9 +247,9 @@ export default function Dashboard() {
             gap: 16
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ 
-                width: 36, height: 36, 
-                borderRadius: "50%", 
+              <div style={{
+                width: 36, height: 36,
+                borderRadius: "50%",
                 background: schoolData.plan_status === "Pending" ? "var(--accent-soft)" : "var(--red-soft)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"
@@ -261,14 +261,14 @@ export default function Dashboard() {
                   {schoolData.plan_status === "Pending" ? "Plan Approval Pending" : "Subscription Required"}
                 </p>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  {schoolData.plan_status === "Pending" 
+                  {schoolData.plan_status === "Pending"
                     ? `Your ${schoolData.plan_type} plan request is being reviewed by the Super Admin.`
                     : "Your school currently has no active plan. Many features are locked."}
                 </p>
               </div>
             </div>
-            <button 
-              className="primary-btn" 
+            <button
+              className="primary-btn"
               style={{ padding: "8px 16px", fontSize: "0.8rem", background: schoolData.plan_status === "Pending" ? "var(--secondary)" : "var(--accent)" }}
               onClick={() => navigate("/subscription")}
             >
@@ -298,14 +298,14 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="stats-grid">
         {stats.map((s) => (
-          <PremiumCard 
-            key={s.label} 
+          <PremiumCard
+            key={s.label}
             className={`stat-card stat-${s.color}`}
             auroraColor={
               s.color === "orange" ? "#F15A24" :
-              s.color === "navy" ? "#0F172A" :
-              s.color === "green" ? "#22C55E" :
-              s.color === "red" ? "#EF4444" : "#F15A24"
+                s.color === "navy" ? "#0F172A" :
+                  s.color === "green" ? "#22C55E" :
+                    s.color === "red" ? "#EF4444" : "#F15A24"
             }
           >
             <div className="stat-icon">{s.icon}</div>
@@ -348,139 +348,140 @@ export default function Dashboard() {
                       <p className="activity-action">Father: {e.father_name} · {e.father_phone}</p>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button 
-                        className="icon-btn-sm" 
+                      <button
+                        className="icon-btn-sm"
+                      >
                         <Zap size={14} fill="currentColor" />
                       </button>
-                      <button 
-                        className="icon-btn-danger" 
-                        onClick={async () => {
-                          if (window.confirm(`Reject enrollment for ${e.student_name}?`)) {
-                            await api.post(`/enrollments/${e.id}/reject/`);
-                            fetchAll();
-                          }
-                        }}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
+                    <button
+                      className="icon-btn-danger"
+                      onClick={async () => {
+                        if (window.confirm(`Reject enrollment for ${e.student_name}?`)) {
+                          await api.post(`/enrollments/${e.id}/reject/`);
+                          fetchAll();
+                        }
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                ))
-              ) : (
-                <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-                  <ClipboardCheck size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                  <p style={{ fontSize: "0.85rem" }}>No pending admissions.</p>
-                  <p style={{ fontSize: "0.75rem" }}>New requests from the landing page will appear here.</p>
-                </div>
-              )}
-              {pendingEnrollments.length > 0 && (
-                <button 
-                  className="text-btn" 
-                  style={{ width: "100%", padding: "12px", borderTop: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--accent)" }}
-                  onClick={() => navigate("/enrollments")}
-                >
-                  View All Requests
-                </button>
-              )}
+                  </div>
+            ))
+            ) : (
+            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
+              <ClipboardCheck size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
+              <p style={{ fontSize: "0.85rem" }}>No pending admissions.</p>
+              <p style={{ fontSize: "0.75rem" }}>New requests from the landing page will appear here.</p>
             </div>
+              )}
+            {pendingEnrollments.length > 0 && (
+              <button
+                className="text-btn"
+                style={{ width: "100%", padding: "12px", borderTop: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--accent)" }}
+                onClick={() => navigate("/enrollments")}
+              >
+                View All Requests
+              </button>
+            )}
+          </div>
           </PremiumCard>
         )}
 
-        {/* Recent Activity - REALTIME */}
-        <PremiumCard className="card" auroraColor="var(--secondary)">
-          <div className="card-header">
-            <h3 className="card-title">
-              <TrendingUp size={18} /> Recent Activity
-            </h3>
-            <span style={{
-              fontSize: "0.7rem", background: "var(--accent)", color: "#fff",
-              borderRadius: 99, padding: "2px 8px"
-            }}>LIVE</span>
-          </div>
-          <div className="activity-list">
-            {activities.length > 0 ? (
-              activities.map((a) => (
-                <div key={a.id} className="activity-item">
-                  <div className="activity-avatar">{a.avatar || a.name?.[0] || "?"}</div>
+      {/* Recent Activity - REALTIME */}
+      <PremiumCard className="card" auroraColor="var(--secondary)">
+        <div className="card-header">
+          <h3 className="card-title">
+            <TrendingUp size={18} /> Recent Activity
+          </h3>
+          <span style={{
+            fontSize: "0.7rem", background: "var(--accent)", color: "#fff",
+            borderRadius: 99, padding: "2px 8px"
+          }}>LIVE</span>
+        </div>
+        <div className="activity-list">
+          {activities.length > 0 ? (
+            activities.map((a) => (
+              <div key={a.id} className="activity-item">
+                <div className="activity-avatar">{a.avatar || a.name?.[0] || "?"}</div>
+                <div className="activity-info">
+                  <p className="activity-name">{a.name}</p>
+                  <p className="activity-action">{a.action}</p>
+                </div>
+                <span className="activity-time">{timeAgo(a.created_at)}</span>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
+              <Bell size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
+              <p style={{ fontSize: "0.85rem" }}>No activity yet.</p>
+              <p style={{ fontSize: "0.75rem" }}>Add a student, teacher or mark attendance to see logs here.</p>
+            </div>
+          )}
+        </div>
+      </PremiumCard>
+
+      {/* Conditional Card: Recent Students (School Admin) OR Active Schools (Super Admin) */}
+      <PremiumCard className="card" auroraColor="var(--accent)">
+        <div className="card-header">
+          <h3 className="card-title">
+            {isSuperadmin ? <School size={18} /> : <Users size={18} />}
+            {isSuperadmin ? " Active Schools" : " Recent Students"}
+          </h3>
+        </div>
+        <div className={isSuperadmin ? "activity-list" : "top-students-list"}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: "center" }}>
+              <Loader2 className="spin" size={24} />
+            </div>
+          ) : isSuperadmin ? (
+            statsData.recent_schools?.length > 0 ? (
+              statsData.recent_schools.map((s) => (
+                <div key={s.id} className="activity-item">
+                  <div className="activity-avatar" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+                    {s.name?.[0].toUpperCase()}
+                  </div>
                   <div className="activity-info">
-                    <p className="activity-name">{a.name}</p>
-                    <p className="activity-action">{a.action}</p>
+                    <p className="activity-name">{s.name}</p>
+                    <p className="activity-action">School Code: {s.code}</p>
                   </div>
-                  <span className="activity-time">{timeAgo(a.created_at)}</span>
+                  <span className="activity-time">{timeAgo(s.created_at)}</span>
                 </div>
               ))
             ) : (
               <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-                <Bell size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <p style={{ fontSize: "0.85rem" }}>No activity yet.</p>
-                <p style={{ fontSize: "0.75rem" }}>Add a student, teacher or mark attendance to see logs here.</p>
+                <School size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <p style={{ fontSize: "0.85rem" }}>No schools registered yet.</p>
               </div>
-            )}
-          </div>
-        </PremiumCard>
-
-        {/* Conditional Card: Recent Students (School Admin) OR Active Schools (Super Admin) */}
-        <PremiumCard className="card" auroraColor="var(--accent)">
-          <div className="card-header">
-            <h3 className="card-title">
-              {isSuperadmin ? <School size={18} /> : <Users size={18} />}
-              {isSuperadmin ? " Active Schools" : " Recent Students"}
-            </h3>
-          </div>
-          <div className={isSuperadmin ? "activity-list" : "top-students-list"}>
-            {loading ? (
-              <div style={{ padding: 40, textAlign: "center" }}>
-                <Loader2 className="spin" size={24} />
-              </div>
-            ) : isSuperadmin ? (
-              statsData.recent_schools?.length > 0 ? (
-                statsData.recent_schools.map((s) => (
-                  <div key={s.id} className="activity-item">
-                    <div className="activity-avatar" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-                      {s.name?.[0].toUpperCase()}
-                    </div>
-                    <div className="activity-info">
-                      <p className="activity-name">{s.name}</p>
-                      <p className="activity-action">School Code: {s.code}</p>
-                    </div>
-                    <span className="activity-time">{timeAgo(s.created_at)}</span>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-                  <School size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                  <p style={{ fontSize: "0.85rem" }}>No schools registered yet.</p>
+            )
+          ) : recentStudents.length > 0 ? (
+            recentStudents.map((s, i) => (
+              <div key={s.id} className="top-student-item">
+                <div
+                  className={`rank-badge rank-${i + 1}`}
+                  style={{ background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 700, borderRadius: 8, padding: "4px 8px" }}
+                >
+                  {s.name?.[0]?.toUpperCase() || "S"}
                 </div>
-              )
-            ) : recentStudents.length > 0 ? (
-              recentStudents.map((s, i) => (
-                <div key={s.id} className="top-student-item">
-                  <div
-                    className={`rank-badge rank-${i + 1}`}
-                    style={{ background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 700, borderRadius: 8, padding: "4px 8px" }}
-                  >
-                    {s.name?.[0]?.toUpperCase() || "S"}
-                  </div>
-                  <div className="student-info">
-                    <p className="student-name">{s.name}</p>
-                    <p className="student-grade">{s.class_name} &nbsp;·&nbsp; {s.roll_no || "No Roll"}</p>
-                  </div>
-                  <span className={`badge-status ${(s.status || "Active") === "Inactive" ? "badge-inactive" : "badge-active"}`}>
-                    {s.status || "Active"}
-                  </span>
+                <div className="student-info">
+                  <p className="student-name">{s.name}</p>
+                  <p className="student-grade">{s.class_name} &nbsp;·&nbsp; {s.roll_no || "No Roll"}</p>
                 </div>
-              ))
-            ) : (
-              <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-                <Users size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <p style={{ fontSize: "0.85rem" }}>No students enrolled yet.</p>
-                <p style={{ fontSize: "0.75rem" }}>Go to Students page to add the first student.</p>
+                <span className={`badge-status ${(s.status || "Active") === "Inactive" ? "badge-inactive" : "badge-active"}`}>
+                  {s.status || "Active"}
+                </span>
               </div>
-            )}
-          </div>
-        </PremiumCard>
+            ))
+          ) : (
+            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
+              <Users size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
+              <p style={{ fontSize: "0.85rem" }}>No students enrolled yet.</p>
+              <p style={{ fontSize: "0.75rem" }}>Go to Students page to add the first student.</p>
+            </div>
+          )}
+        </div>
+      </PremiumCard>
 
-      </div>
     </div>
+    </div >
   );
 }
