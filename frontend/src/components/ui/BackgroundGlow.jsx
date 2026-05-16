@@ -21,7 +21,7 @@ export default function BackgroundGlow({
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: `radial-gradient(circle at center, #FFF991 0%, transparent 70%)`,
+              backgroundImage: `radial-gradient(circle at center, rgba(255, 140, 66, 0.15) 0%, transparent 70%)`,
               opacity: 0.6,
               mixBlendMode: "multiply",
             }}
@@ -34,7 +34,7 @@ export default function BackgroundGlow({
             className="absolute inset-x-0 inset-y-0 pointer-events-none"
             style={{
               background: "#ffffff",
-              backgroundImage: `radial-gradient(circle at top right, rgba(173, 109, 244, 0.5), transparent 70%)`,
+              backgroundImage: `radial-gradient(circle at top right, rgba(241, 90, 36, 0.08), transparent 70%)`,
               filter: "blur(120px)", // Increased blur for premium feel
               backgroundRepeat: "no-repeat",
               opacity: 0.8,
