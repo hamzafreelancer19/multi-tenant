@@ -440,8 +440,14 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
       {/* Global Toolbar */}
       <div className="fixed top-4 left-4 z-20 flex items-center gap-2">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-          {logo}
-          <h1 className="text-base font-bold text-slate-900">{effectiveBrandName}</h1>
+          {effectiveBrandName === "Classora" ? (
+            <img src="/logo.png" alt="Classora Logo" style={{ height: '32px', objectFit: 'contain' }} />
+          ) : (
+            <>
+              {logo}
+              <h1 className="text-base font-bold text-slate-900">{effectiveBrandName}</h1>
+            </>
+          )}
         </div>
       </div>
 

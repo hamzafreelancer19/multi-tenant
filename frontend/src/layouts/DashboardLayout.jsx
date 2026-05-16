@@ -189,17 +189,35 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            ) : (
-              <School size={24} />
-            )}
-          </div>
-          <div>
-            <div className="logo-title">{brandName}</div>
-            <div className="logo-sub">School Management</div>
-          </div>
+          {brandName === "Classora" ? (
+             <img 
+                src="/logo.png" 
+                alt="Classora" 
+                style={{ 
+                  height: '32px', 
+                  width: isCollapsed ? '32px' : '150px', 
+                  objectFit: isCollapsed ? 'cover' : 'contain',
+                  objectPosition: 'left',
+                  transition: 'width 0.3s ease'
+                }} 
+             />
+          ) : (
+            <>
+              <div className="logo-icon">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <School size={24} />
+                )}
+              </div>
+              {!isCollapsed && (
+                <div>
+                  <div className="logo-title">{brandName}</div>
+                  <div className="logo-sub">School Management</div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <nav className="sidebar-nav">
