@@ -115,7 +115,7 @@ export default function LandingPage() {
                 <div className="lp-mock-address-bar">edusees.com/dashboard</div>
               </div>
               <div className="lp-mock-body-img">
-                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Dashboard Mockup" />
+                <img src="/hero-mockup.png" alt="Dashboard Mockup" />
                 <div className="lp-mock-overlay"></div>
               </div>
             </div>
@@ -190,7 +190,7 @@ export default function LandingPage() {
       <section id="how-it-works">
         <BackgroundGlow variant="both" className="lp-section">
           <div className="lp-split">
-            <div className="lp-split-img" style={{ background: 'url("https://images.unsplash.com/photo-1524178232363-1fb2b075b655?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80") center/cover' }}>
+            <div className="lp-split-img" style={{ background: 'url("/classroom.png") center/cover' }}>
               {/* Image placeholder */}
             </div>
             <div className="lp-split-content">
