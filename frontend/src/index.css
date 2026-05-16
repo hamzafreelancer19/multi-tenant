@@ -905,7 +905,7 @@ select {
 .logo-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -917,7 +917,7 @@ select {
 .login-logo-icon {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -936,7 +936,7 @@ select {
 .login-brand {
   font-size: 18px;
   font-weight: 800;
-  background: linear-gradient(90deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1043,7 +1043,7 @@ select {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   color: white;
   font-weight: 700;
   font-size: 14px;
@@ -1378,7 +1378,7 @@ select {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1482,7 +1482,7 @@ select {
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   color: white;
   font-weight: 600;
   font-size: 13px;
@@ -1538,7 +1538,7 @@ select {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1569,8 +1569,8 @@ select {
 }
 
 .subject-purple {
-  background: var(--purple-soft);
-  color: var(--purple);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .subject-orange {
@@ -1808,7 +1808,7 @@ select {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
