@@ -31,7 +31,7 @@ export default function Profile() {
           }}>
             {user?.username?.[0]?.toUpperCase() || "U"}
           </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{user?.username}</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px', wordBreak: 'break-all' }}>{user?.username}</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{role}</p>
 
 
