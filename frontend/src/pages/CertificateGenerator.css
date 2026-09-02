@@ -1,0 +1,142 @@
+.cert-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+}
+
+.cert-card {
+  background: white;
+  border-radius: 20px;
+  padding: 16px;
+  border: 1px solid var(--bg-hover);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.cert-card:hover {
+  border-color: var(--accent);
+  background: #fff7f3;
+}
+
+.cert-active {
+  border-color: var(--accent);
+  background: #fff7f3;
+  box-shadow: 0 10px 20px rgba(241, 90, 36, 0.1);
+}
+
+.id-card-preview {
+  width: 320px;
+  height: 500px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+.cert-preview {
+  width: 800px;
+  min-height: 580px;
+  background: white;
+  padding: 40px;
+  position: relative;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.student-item {
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+  border: 1px solid var(--bg-hover);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.student-selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.sidebar-section {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid var(--border-glass);
+  margin-bottom: 24px;
+}
+
+.cert-field,
+.cert-select {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.cert-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.print-only {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .cert-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-area {
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .page {
+    padding: 0 !important;
+    background: white !important;
+  }
+  body {
+    background: white !important;
+  }
+  .bulk-print-container {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  .id-card-preview {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px !important;
+  }
+  .cert-preview {
+    break-inside: avoid;
+    page-break-after: always;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+  }
+}

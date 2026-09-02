@@ -58,7 +58,7 @@ class SchoolAdmin(admin.ModelAdmin):
                 'landing_hero_image_url', 'landing_center_image_url',
                 'landing_about_text', 'landing_contact_email', 'landing_contact_phone',
                 'landing_show_stats', 'landing_features', 'landing_testimonials', 
-                'landing_programs', 'landing_languages'
+                'landing_programs', 'landing_languages', 'landing_copy'
             )
         }),
         ('Infrastructure', {
@@ -69,9 +69,9 @@ class SchoolAdmin(admin.ModelAdmin):
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
-    list_display = ('student_name', 'school', 'status_styled', 'created_at')
-    list_filter = ('status', 'school')
-    search_fields = ('student_name', 'father_name', 'father_phone')
+    list_display = ('student_name', 'class_applying', 'school', 'father_name', 'father_phone', 'status_styled', 'created_at')
+    list_filter = ('status', 'school', 'class_applying', 'gender')
+    search_fields = ('student_name', 'father_name', 'father_phone', 'email', 'class_applying')
     actions = ['accept_enrollments', 'reject_enrollments']
 
     def status_styled(self, obj):

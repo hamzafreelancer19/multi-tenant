@@ -1,0 +1,54 @@
+.fee-collect {
+  border: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fee-wa {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.fee-wa:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.fee-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fee-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fee-history b,
+.fee-history strong {
+  display: block;
+  font-size: 14px;
+}
+
+.fee-history small {
+  color: var(--text-secondary);
+  font-weight: 600;
+}

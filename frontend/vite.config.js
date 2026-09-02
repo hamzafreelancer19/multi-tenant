@@ -17,12 +17,16 @@ export default defineConfig({
   },
   server: {
     host: true,
-    allowedHosts: ["provoking-tipper-tattling.ngrok-free.dev"],
+    allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: false,
-      }
-    }
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/media': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })

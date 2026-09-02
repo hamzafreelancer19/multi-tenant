@@ -1,0 +1,359 @@
+.sap-page {
+  background:
+    radial-gradient(900px 280px at 100% 0%, rgba(var(--slp-primary-rgb), 0.18), transparent 50%),
+    var(--slp-ivory);
+}
+
+.sap-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px clamp(16px, 5vw, 7%);
+  background: #08131c;
+  color: #f7f1e6;
+}
+
+.sap-saved-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  border: 1px solid rgba(232, 184, 109, 0.35);
+  background: rgba(232, 184, 109, 0.12);
+  color: #f7f1e6;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: 700 13px var(--font);
+}
+
+.sap-saved-nav:hover {
+  background: rgba(232, 184, 109, 0.22);
+}
+
+.sap-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 700 14px var(--font);
+  opacity: 0.85;
+  min-width: 0;
+}
+
+.sap-back:hover {
+  color: var(--slp-primary);
+  opacity: 1;
+}
+
+.sap-brand .slp-logo-copy small {
+  color: rgba(247, 241, 230, 0.62);
+}
+
+.sap-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(24px, 4vw, 48px);
+  align-items: start;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 48px) clamp(16px, 5vw, 7%) 64px;
+}
+
+.sap-aside h1 {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1.1;
+  margin: 0 0 12px;
+  color: #08131c;
+}
+
+.sap-aside > p {
+  color: var(--slp-muted);
+  line-height: 1.7;
+  margin: 0 0 24px;
+  max-width: 42ch;
+}
+
+.sap-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: grid;
+  gap: 14px;
+}
+
+.sap-steps li {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #fffaf3;
+  border: 1px solid rgba(232, 184, 109, 0.22);
+  border-radius: 16px;
+}
+
+.sap-steps strong {
+  font-size: 14px;
+}
+
+.sap-steps span {
+  color: var(--slp-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sap-contact {
+  display: grid;
+  gap: 10px;
+}
+
+.sap-contact a,
+.sap-contact p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #08131c;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.sap-contact svg {
+  color: #b8873b;
+  flex-shrink: 0;
+}
+
+.sap-form {
+  margin: 0;
+}
+
+.sap-success .slp-btn-light {
+  color: #08131c;
+  border-color: rgba(8, 19, 28, 0.18);
+}
+
+.sap-success {
+  background: #fffaf3;
+  border: 1px solid rgba(232, 184, 109, 0.28);
+  border-radius: 24px;
+  padding: clamp(28px, 5vw, 48px);
+  text-align: center;
+  box-shadow: 0 24px 50px rgba(8, 19, 28, 0.08);
+}
+
+.sap-success svg {
+  color: #047857;
+  margin-bottom: 12px;
+}
+
+.sap-success h2 {
+  font-family: var(--serif);
+  font-size: 36px;
+  margin: 0 0 8px;
+}
+
+.sap-success p {
+  color: var(--slp-muted);
+  margin: 0 0 24px;
+}
+
+.sap-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sap-success-note {
+  font-size: 14px;
+  color: #047857 !important;
+}
+
+.sap-saved-banner {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(232, 184, 109, 0.4);
+  background: #fff6e6;
+  color: #08131c;
+  border-radius: 12px;
+  cursor: pointer;
+  font: 600 14px var(--font);
+  line-height: 1.45;
+}
+
+.sap-saved-banner:hover {
+  background: #ffefd2;
+}
+
+.sap-saved {
+  background: #fffaf3;
+  border: 1px solid rgba(232, 184, 109, 0.28);
+  border-radius: 24px;
+  padding: clamp(20px, 4vw, 32px);
+  box-shadow: 0 24px 50px rgba(8, 19, 28, 0.08);
+}
+
+.sap-saved-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sap-saved-head h2 {
+  font-family: var(--serif);
+  font-size: 32px;
+  margin: 4px 0 0;
+}
+
+.sap-saved-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sap-saved-chip {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  width: 100%;
+  border: 1px solid rgba(8, 19, 28, 0.1);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.sap-saved-chip strong {
+  font-size: 14px;
+}
+
+.sap-saved-chip span {
+  color: var(--slp-muted);
+  font-size: 12px;
+}
+
+.sap-saved-chip.is-active {
+  border-color: rgba(232, 184, 109, 0.7);
+  background: #fff6e6;
+}
+
+.sap-saved-card {
+  background: #fff;
+  border: 1px solid rgba(8, 19, 28, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.sap-saved-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.sap-saved-card h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.sap-saved-card header p {
+  margin: 0;
+  color: var(--slp-muted);
+  font-size: 13px;
+}
+
+.sap-status {
+  flex-shrink: 0;
+  background: #fff7ed;
+  color: #c2410c;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sap-saved-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin: 0 0 18px;
+}
+
+.sap-saved-fields div {
+  display: grid;
+  gap: 4px;
+}
+
+.sap-saved-fields dt {
+  color: var(--slp-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sap-saved-fields dd {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.sap-saved-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .sap-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sap-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sap-form .slp-btn-lg,
+  .sap-success-actions .slp-btn-gold,
+  .sap-success-actions .slp-btn-light,
+  .sap-saved-head .slp-btn-gold,
+  .sap-saved-actions .slp-btn-gold,
+  .sap-saved-actions .slp-btn-light {
+    width: 100%;
+  }
+
+  .sap-success-actions,
+  .sap-saved-head,
+  .sap-saved-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sap-saved-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .sap-saved-nav {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .sap-back {
+    font-size: 13px;
+  }
+}

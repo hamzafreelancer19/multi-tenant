@@ -4,14 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
   ArrowRight, Mail, Gem, Lock, Eye, EyeOff,
-  ArrowLeft, X, AlertCircle, PartyPopper, Loader,
+  ArrowLeft, X, AlertCircle, PartyPopper,
   School
 } from "lucide-react";
 import { AnimatePresence, motion, useInView, Variants, Transition } from "framer-motion";
 import confetti from "canvas-confetti";
 
 // --- AUTH SERVICES ---
-import { loginUser, signupUser, getUserProfile, googleLoginAuth } from "@/auth/authService";
+import { loginUser, signupUser, getUserProfile, googleLoginAuth, getPlatformStatus } from "@/auth/authService";
 import { setToken, setRefreshToken, setUser } from "@/store/authStore";
 import BackgroundGlow from "./BackgroundGlow";
 import { useGoogleLogin } from '@react-oauth/google';
@@ -45,6 +45,17 @@ const Confetti = forwardRef<ConfettiRef, React.ComponentPropsWithRef<"canvas"> &
   return <canvas ref={canvasRef} {...rest} />
 })
 Confetti.displayName = "Confetti";
+
+function authErrorMessage(err: any, fallback: string) {
+  const data = err?.response?.data;
+  if (!data) return err?.message || fallback;
+  if (typeof data === "string") return data;
+  const pick = (value: any) => (Array.isArray(value) ? value[0] : value);
+  if (data.error) return String(pick(data.error));
+  if (data.detail) return String(pick(data.detail));
+  if (data.non_field_errors) return String(pick(data.non_field_errors));
+  return fallback;
+}
 
 // --- TEXT LOOP ANIMATION COMPONENT ---
 type TextLoopProps = { children: React.ReactNode[]; className?: string; interval?: number; transition?: Transition; variants?: Variants; onIndexChange?: (index: number) => void; stopOnEnd?: boolean; };
@@ -129,12 +140,11 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (<svg {...props} xm
 const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" className="w-6 h-6"> <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" /> </svg>);
 
 const modalSteps = [
-  { message: "Authenticating...", icon: <Loader className="w-12 h-12 text-blue-500 animate-spin" /> },
-  { message: "Setting up environment...", icon: <Loader className="w-12 h-12 text-blue-500 animate-spin" /> },
-  { message: "Finalizing session...", icon: <Loader className="w-12 h-12 text-blue-500 animate-spin" /> },
-  { message: "Process Complete!", icon: <PartyPopper className="w-12 h-12 text-green-500" /> }
+  { message: "Checking your login", hint: "Verifying username and password" },
+  { message: "Setting up your school", hint: "Loading classes, staff, and access" },
+  { message: "Finalizing session", hint: "Almost ready — opening your dashboard" },
 ];
-const TEXT_LOOP_INTERVAL = 1.5;
+const TEXT_LOOP_INTERVAL = 1.4;
 
 const DefaultLogo = () => (<div className="bg-primary text-primary-foreground rounded-md p-1.5"> <Gem className="h-4 w-4" /> </div>);
 
@@ -157,6 +167,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
   const [modalStatus, setModalStatus] = useState<'closed' | 'loading' | 'error' | 'success'>('closed');
   const [modalErrorMessage, setModalErrorMessage] = useState('');
   const [inlineError, setInlineError] = useState('');
+  const [loadStep, setLoadStep] = useState(0);
+  const [allowSignup, setAllowSignup] = useState(true);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [supportHint, setSupportHint] = useState("");
   const confettiRef = useRef<ConfettiRef>(null);
 
   const tenant = useTenant();
@@ -169,6 +183,22 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
   useEffect(() => {
     if (inlineError) setInlineError('');
   }, [usernameOrEmail, userEmail, password, schoolName]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPlatformStatus()
+      .then((d) => {
+        if (cancelled) return;
+        setAllowSignup(d.allow_signup !== false);
+        setMaintenanceMode(!!d.maintenance_mode);
+        const bits = [d.support_email, d.support_phone].filter(Boolean);
+        setSupportHint(bits.join(" · "));
+      })
+      .catch(() => {});
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("maintenance") === "1") setMaintenanceMode(true);
+    return () => { cancelled = true; };
+  }, []);
 
   const isIdentifierValid = usernameOrEmail.length >= 3;
   const isEmailValid = /\S+@\S+\.\S+/.test(userEmail);
@@ -208,7 +238,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           const isCurrentlyProduction = !window.location.hostname.includes('localhost');
           const isVercel = window.location.hostname.includes('vercel.app');
 
-          let targetPath = userProfile.role === 'superadmin' ? "/schools" : "/dashboard";
+          let targetPath = "/dashboard";
+          if (userProfile.role === "superadmin") targetPath = "/schools";
+          if (userProfile.role === "teacher") targetPath = "/teacher";
+          if (userProfile.role === "parent") targetPath = "/parent";
 
           if (userProfile.role === 'superadmin') {
             const currentHost = window.location.hostname;
@@ -235,11 +268,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
 
       } catch (err: any) {
         setModalStatus('closed');
-        let errorMsg = err.response?.data?.error || "Google login failed.";
-        if (typeof errorMsg === 'object') {
-          errorMsg = JSON.stringify(errorMsg);
-        }
-        setInlineError(errorMsg);
+        setInlineError(authErrorMessage(err, "Google login failed."));
       }
     },
     onError: () => {
@@ -251,6 +280,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
     e?.preventDefault();
     if (modalStatus !== 'closed') return;
 
+    if (mode === "signup" && !allowSignup) {
+      setInlineError("New school registrations are currently closed.");
+      return;
+    }
     if (mode === "signup" && password !== confirmPassword) {
       setModalErrorMessage("Passwords do not match!");
       setModalStatus('error');
@@ -272,7 +305,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           const isCurrentlyProduction = !window.location.hostname.includes('localhost');
           const isVercel = window.location.hostname.includes('vercel.app');
 
-          let targetPath = userProfile.role === 'superadmin' ? "/schools" : "/dashboard";
+          let targetPath = "/dashboard";
+          if (userProfile.role === "superadmin") targetPath = "/schools";
+          if (userProfile.role === "teacher") targetPath = "/teacher";
+          if (userProfile.role === "parent") targetPath = "/parent";
 
           if (userProfile.role === 'superadmin') {
             const currentHost = window.location.hostname;
@@ -305,12 +341,8 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
         }, TEXT_LOOP_INTERVAL * 3000);
       }
     } catch (err: any) {
-      let errorMsg = err.response?.data?.error || err.response?.data?.detail || err.message || "Authentication failed.";
-      if (typeof errorMsg === 'object') {
-        errorMsg = JSON.stringify(errorMsg);
-      }
-      setInlineError(errorMsg); 
-      // setModalStatus('error'); // Disabled modal as per "error login page pr hi show krwaya"
+      setModalStatus('closed');
+      setInlineError(authErrorMessage(err, "Authentication failed."));
     }
   };
 
@@ -364,57 +396,131 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
     else if (authStep === 'school') setTimeout(() => schoolInputRef.current?.focus(), 500);
   }, [authStep]);
 
+  useEffect(() => {
+    if (modalStatus !== "loading") {
+      setLoadStep(0);
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setLoadStep((step) => (step < modalSteps.length - 1 ? step + 1 : step));
+    }, TEXT_LOOP_INTERVAL * 1000);
+    return () => window.clearInterval(timer);
+  }, [modalStatus]);
+
+  const currentLoad = modalSteps[loadStep] || modalSteps[0];
+
   const Modal = () => (
     <AnimatePresence>
-      {modalStatus !== 'closed' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl p-10 w-full max-w-sm flex flex-col items-center gap-6 mx-4">
-            {(modalStatus === 'error' || (modalStatus === 'success' && mode === 'signup')) && <button onClick={() => mode === 'signup' && modalStatus === 'success' ? navigate("/login") : closeModal()} className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"><X className="w-5 h-5" /></button>}
-            {/* Modal Error State (Refined for Readability) */}
-            {modalStatus === 'error' && (
-              <div className="flex flex-col items-center gap-6 w-full py-4">
-                <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shadow-sm">
-                  <AlertCircle className="w-10 h-10 text-red-500" />
-                </div>
-                
-                <div className="flex flex-col gap-2 text-center">
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                    Authentication Failed
-                  </h3>
-                  <p className="text-[15px] font-medium text-slate-500 leading-relaxed max-w-[280px]">
-                    {modalErrorMessage}
-                  </p>
-                </div>
+      {modalStatus !== "closed" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/55 backdrop-blur-md px-4"
+        >
+          <motion.div
+            initial={{ scale: 0.94, opacity: 0, y: 12 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-[400px] min-h-[300px] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.28)] border border-white/80 overflow-hidden flex flex-col"
+          >
+            <div className="h-1.5 w-full bg-[#FFF0EB]">
+              {modalStatus === "loading" && (
+                <motion.div
+                  className="h-full rounded-r-full"
+                  style={{ background: "linear-gradient(90deg, #F15A24, #FF8C42)" }}
+                  initial={{ width: "12%" }}
+                  animate={{ width: `${((loadStep + 1) / modalSteps.length) * 100}%` }}
+                  transition={{ duration: 0.45 }}
+                />
+              )}
+              {modalStatus === "success" && <div className="h-full w-full bg-emerald-500" />}
+              {modalStatus === "error" && <div className="h-full w-full bg-red-500" />}
+            </div>
 
-                <div className="w-full flex justify-center pt-4">
-                  <button 
-                    onClick={closeModal}
-                    className="w-full bg-slate-900 text-white rounded-2xl py-4 font-bold text-sm hover:bg-slate-800 transition-all active:scale-[0.98] shadow-xl shadow-slate-200"
-                  >
-                    Try Again
-                  </button>
+            {(modalStatus === "error" || (modalStatus === "success" && mode === "signup")) && (
+              <button
+                onClick={() => (mode === "signup" && modalStatus === "success" ? navigate("/login") : closeModal())}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+
+            {modalStatus === "error" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 py-10 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-[22px] font-extrabold text-[#0F172A] tracking-tight">Could not sign in</h3>
+                  <p className="text-sm font-medium text-slate-500 leading-relaxed">{modalErrorMessage}</p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="w-full mt-2 bg-[#0F172A] text-white rounded-2xl py-3.5 font-bold text-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {modalStatus === "loading" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-10 text-center">
+                <div className="relative w-[72px] h-[72px]">
+                  <div className="absolute inset-0 rounded-full border-[3px] border-[#FFF0EB]" />
+                  <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-[#F15A24] border-r-[#FF8C42] animate-spin" />
+                  <div className="absolute inset-[10px] rounded-full bg-[#FFF0EB] flex items-center justify-center">
+                    <School className="w-6 h-6 text-[#F15A24]" />
+                  </div>
+                </div>
+                <div className="w-full min-h-[72px] flex flex-col items-center justify-center gap-1.5">
+                  <p className="text-[20px] font-extrabold text-[#0F172A] tracking-tight leading-tight">
+                    {currentLoad.message}
+                  </p>
+                  <p className="text-sm font-medium text-slate-500 leading-relaxed">{currentLoad.hint}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {modalSteps.map((_, i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: i === loadStep ? 22 : 8,
+                        background: i <= loadStep ? "#F15A24" : "#E2E8F0",
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             )}
-            {modalStatus === 'loading' &&
-              <TextLoop interval={TEXT_LOOP_INTERVAL} stopOnEnd={true}>
-                {modalSteps.slice(0, -1).map((step, i) =>
-                  <div key={i} className="flex flex-col items-center gap-5">
-                    {step.icon}
-                    <p className="text-lg font-semibold text-slate-800 tracking-tight">{step.message}</p>
-                  </div>
+
+            {modalStatus === "success" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 py-10 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                  <PartyPopper className="w-8 h-8 text-emerald-500" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-[22px] font-extrabold text-[#0F172A] tracking-tight">
+                    {mode === "signup" ? "Registration sent" : "You're in"}
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                    {mode === "signup"
+                      ? "Your school is pending approval. You can sign in after an admin reviews it."
+                      : "Opening your dashboard now."}
+                  </p>
+                </div>
+                {mode === "signup" && (
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="w-full mt-1 bg-[#F15A24] text-white rounded-2xl py-3.5 font-bold text-sm hover:bg-[#d94e1c] transition-all active:scale-[0.98]"
+                  >
+                    Go to login
+                  </button>
                 )}
-              </TextLoop>
-            }
-            {modalStatus === 'success' &&
-              <div className="flex flex-col items-center gap-5">
-                {modalSteps[modalSteps.length - 1].icon}
-                <p className="text-lg font-semibold text-slate-800 tracking-tight text-center">
-                  {mode === 'signup' ? "Registration Successful! Pending approval." : modalSteps[modalSteps.length - 1].message}
-                </p>
-                {mode === 'signup' && <GlassButton onClick={() => navigate("/login")} size="sm" className="mt-2">Go to Login</GlassButton>}
               </div>
-            }
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -454,8 +560,28 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
 
       <BackgroundGlow variant="both" className="min-h-[100vh]">
         <div className="flex w-full h-full min-h-[80vh] items-center justify-center relative">
-          
-        <fieldset disabled={modalStatus !== 'closed'} className="relative z-10 flex flex-col items-center gap-8 w-full max-w-[400px] mx-auto p-4">
+        {mode === "signup" && !allowSignup ? (
+          <div className="relative z-10 flex flex-col items-center gap-4 w-full max-w-[420px] mx-auto p-4 text-center">
+            <p className="font-serif font-light text-4xl sm:text-5xl tracking-tight text-slate-900">Signups closed</p>
+            <p className="text-sm font-medium text-slate-500">
+              New school registrations are currently closed.
+              {supportHint ? ` Contact ${supportHint}.` : ""}
+            </p>
+            <button type="button" onClick={() => navigate("/login")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline">
+              Already have an account? Sign In
+            </button>
+          </div>
+        ) : (
+        <fieldset disabled={modalStatus !== 'closed'} className="relative z-10 flex flex-col items-center gap-5 w-full max-w-[400px] mx-auto p-4">
+          {mode === "login" && maintenanceMode && (
+            <div className="w-full max-w-[340px] text-center rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <p className="text-sm font-bold text-amber-800">Platform is under maintenance</p>
+              <p className="text-xs font-medium text-amber-700 mt-1">
+                School accounts cannot sign in right now. Superadmin access stays open.
+                {supportHint ? ` ${supportHint}` : ""}
+              </p>
+            </div>
+          )}
           <AnimatePresence mode="wait">
             {authStep === "school" && <motion.div key="school-content" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center gap-4 text-center">
               <BlurFade delay={0}><p className="font-serif font-light text-4xl sm:text-5xl md:text-6xl tracking-tight text-slate-900 whitespace-nowrap uppercase">Register School</p></BlurFade>
@@ -489,7 +615,7 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
             </motion.div>}
           </AnimatePresence>
 
-          <form onSubmit={handleFinalSubmit} className="w-full max-w-[340px] space-y-10 " >
+          <form onSubmit={handleFinalSubmit} className="w-full max-w-[340px] space-y-4">
             {/* Inline Error (Text Only, No Box) */}
             <AnimatePresence>
               {inlineError && (
@@ -517,10 +643,14 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
                     <button type="button" onClick={handleProgressStep} className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-900 hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all"><ArrowRight className="w-5 h-5" /></button>
                   </div>
                 </div></div>
-                <BlurFade inView delay={0.3} className="mt-8 text-center"><button type="button" onClick={() => navigate("/login")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline mt-3" style={{ marginTop: "20px" }}>Already have an account? Sign In</button></BlurFade>
+                <div className="block w-full text-center" style={{ paddingTop: 48 }}>
+                  <button type="button" onClick={() => navigate("/login")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline">
+                    Already have an account? Sign In
+                  </button>
+                </div>
               </motion.div>}
 
-              {(authStep === 'usernameOrEmail' || authStep === 'email' || authStep === 'password') && <motion.div key="e-p-fields" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col gap-12 text-slate-900">
+              {(authStep === 'usernameOrEmail' || authStep === 'email' || authStep === 'password') && <motion.div key="e-p-fields" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col gap-4 text-slate-900">
                 
                 {/* Username / Identifier Step */}
                 {(authStep === 'usernameOrEmail') && (
@@ -575,13 +705,13 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
                   </motion.div>}
                 </AnimatePresence>
 
-                <div className="flex flex-col gap-4 mt-8">
-                  {(authStep === 'password' || authStep === 'email' || (authStep === 'usernameOrEmail' && mode === 'signup')) && <BlurFade inView delay={0.2}><button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full" style={{ marginTop: "2rem" }}><ArrowLeft className="w-3 h-3" /> Go back</button></BlurFade>}
-                  {authStep === 'usernameOrEmail' && mode === 'login' && <BlurFade inView delay={0.2} className="text-center pt-2"><button type="button" onClick={() => navigate("/signup")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline" style={{ marginTop: "2rem" }}>New School? Register here</button></BlurFade>}
+                <div className="flex flex-col gap-2 mt-3">
+                  {(authStep === 'password' || authStep === 'email' || (authStep === 'usernameOrEmail' && mode === 'signup')) && <BlurFade inView delay={0.2}><button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full"><ArrowLeft className="w-3 h-3" /> Go back</button></BlurFade>}
+                  {authStep === 'usernameOrEmail' && mode === 'login' && allowSignup && <BlurFade inView delay={0.2} className="text-center"><button type="button" onClick={() => navigate("/signup")} className="text-sm text-slate-600 hover:text-slate-900 font-medium underline-offset-4 hover:underline">New School? Register here</button></BlurFade>}
                 </div>
               </motion.div>}
 
-              {authStep === 'confirmPassword' && <motion.div key="c-p-field" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="w-full space-y-10">
+              {authStep === 'confirmPassword' && <motion.div key="c-p-field" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="w-full space-y-4">
                 <div className="relative w-full">
                   <AnimatePresence>
                     {confirmPassword.length > 0 && <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10"><label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Confirm Password</label></motion.div>}
@@ -597,11 +727,12 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
                     </div>
                   </div></div>
                 </div>
-                <button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full mt-6"><ArrowLeft className="w-3 h-3" /> Back to password</button>
+                <button type="button" onClick={handleGoBack} className="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-all uppercase tracking-tighter w-full mt-3"><ArrowLeft className="w-3 h-3" /> Back to password</button>
               </motion.div>}
             </AnimatePresence>
           </form>
         </fieldset>
+        )}
         </div>
       </BackgroundGlow>
     </div >

@@ -1,24 +1,45 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, X, Send, User, Sparkles, Loader2, BarChart3, Bell, Package, Wallet } from "lucide-react";
+import { Bot, X, Send, User, Sparkles, Loader2, BarChart3, Bell, Package, Wallet, Shield, School, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
-export default function AIAssistant({ toggleTheme }) {
+const SCHOOL_PATHS = ["/dashboard", "/students", "/teachers", "/fees", "/attendance", "/notices", "/exams", "/inventory", "/staff", "/transport", "/classes", "/enrollments", "/settings", "/assignments", "/library"];
+const PLATFORM_PATHS = ["/schools", "/users", "/security", "/database", "/platform-settings", "/dashboard"];
+
+function canNavigate(path, isPlatform) {
+  if (!path || typeof path !== "string" || !path.startsWith("/") || path.includes("://") || path.includes("..")) {
+    return false;
+  }
+  const roots = isPlatform ? PLATFORM_PATHS : SCHOOL_PATHS;
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
+export default function AIAssistant({ toggleTheme, variant = "school" }) {
   const navigate = useNavigate();
+  const isPlatform = variant === "platform";
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora AI Assistant hoon. Main aapke school admin panel ke data aur settings mein help kar sakta hoon.\n\nMujhse school stats, fees, ya attendance ke baare mein poochein!" }
+    isPlatform
+      ? { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora Platform Assistant hoon — schools, admins, approvals, aur platform settings mein help karta hoon. Campus students/fees yahan nahi chalte." }
+      : { id: 1, sender: "ai", text: "👋 Assalam-o-Alaikum! Main Classora AI Assistant hoon. Main aapke school admin panel ke data aur settings mein help kar sakta hoon.\n\nMujhse school stats, fees, ya attendance ke baare mein poochein!" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const suggestions = [
-    { label: "School Stats", icon: <BarChart3 size={14} />, prompt: "Show me school stats" },
-    { label: "Post Notice", icon: <Bell size={14} />, prompt: "Add a notice: Tomorrow is a holiday." },
-    { label: "Inventory", icon: <Package size={14} />, prompt: "What is the inventory status?" },
-    { label: "Fee Status", icon: <Wallet size={14} />, prompt: "Check fee status for Hamza" },
-  ];
+  const suggestions = isPlatform
+    ? [
+        { label: "Platform stats", icon: <BarChart3 size={14} />, prompt: "Show platform stats" },
+        { label: "Pending schools", icon: <School size={14} />, prompt: "Kaun se schools pending hain?" },
+        { label: "Security", icon: <Shield size={14} />, prompt: "Open the security page" },
+        { label: "Settings", icon: <Settings size={14} />, prompt: "Open platform settings" },
+      ]
+    : [
+        { label: "School Stats", icon: <BarChart3 size={14} />, prompt: "Show me school stats" },
+        { label: "Post Notice", icon: <Bell size={14} />, prompt: "Add a notice: Tomorrow is a holiday." },
+        { label: "Inventory", icon: <Package size={14} />, prompt: "What is the inventory status?" },
+        { label: "Fee Status", icon: <Wallet size={14} />, prompt: "Check fee status for Hamza" },
+      ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,8 +72,7 @@ export default function AIAssistant({ toggleTheme }) {
       // Handle UI Actions
       if (action) {
         if (action.action === "navigate" && action.path) {
-          // Security: Only allow internal dashboard paths
-          if (action.path.startsWith("/dashboard") || action.path.startsWith("/students") || action.path.startsWith("/teachers") || action.path.startsWith("/fees")) {
+          if (canNavigate(action.path, isPlatform)) {
             setTimeout(() => {
               navigate(action.path);
             }, 1000);
@@ -134,10 +154,12 @@ export default function AIAssistant({ toggleTheme }) {
                 <Bot size={24} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Classora AI</h3>
+                <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
+                  {isPlatform ? "Platform AI" : "Classora AI"}
+                </h3>
                 <div style={{ fontSize: "0.75rem", opacity: 0.9, display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                  <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80" }} /> 
-                  Online & Ready to Help
+                  <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80" }} />
+                  {isPlatform ? "Superadmin · platform ops" : "Online & Ready to Help"}
                 </div>
               </div>
             </div>

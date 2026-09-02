@@ -1,0 +1,100 @@
+.ps-page {
+  max-width: 760px;
+  gap: 18px;
+}
+
+.ps-empty {
+  padding: 80px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ps-card {
+  padding: 22px 24px 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.ps-card h3 {
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.ps-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.ps-toggles {
+  display: grid;
+  gap: 10px;
+}
+
+.ps-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7f8fb;
+  cursor: pointer;
+}
+
+.dark .ps-toggle {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.ps-toggle.is-on {
+  background: #ecfdf5;
+}
+
+.ps-toggle.is-warn {
+  background: #fff7ed;
+}
+
+.ps-toggle.is-saving {
+  opacity: 0.75;
+}
+
+.ps-toggle b {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.ps-toggle input {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+}
+
+.ps-toggle span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ps-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ps-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+
+.ps-foot small {
+  color: var(--text-muted);
+  font-weight: 700;
+}

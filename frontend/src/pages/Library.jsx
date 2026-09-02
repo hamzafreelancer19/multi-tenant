@@ -1,68 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Library as LibraryIcon, 
-  Plus, 
-  Search, 
-  X, 
-  Loader2, 
-  Trash2, 
-  Edit, 
-  Book as BookIcon,
-  User as UserIcon,
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  Hash,
-  ArrowRightLeft,
-  Filter
-} from 'lucide-react';
-import { getBooks, createBook, updateBook, deleteBook, getIssues, createIssue, updateIssue } from '../api/libraryApi';
-import { getStudents } from '../api/studentsApi';
+import { useEffect, useMemo, useState } from "react";
+import {
+  BookOpen,
+  Edit,
+  Eye,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  getBooks,
+  createBook,
+  updateBook,
+  deleteBook,
+  getIssues,
+  createIssue,
+  updateIssue,
+  deleteIssue,
+} from "../api/libraryApi";
+import { getStudents } from "../api/studentsApi";
+import { useTenant } from "../context/TenantContext";
+import { getRole, getUser } from "../store/authStore";
+import AppModal from "../components/AppModal";
+import "./Dashboard.css";
+import "./Students.css";
+import "./Library.css";
 
-const Library = () => {
-  const [activeTab, setActiveTab] = useState("books");
+const CATEGORIES = ["Textbook", "Story", "Reference", "Science", "Islamiat", "Fiction", "Magazine", "Other"];
+const CONDITIONS = ["New", "Good", "Fair", "Damaged"];
+const LANGUAGES = ["English", "Urdu", "Arabic", "Bilingual"];
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(iso, days) {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const d = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function contactPhone(s) {
+  return s?.father_phone || s?.phone || s?.mother_phone || "";
+}
+
+function issueStatus(item) {
+  if (item.due_status) return item.due_status;
+  if (item.status === "Returned" || item.status === "Lost") return item.status;
+  if (item.due_date && item.due_date < todayISO()) return "Overdue";
+  return "Issued";
+}
+
+function badgeClass(st) {
+  if (st === "Overdue" || st === "Lost") return "is-off lib-overdue";
+  if (st === "Issued") return "is-warn";
+  return "is-on";
+}
+
+function apiError(err) {
+  const data = err.response?.data;
+  if (!data) return "Could not save.";
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  const first = Object.values(data).flat()?.[0];
+  return first || "Could not save.";
+}
+
+const EMPTY_BOOK = {
+  title: "",
+  author: "",
+  isbn: "",
+  publisher: "",
+  category: "Textbook",
+  language: "English",
+  shelf_no: "",
+  condition: "Good",
+  quantity: "1",
+  notes: "",
+};
+
+const EMPTY_ISSUE = {
+  book: "",
+  student: "",
+  issue_date: todayISO(),
+  due_date: addDays(todayISO(), 14),
+  remarks: "",
+};
+
+export default function Library() {
+  const tenant = useTenant();
+  const role = getRole();
+  const user = getUser();
+  const canManage = role === "admin" || role === "teacher";
+  const [viewMode, setViewMode] = useState("books");
   const [books, setBooks] = useState([]);
   const [issues, setIssues] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [showIssueModal, setShowIssueModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  
-  const [bookData, setBookData] = useState({ title: "", author: "", isbn: "", quantity: 1, available_quantity: 1, category: "" });
-  const [issueData, setIssueData] = useState({ book: "", student: "", due_date: "", status: "Issued" });
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [issueTab, setIssueTab] = useState("All");
+  const [showBook, setShowBook] = useState(false);
+  const [showIssue, setShowIssue] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [viewing, setViewing] = useState(null);
+  const [returning, setReturning] = useState(null);
+  const [bookForm, setBookForm] = useState(EMPTY_BOOK);
+  const [issueForm, setIssueForm] = useState(EMPTY_ISSUE);
+  const [returnForm, setReturnForm] = useState({ return_date: todayISO(), fine_amount: "0", remarks: "", status: "Returned" });
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  const fetchData = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const [bRes, iRes, sRes] = await Promise.all([getBooks(), getIssues(), getStudents()]);
+      const [bRes, iRes, sRes] = await Promise.all([
+        getBooks().catch(() => ({ data: [] })),
+        getIssues().catch(() => ({ data: [] })),
+        getStudents().catch(() => ({ data: [] })),
+      ]);
       setBooks(Array.isArray(bRes.data) ? bRes.data : []);
       setIssues(Array.isArray(iRes.data) ? iRes.data : []);
       setStudents(Array.isArray(sRes.data) ? sRes.data : []);
     } catch (err) {
       console.error(err);
+      setBooks([]);
+      setIssues([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const myStudent = useMemo(() => {
+    return students.find((s) => {
+      const email = (s.email || "").toLowerCase();
+      return email && (email === (user?.email || "").toLowerCase() || email === (user?.username || "").toLowerCase());
+    });
+  }, [students, user]);
+
+  const setBookField = (key) => (e) => setBookForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const setIssueField = (key) => (e) => setIssueForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const openAddBook = () => {
+    setBookForm(EMPTY_BOOK);
+    setEditingId(null);
+    setShowBook(true);
+  };
+
+  const openEditBook = (book) => {
+    setBookForm({
+      title: book.title || "",
+      author: book.author || "",
+      isbn: book.isbn || "",
+      publisher: book.publisher || "",
+      category: book.category || "Textbook",
+      language: book.language || "English",
+      shelf_no: book.shelf_no || "",
+      condition: book.condition || "Good",
+      quantity: String(book.quantity || 1),
+      notes: book.notes || "",
+    });
+    setEditingId(book.id);
+    setViewing(null);
+    setShowBook(true);
+  };
+
+  const openIssue = (book = null) => {
+    setIssueForm({
+      ...EMPTY_ISSUE,
+      book: book ? String(book.id) : "",
+      issue_date: todayISO(),
+      due_date: addDays(todayISO(), 14),
+    });
+    setShowIssue(true);
+  };
+
   const handleBookSave = async (e) => {
     e.preventDefault();
+    if (!bookForm.title.trim() || !bookForm.author.trim()) return alert("Title and author are required");
     setSaving(true);
     try {
-      if (editingId) await updateBook(editingId, bookData);
-      else await createBook(bookData);
-      setShowBookModal(false);
-      fetchData();
+      const payload = {
+        ...bookForm,
+        quantity: Number(bookForm.quantity) || 1,
+      };
+      if (!editingId) payload.available_quantity = payload.quantity;
+      if (editingId) await updateBook(editingId, payload);
+      else await createBook(payload);
+      setShowBook(false);
+      await fetchAll();
     } catch (err) {
-      alert("Error saving book");
+      alert(apiError(err));
     } finally {
       setSaving(false);
     }
@@ -70,183 +211,552 @@ const Library = () => {
 
   const handleIssueSave = async (e) => {
     e.preventDefault();
+    if (!issueForm.book || !issueForm.student) return alert("Book and student are required");
     setSaving(true);
     try {
-      await createIssue(issueData);
-      setShowIssueModal(false);
-      fetchData();
+      await createIssue({
+        ...issueForm,
+        book: Number(issueForm.book),
+        student: Number(issueForm.student),
+      });
+      setShowIssue(false);
+      setViewMode("issues");
+      await fetchAll();
     } catch (err) {
-      alert("Error issuing book");
+      alert(apiError(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const filteredBooks = books.filter(b => b.title.toLowerCase().includes(search.toLowerCase()) || b.author.toLowerCase().includes(search.toLowerCase()));
+  const handleDeleteBook = async (id, title) => {
+    if (!window.confirm(`Delete "${title}" from the catalog?`)) return;
+    try {
+      await deleteBook(id);
+      setViewing(null);
+      await fetchAll();
+    } catch {
+      alert("Could not delete book. Return issued copies first.");
+    }
+  };
+
+  const openReturn = (item) => {
+    const overdueDays = item.due_date && item.due_date < todayISO()
+      ? Math.max(1, Math.round((new Date(`${todayISO()}T12:00:00`) - new Date(`${item.due_date}T12:00:00`)) / 86400000))
+      : 0;
+    setReturnForm({
+      return_date: todayISO(),
+      fine_amount: String(item.fine_amount > 0 ? item.fine_amount : overdueDays * 10),
+      remarks: item.remarks || "",
+      status: "Returned",
+    });
+    setReturning(item);
+  };
+
+  const handleReturn = async (e) => {
+    e.preventDefault();
+    if (!returning) return;
+    setSaving(true);
+    try {
+      await updateIssue(returning.id, {
+        status: returnForm.status,
+        return_date: returnForm.status === "Returned" ? returnForm.return_date : null,
+        fine_amount: Number(returnForm.fine_amount) || 0,
+        remarks: returnForm.remarks,
+      });
+      setReturning(null);
+      await fetchAll();
+    } catch (err) {
+      alert(apiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteIssue = async (id) => {
+    if (!window.confirm("Delete this issue record?")) return;
+    try {
+      await deleteIssue(id);
+      await fetchAll();
+    } catch {
+      alert("Could not delete issue.");
+    }
+  };
+
+  const sendReminder = (item) => {
+    const student = students.find((s) => s.id === item.student);
+    const phone = contactPhone(student);
+    if (!phone) return alert("No phone on this student record.");
+    const msg = encodeURIComponent(
+      `Library reminder\n\n${item.book_title} is ${issueStatus(item) === "Overdue" ? "overdue" : "issued"} to ${item.student_name}.\nDue: ${formatDate(item.due_date)}\n\nPlease return it to the school library.\n\n${tenant.schoolName || "School"}`
+    );
+    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, "")}?text=${msg}`, "_blank");
+  };
+
+  const visibleIssues = issues.filter((item) => {
+    if (role === "student" && myStudent) return item.student === myStudent.id;
+    return true;
+  });
+
+  const filteredBooks = books.filter((b) => {
+    const q = search.trim().toLowerCase();
+    const blob = [b.title, b.author, b.isbn, b.accession_no, b.publisher, b.category, b.shelf_no].join(" ").toLowerCase();
+    const matchSearch = !q || blob.includes(q);
+    const matchCat = category === "All" || b.category === category;
+    return matchSearch && matchCat;
+  });
+
+  const filteredIssues = visibleIssues.filter((item) => {
+    const q = search.trim().toLowerCase();
+    const blob = [item.book_title, item.student_name, item.student_class, item.student_roll].join(" ").toLowerCase();
+    const st = issueStatus(item);
+    const matchSearch = !q || blob.toLowerCase().includes(q);
+    const matchTab = issueTab === "All" || st === issueTab;
+    return matchSearch && matchTab;
+  });
+
+  const stats = {
+    titles: books.length,
+    available: books.reduce((sum, b) => sum + Number(b.available_quantity || 0), 0),
+    issued: visibleIssues.filter((i) => issueStatus(i) === "Issued" || issueStatus(i) === "Overdue").length,
+    overdue: visibleIssues.filter((i) => issueStatus(i) === "Overdue").length,
+  };
+
+  const availableBooks = books.filter((b) => Number(b.available_quantity) > 0);
+  const activeStudents = students.filter((s) => (s.status || "Active") === "Active");
 
   return (
-    <div className="page">
-      <style>{`
-        .lib-card { background: white; border-radius: 28px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.01); transition: 0.3s; }
-        .lib-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
-        .tab-btn { padding: 12px 24px; border-radius: 14px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        .tab-active { background: var(--accent); color: white; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2); }
-        .tab-inactive { background: white; color: var(--text-secondary); }
-        .btn-premium { background: var(--gradient-primary) !important; color: white !important; font-weight: 800 !important; padding: 12px 24px !important; border-radius: 14px !important; border: none !important; cursor: pointer !important; display: flex; align-items: center; gap: 8px; }
-      `}</style>
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, flexWrap: 'wrap', gap: 20 }}>
+    <div className="page dash-page st-page">
+      <header className="dash-hero">
         <div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div style={{ background: 'var(--accent)', padding: 6, borderRadius: 8, color: 'white' }}><LibraryIcon size={18} /></div>
-              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px' }}>Resource Management</span>
-           </div>
-           <h1 style={{ fontSize: 36, fontWeight: 900, color: 'var(--text-primary)' }}>School Library</h1>
-           <p style={{ fontSize: 16, color: 'var(--text-secondary)', fontWeight: 600 }}>Manage inventory and student book circulation.</p>
+          <p className="dash-kicker">Resources</p>
+          <h1>Library</h1>
+          <p>Catalog and circulation for {tenant.schoolName || "your school"}.</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-           <button onClick={() => { setEditingId(null); setBookData({ title: "", author: "", isbn: "", quantity: 1, available_quantity: 1, category: "" }); setShowBookModal(true); }} className="btn-premium"><Plus size={20} /> Add Book</button>
-           <button onClick={() => setShowIssueModal(true)} className="btn-premium" style={{ background: 'var(--text-primary) !important' }}><ArrowRightLeft size={20} /> Issue Book</button>
+        {canManage && (
+          <div className="dash-hero-meta">
+            <button type="button" className="st-ghost" onClick={() => openIssue()}>Issue book</button>
+            <button type="button" className="st-add-btn" onClick={openAddBook}>
+              <Plus size={16} /> Add book
+            </button>
+          </div>
+        )}
+      </header>
+
+      <div className="dash-stats">
+        <button type="button" className="dash-stat dash-stat-orange" onClick={() => setViewMode("books")}>
+          <span>Titles</span>
+          <strong>{loading ? "—" : stats.titles}</strong>
+          <small>in catalog</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-green" onClick={() => setViewMode("books")}>
+          <span>Available</span>
+          <strong>{loading ? "—" : stats.available}</strong>
+          <small>copies</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-navy" onClick={() => { setViewMode("issues"); setIssueTab("Issued"); }}>
+          <span>Issued</span>
+          <strong>{loading ? "—" : stats.issued}</strong>
+          <small>out now</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-gold" onClick={() => { setViewMode("issues"); setIssueTab("Overdue"); }}>
+          <span>Overdue</span>
+          <strong>{loading ? "—" : stats.overdue}</strong>
+          <small>need return</small>
+        </button>
+      </div>
+
+      <div className="st-toolbar">
+        <div className="st-search">
+          <Search size={16} />
+          <input
+            placeholder={viewMode === "issues" ? "Search student, book, roll…" : "Search title, author, ISBN, shelf…"}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} aria-label="Clear search">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <div className="st-filters">
+          <button type="button" className={viewMode === "books" ? "is-on" : ""} onClick={() => setViewMode("books")}>Catalog</button>
+          <button type="button" className={viewMode === "issues" ? "is-on" : ""} onClick={() => setViewMode("issues")}>Issued</button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 32 }}>
-         <button onClick={() => setActiveTab("books")} className={`tab-btn ${activeTab === "books" ? "tab-active" : "tab-inactive"}`}>Books Inventory</button>
-         <button onClick={() => setActiveTab("issues")} className={`tab-btn ${activeTab === "issues" ? "tab-active" : "tab-inactive"}`}>Issued History</button>
-      </div>
-
-      {activeTab === "books" ? (
-        <>
-          <div style={{ position: 'relative', maxWidth: 400, marginBottom: 32 }}>
-            <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={20} />
-            <input type="text" placeholder="Search books by title or author..." style={{ width: '100%', padding: '12px 12px 12px 48px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, fontWeight: 700, outline: 'none' }} value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
-            {loading ? Array(6).fill(0).map((_,i) => <div key={i} className="lib-card" style={{ height: 180, opacity: 0.5 }} />) : 
-             filteredBooks.map(book => (
-               <div key={book.id} className="lib-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                     <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', background: '#f5f3ff', padding: '4px 10px', borderRadius: 8, textTransform: 'uppercase' }}>{book.category || "General"}</span>
-                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => { setEditingId(book.id); setBookData(book); setShowBookModal(true); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Edit size={16} /></button>
-                        <button style={{ background: 'none', border: 'none', color: '#fee2e2', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                     </div>
-                  </div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 4 }}>{book.title}</h3>
-                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 16 }}>{book.author}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: '1px solid var(--bg-hover)' }}>
-                     <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' }}>Available: <span style={{ color: book.available_quantity > 0 ? '#10b981' : '#ef4444' }}>{book.available_quantity}/{book.quantity}</span></div>
-                     <BookIcon size={18} color="#e2e8f0" />
-                  </div>
-               </div>
-             ))
-            }
-          </div>
-        </>
+      {viewMode === "books" ? (
+        <div className="st-classes">
+          <button type="button" className={category === "All" ? "is-on" : ""} onClick={() => setCategory("All")}>All</button>
+          {CATEGORIES.map((c) => (
+            <button key={c} type="button" className={category === c ? "is-on" : ""} onClick={() => setCategory(c)}>{c}</button>
+          ))}
+        </div>
       ) : (
-        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: 'var(--bg-base)' }}>
-                 <tr>
-                    <th style={{ padding: 20, textAlign: 'left', fontSize: 12, fontWeight: 900, color: 'var(--text-secondary)' }}>BOOK</th>
-                    <th style={{ padding: 20, textAlign: 'left', fontSize: 12, fontWeight: 900, color: 'var(--text-secondary)' }}>STUDENT</th>
-                    <th style={{ padding: 20, textAlign: 'left', fontSize: 12, fontWeight: 900, color: 'var(--text-secondary)' }}>DUE DATE</th>
-                    <th style={{ padding: 20, textAlign: 'left', fontSize: 12, fontWeight: 900, color: 'var(--text-secondary)' }}>STATUS</th>
-                    <th style={{ padding: 20, textAlign: 'center', fontSize: 12, fontWeight: 900, color: 'var(--text-secondary)' }}>ACTION</th>
-                 </tr>
+        <div className="st-classes">
+          {["All", "Issued", "Overdue", "Returned", "Lost"].map((f) => (
+            <button key={f} type="button" className={issueTab === f ? "is-on" : ""} onClick={() => setIssueTab(f)}>{f}</button>
+          ))}
+        </div>
+      )}
+
+      <section className="dash-panel st-panel">
+        {loading ? (
+          <div className="st-empty">
+            <Loader2 className="spin" size={32} />
+            <p>Loading library…</p>
+          </div>
+        ) : viewMode === "books" ? (
+          filteredBooks.length === 0 ? (
+            <div className="st-empty">
+              <BookOpen size={36} />
+              <p>{books.length ? "No books match these filters." : "No books yet. Add the first title."}</p>
+              {canManage && !books.length && <button type="button" onClick={openAddBook}>Add book</button>}
+            </div>
+          ) : (
+            <div className="st-table-wrap">
+              <table className="st-table">
+                <thead>
+                  <tr>
+                    <th>Book</th>
+                    <th>Accession</th>
+                    <th>Shelf</th>
+                    <th>Copies</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBooks.map((book) => {
+                    const avail = Number(book.available_quantity || 0);
+                    return (
+                      <tr key={book.id}>
+                        <td>
+                          <button type="button" className="st-person" onClick={() => setViewing(book)}>
+                            <span>{(book.title || "B").slice(0, 1)}</span>
+                            <div>
+                              <b>{book.title}</b>
+                              <small>{book.author}{book.category ? ` · ${book.category}` : ""}</small>
+                            </div>
+                          </button>
+                        </td>
+                        <td className="st-mono">{book.accession_no || "—"}</td>
+                        <td>{book.shelf_no || "—"}</td>
+                        <td className="st-mono">{avail}/{book.quantity || 0}</td>
+                        <td>
+                          <span className={`st-badge ${avail > 0 ? "is-on" : "is-off"}`}>{avail > 0 ? "Available" : "All out"}</span>
+                        </td>
+                        <td>
+                          <div className="st-actions">
+                            <button type="button" title="View" onClick={() => setViewing(book)}><Eye size={15} /></button>
+                            {canManage && (
+                              <>
+                                <button type="button" title="Issue" disabled={avail < 1} onClick={() => openIssue(book)}><Plus size={15} /></button>
+                                <button type="button" title="Edit" onClick={() => openEditBook(book)}><Edit size={15} /></button>
+                                <button type="button" className="is-danger" title="Delete" onClick={() => handleDeleteBook(book.id, book.title)}>
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : filteredIssues.length === 0 ? (
+          <div className="st-empty">
+            <BookOpen size={36} />
+            <p>{visibleIssues.length ? "No issues match these filters." : "No books issued yet."}</p>
+            {canManage && !visibleIssues.length && <button type="button" onClick={() => openIssue()}>Issue book</button>}
+          </div>
+        ) : (
+          <div className="st-table-wrap">
+            <table className="st-table">
+              <thead>
+                <tr>
+                  <th>Book</th>
+                  <th>Student</th>
+                  <th>Due</th>
+                  <th>Fine</th>
+                  <th>Status</th>
+                  <th />
+                </tr>
               </thead>
               <tbody>
-                 {issues.map(item => (
-                   <tr key={item.id} style={{ borderBottom: '1px solid var(--bg-hover)' }}>
-                      <td style={{ padding: 20, fontWeight: 800, color: 'var(--text-primary)' }}>{item.book_title}</td>
-                      <td style={{ padding: 20, fontWeight: 800, color: 'var(--text-primary)' }}>{item.student_name}</td>
-                      <td style={{ padding: 20, fontWeight: 800, color: '#ef4444' }}>{item.due_date}</td>
-                      <td style={{ padding: 20 }}>
-                         <span style={{ padding: '4px 10px', background: item.status === 'Issued' ? '#fffbeb' : '#ecfdf5', color: item.status === 'Issued' ? '#f59e0b' : '#10b981', fontSize: 11, fontWeight: 900, borderRadius: 8 }}>{item.status}</span>
+                {filteredIssues.map((item) => {
+                  const st = issueStatus(item);
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div className="st-cell-stack">
+                          <b>{item.book_title}</b>
+                          <small>{item.book_author || "—"}</small>
+                        </div>
                       </td>
-                      <td style={{ padding: 20, textAlign: 'center' }}>
-                         {item.status === 'Issued' && <button className="btn-premium" style={{ padding: '8px 16px !important', fontSize: 11 }}>Mark Returned</button>}
+                      <td>
+                        <div className="st-cell-stack">
+                          <b>{item.student_name}</b>
+                          <small>{item.student_class || "—"}{item.student_roll ? ` · ${item.student_roll}` : ""}</small>
+                        </div>
                       </td>
-                   </tr>
-                 ))}
+                      <td>
+                        <div className="st-cell-stack">
+                          <b>{formatDate(item.due_date)}</b>
+                          <small>Issued {formatDate(item.issue_date)}</small>
+                        </div>
+                      </td>
+                      <td className="st-mono">Rs {Number(item.fine_amount || 0)}</td>
+                      <td><span className={`st-badge ${badgeClass(st)}`}>{st}</span></td>
+                      <td>
+                        <div className="st-actions">
+                          {canManage && (st === "Issued" || st === "Overdue") && (
+                            <>
+                              <button type="button" title="Remind" onClick={() => sendReminder(item)}><MessageCircle size={15} /></button>
+                              <button type="button" title="Return" onClick={() => openReturn(item)}><Eye size={15} /></button>
+                            </>
+                          )}
+                          {canManage && (
+                            <button type="button" className="is-danger" title="Delete" onClick={() => handleDeleteIssue(item.id)}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
-           </table>
-        </div>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <p className="st-count">
+        {viewMode === "books"
+          ? `Showing ${filteredBooks.length} of ${books.length} titles`
+          : `Showing ${filteredIssues.length} of ${visibleIssues.length} issues`}
+      </p>
+
+      {showBook && (
+        <AppModal onClose={() => setShowBook(false)}>
+          <form className="st-modal" onSubmit={handleBookSave}>
+            <header>
+              <div>
+                <p>Catalog</p>
+                <h2>{editingId ? "Edit book" : "Add book"}</h2>
+              </div>
+              <button type="button" onClick={() => setShowBook(false)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <p className="st-section">Details</p>
+              <div className="st-grid">
+                <label className="st-span-2">
+                  Title *
+                  <input required value={bookForm.title} onChange={setBookField("title")} placeholder="e.g. English Reader 5" />
+                </label>
+                <label>
+                  Author *
+                  <input required value={bookForm.author} onChange={setBookField("author")} />
+                </label>
+                <label>
+                  Category
+                  <select value={bookForm.category} onChange={setBookField("category")}>
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label>
+                  ISBN
+                  <input value={bookForm.isbn} onChange={setBookField("isbn")} placeholder="Optional" />
+                </label>
+                <label>
+                  Publisher
+                  <input value={bookForm.publisher} onChange={setBookField("publisher")} />
+                </label>
+                <label>
+                  Language
+                  <select value={bookForm.language} onChange={setBookField("language")}>
+                    {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Shelf
+                  <input value={bookForm.shelf_no} onChange={setBookField("shelf_no")} placeholder="e.g. A-12" />
+                </label>
+                <label>
+                  Copies
+                  <input type="number" min="1" value={bookForm.quantity} onChange={setBookField("quantity")} />
+                </label>
+                <label>
+                  Condition
+                  <select value={bookForm.condition} onChange={setBookField("condition")}>
+                    {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label className="st-span-2">
+                  Notes
+                  <input value={bookForm.notes} onChange={setBookField("notes")} placeholder="Optional" />
+                </label>
+              </div>
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setShowBook(false)}>Cancel</button>
+              <button type="submit" className="st-add-btn" disabled={saving}>
+                {saving ? <Loader2 size={16} className="spin" /> : editingId ? "Save changes" : "Add book"}
+              </button>
+            </footer>
+          </form>
+        </AppModal>
       )}
 
-      {/* Book Modal */}
-      {showBookModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-           <div style={{ background: 'var(--bg-card)', backdropFilter: 'var(--glass-blur)', border: '1px solid var(--border-glass)', width: '100%', maxWidth: 500, borderRadius: 32, overflow: 'hidden' }}>
-              <div style={{ background: 'var(--bg-surface)', padding: 32, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>
-                 <h2 style={{ fontSize: 24, fontWeight: 900 }}>{editingId ? "Edit Book" : "Add New Book"}</h2>
+      {showIssue && (
+        <AppModal onClose={() => setShowIssue(false)}>
+          <form className="st-modal" onSubmit={handleIssueSave}>
+            <header>
+              <div>
+                <p>Circulation</p>
+                <h2>Issue book</h2>
               </div>
-              <form onSubmit={handleBookSave} style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div>
-                    <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Book Title</label>
-                    <input required style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={bookData.title} onChange={(e) => setBookData({...bookData, title: e.target.value})} />
-                 </div>
-                 <div>
-                    <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Author</label>
-                    <input required style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={bookData.author} onChange={(e) => setBookData({...bookData, author: e.target.value})} />
-                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <div>
-                       <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Quantity</label>
-                       <input type="number" style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={bookData.quantity} onChange={(e) => setBookData({...bookData, quantity: e.target.value, available_quantity: e.target.value})} />
-                    </div>
-                    <div>
-                       <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Category</label>
-                       <input style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={bookData.category} onChange={(e) => setBookData({...bookData, category: e.target.value})} />
-                    </div>
-                 </div>
-                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                    <button type="button" onClick={() => setShowBookModal(false)} style={{ flex: 1, padding: 14, borderRadius: 14, border: 'none', fontWeight: 900 }}>Cancel</button>
-                    <button type="submit" className="btn-premium" style={{ flex: 1.5, justifyContent: 'center' }}>Save Book</button>
-                 </div>
-              </form>
-           </div>
-        </div>
+              <button type="button" onClick={() => setShowIssue(false)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <div className="st-grid">
+                <label className="st-span-2">
+                  Book *
+                  <select required value={issueForm.book} onChange={setIssueField("book")}>
+                    <option value="">Select book</option>
+                    {availableBooks.map((b) => (
+                      <option key={b.id} value={b.id}>{b.title} · {b.author} ({b.available_quantity} left)</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="st-span-2">
+                  Student *
+                  <select required value={issueForm.student} onChange={setIssueField("student")}>
+                    <option value="">Select student</option>
+                    {activeStudents.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} · {s.class_name || "No class"} · {s.roll_no || "No roll"}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Issue date
+                  <input type="date" required value={issueForm.issue_date} onChange={setIssueField("issue_date")} />
+                </label>
+                <label>
+                  Due date
+                  <input type="date" required value={issueForm.due_date} onChange={setIssueField("due_date")} />
+                </label>
+                <label className="st-span-2">
+                  Remarks
+                  <input value={issueForm.remarks} onChange={setIssueField("remarks")} placeholder="Optional" />
+                </label>
+              </div>
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setShowIssue(false)}>Cancel</button>
+              <button type="submit" className="st-add-btn" disabled={saving}>
+                {saving ? <Loader2 size={16} className="spin" /> : "Issue book"}
+              </button>
+            </footer>
+          </form>
+        </AppModal>
       )}
 
-      {/* Issue Modal */}
-      {showIssueModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-           <div style={{ background: 'var(--bg-card)', backdropFilter: 'var(--glass-blur)', border: '1px solid var(--border-glass)', width: '100%', maxWidth: 500, borderRadius: 32, overflow: 'hidden' }}>
-              <div style={{ background: 'var(--bg-surface)', padding: 32, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>
-                 <h2 style={{ fontSize: 24, fontWeight: 900 }}>Issue a Book</h2>
+      {viewing && (
+        <AppModal onClose={() => setViewing(null)}>
+          <div className="st-modal">
+            <header>
+              <div>
+                <p>{viewing.accession_no || "Catalog"}</p>
+                <h2>{viewing.title}</h2>
               </div>
-              <form onSubmit={handleIssueSave} style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div>
-                    <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Select Book</label>
-                    <select required style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={issueData.book} onChange={(e) => setIssueData({...issueData, book: e.target.value})}>
-                       <option value="">Choose Book</option>
-                       {books.filter(b => b.available_quantity > 0).map(b => <option key={b.id} value={b.id}>{b.title} (By {b.author})</option>)}
-                    </select>
-                 </div>
-                 <div>
-                    <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Select Student</label>
-                    <select required style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={issueData.student} onChange={(e) => setIssueData({...issueData, student: e.target.value})}>
-                       <option value="">Choose Student</option>
-                       {students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.roll_number})</option>)}
-                    </select>
-                 </div>
-                 <div>
-                    <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Due Date</label>
-                    <input type="date" required style={{ width: '100%', padding: 12, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 800, color: 'var(--text-primary)' }} value={issueData.due_date} onChange={(e) => setIssueData({...issueData, due_date: e.target.value})} />
-                 </div>
-                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                    <button type="button" onClick={() => setShowIssueModal(false)} style={{ flex: 1, padding: 14, borderRadius: 14, border: 'none', fontWeight: 900 }}>Cancel</button>
-                    <button type="submit" className="btn-premium" style={{ flex: 1.5, justifyContent: 'center' }}>Issue Now</button>
-                 </div>
-              </form>
-           </div>
-        </div>
+              <button type="button" onClick={() => setViewing(null)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <div className="lib-view-grid">
+                <ViewRow label="Author" value={viewing.author} />
+                <ViewRow label="Category" value={viewing.category} />
+                <ViewRow label="ISBN" value={viewing.isbn} />
+                <ViewRow label="Publisher" value={viewing.publisher} />
+                <ViewRow label="Language" value={viewing.language} />
+                <ViewRow label="Shelf" value={viewing.shelf_no} />
+                <ViewRow label="Copies" value={`${viewing.available_quantity}/${viewing.quantity}`} />
+                <ViewRow label="Condition" value={viewing.condition} />
+              </div>
+              {viewing.notes && <p className="st-hint">{viewing.notes}</p>}
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setViewing(null)}>Close</button>
+              {canManage && Number(viewing.available_quantity) > 0 && (
+                <button type="button" className="st-ghost" onClick={() => { setViewing(null); openIssue(viewing); }}>Issue</button>
+              )}
+              {canManage && (
+                <button type="button" className="st-add-btn" onClick={() => openEditBook(viewing)}>Edit</button>
+              )}
+            </footer>
+          </div>
+        </AppModal>
+      )}
+
+      {returning && (
+        <AppModal onClose={() => setReturning(null)}>
+          <form className="st-modal" onSubmit={handleReturn}>
+            <header>
+              <div>
+                <p>{returning.student_name}</p>
+                <h2>Return · {returning.book_title}</h2>
+              </div>
+              <button type="button" onClick={() => setReturning(null)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <p className="st-hint">Due {formatDate(returning.due_date)}. Overdue fine is Rs 10 per day unless you change it.</p>
+              <div className="st-grid">
+                <label>
+                  Result
+                  <select value={returnForm.status} onChange={(e) => setReturnForm((p) => ({ ...p, status: e.target.value }))}>
+                    <option value="Returned">Returned</option>
+                    <option value="Lost">Lost</option>
+                  </select>
+                </label>
+                {returnForm.status === "Returned" && (
+                  <label>
+                    Return date
+                    <input type="date" value={returnForm.return_date} onChange={(e) => setReturnForm((p) => ({ ...p, return_date: e.target.value }))} />
+                  </label>
+                )}
+                <label>
+                  Fine (Rs)
+                  <input type="number" min="0" value={returnForm.fine_amount} onChange={(e) => setReturnForm((p) => ({ ...p, fine_amount: e.target.value }))} />
+                </label>
+                <label className="st-span-2">
+                  Remarks
+                  <input value={returnForm.remarks} onChange={(e) => setReturnForm((p) => ({ ...p, remarks: e.target.value }))} />
+                </label>
+              </div>
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setReturning(null)}>Cancel</button>
+              <button type="submit" className="st-add-btn" disabled={saving}>
+                {saving ? <Loader2 size={16} className="spin" /> : returnForm.status === "Lost" ? "Mark lost" : "Mark returned"}
+              </button>
+            </footer>
+          </form>
+        </AppModal>
       )}
     </div>
   );
-};
+}
 
-export default Library;
+function ViewRow({ label, value }) {
+  return (
+    <div className="lib-view-row">
+      <span>{label}</span>
+      <b>{value || "—"}</b>
+    </div>
+  );
+}

@@ -1,0 +1,23 @@
+.nt-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px !important;
+  font-weight: 800;
+  color: var(--text-primary) !important;
+}
+
+.nt-check input {
+  width: 16px;
+  height: 16px;
+}
+
+.nt-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text-primary);
+}

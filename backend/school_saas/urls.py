@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenRefreshView
-from users.views import MeView, SignupView, GoogleLoginView, TenantInfoView, SchoolLandingUpdateView
+from users.views import MeView, MePasswordView, PresenceView, SignupView, GoogleLoginView, TenantInfoView, SchoolLandingUpdateView
 from users.image_views import ImageUploadView
 from core.views import (
     DashboardStatsView, 
@@ -10,7 +9,9 @@ from core.views import (
     MarkNotificationReadView,
     MarkAllNotificationsReadView,
     SystemDatabaseView,
-    AIChatView
+    AIChatView,
+    GlobalSettingView,
+    PlatformStatusView,
 )
 
 from rest_framework.routers import DefaultRouter
@@ -23,7 +24,11 @@ router.register('platform-users', UserViewSet, basename='platform-user')
 router.register('enrollments', EnrollmentViewSet, basename='enrollment')
 
 from rest_framework_simplejwt.views import TokenObtainPairView
-from users.auth import MyTokenObtainPairSerializer
+from users.auth import MyTokenObtainPairSerializer, MyTokenRefreshView
+
+admin.site.site_header = "School SaaS Administration"
+admin.site.site_title = "School Admin"
+admin.site.index_title = "Platform Administration"
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -36,12 +41,14 @@ urlpatterns = [
     
     # JWT Auth
     path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
     
     # Real Auth Integration
     path('api/signup/', SignupView.as_view(), name='signup'),
     path('api/auth/google/', GoogleLoginView.as_view(), name='google-login'),
     path('api/me/', MeView.as_view(), name='me'),
+    path('api/me/presence/', PresenceView.as_view(), name='me-presence'),
+    path('api/me/password/', MePasswordView.as_view(), name='me-password'),
     path('api/tenant-info/', TenantInfoView.as_view(), name='tenant-info'),
     path('api/school/landing-settings/', SchoolLandingUpdateView.as_view(), name='landing-settings-update'),
     path('api/school/upload-image/', ImageUploadView.as_view(), name='landing-image-upload'),
@@ -51,6 +58,8 @@ urlpatterns = [
     path('api/notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='notification-read'),
     path('api/notifications/read-all/', MarkAllNotificationsReadView.as_view(), name='notification-read-all'),
     path('api/system/explorer/', SystemDatabaseView.as_view(), name='system-explorer'),
+    path('api/platform/status/', PlatformStatusView.as_view(), name='platform-status'),
+    path('api/platform/settings/', GlobalSettingView.as_view(), name='platform-settings'),
     path('api/ai/chat/', AIChatView.as_view(), name='ai-chat'),
 
     # Apps
@@ -67,6 +76,7 @@ urlpatterns = [
     path('api/transport/', include('transport.urls')),
     path('api/staff/', include('staff.urls')),
     path('api/inventory/', include('inventory.urls')),
+    path('api/chat/', include('chat.urls')),
 ]
 from django.conf import settings
 from django.conf.urls.static import static

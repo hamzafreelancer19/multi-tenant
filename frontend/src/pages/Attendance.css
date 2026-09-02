@@ -1,0 +1,74 @@
+.att-date-nav input[type="date"] {
+  height: 40px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.att-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.att-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-secondary);
+}
+
+.att-pill.is-present.is-on {
+  background: #ecfdf3;
+  border-color: transparent;
+  color: #067647;
+}
+
+.att-pill.is-absent.is-on {
+  background: #fef2f2;
+  border-color: transparent;
+  color: #dc2626;
+}
+
+.att-pill.is-late.is-on {
+  background: #fff7ed;
+  border-color: transparent;
+  color: #c2410c;
+}
+
+.att-pill.is-leave.is-on {
+  background: #f1f5f9;
+  border-color: transparent;
+  color: #475569;
+}
+
+.att-note {
+  width: 160px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .att-note {
+    width: 120px;
+  }
+}

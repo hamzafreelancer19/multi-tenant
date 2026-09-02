@@ -1,0 +1,50 @@
+.sf-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-bottom: 12px;
+}
+
+.sf-view-row span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sf-view-row b {
+  font-size: 14px;
+}
+
+.sf-pay-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sf-pay-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sf-pay-list b {
+  font-size: 14px;
+}
+
+.sf-pay-list small {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .sf-view-grid {
+    grid-template-columns: 1fr;
+  }
+}

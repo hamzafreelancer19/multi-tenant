@@ -1,0 +1,159 @@
+.ss-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.ss-identity strong {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.ss-logo-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ss-logo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ss-readonly {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.ss-color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ss-dash-preview {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  min-height: 160px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.ss-dash-preview aside {
+  background: var(--ss-secondary, #0F172A);
+  color: #fff;
+  padding: 12px 10px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ss-dash-preview aside strong {
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.ss-dash-preview aside span {
+  opacity: 0.65;
+}
+
+.ss-dash-preview aside .is-active {
+  background: var(--ss-primary, #F15A24);
+  color: #fff;
+  opacity: 1;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.ss-dash-preview main {
+  background: #f8fafc;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.ss-dash-preview main b {
+  font-size: 13px;
+}
+
+.ss-dash-preview main i {
+  display: block;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ss-accent, #FF8C42) 22%, white);
+}
+
+.ss-plan-card {
+  margin-top: 16px;
+}
+
+.ss-plan-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ss-plan-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ss-plan-row small {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ss-plan-row strong {
+  font-size: 22px;
+}
+
+.ss-plan-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.ss-plan-note.is-ok { color: #047857; }
+.ss-plan-note.is-warn { color: #b45309; }
+
+@media (max-width: 640px) {
+  .ss-color-grid,
+  .lps-image-field {
+    grid-template-columns: 1fr;
+  }
+}

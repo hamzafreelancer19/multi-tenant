@@ -7,6 +7,11 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'action', 'avatar', 'created_at']
 
 class NotificationSerializer(serializers.ModelSerializer):
+    is_read = serializers.SerializerMethodField()
+
     class Meta:
         model = Notification
-        fields = ['id', 'message', 'is_read', 'created_at']
+        fields = ["id", "message", "is_read", "created_at", "audience", "link_path"]
+
+    def get_is_read(self, obj):
+        return False

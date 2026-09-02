@@ -1,357 +1,665 @@
-import React, { useState, useEffect } from 'react';
-import { useTenant } from '../context/TenantContext';
-import api from '../api/axios';
-import { Save, Layout, Palette, Phone, Mail, FileText, CheckCircle, Image as ImageIcon, Plus, Trash2, Heart, Award, GraduationCap, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
-import './LandingPageSettings.css';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Award,
+  CheckCircle,
+  ClipboardList,
+  ExternalLink,
+  FileText,
+  Globe,
+  GraduationCap,
+  Heart,
+  Image as ImageIcon,
+  Layout,
+  Palette,
+  Phone,
+  Plus,
+  Save,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useTenant } from "../context/TenantContext";
+import api from "../api/axios";
+import "./LandingPageSettings.css";
 
-const LandingPageSettings = () => {
+const TABS = [
+  { id: "hero", label: "Hero", icon: Layout },
+  { id: "about", label: "About", icon: FileText },
+  { id: "highlights", label: "Highlights", icon: Award },
+  { id: "programs", label: "Programs", icon: GraduationCap },
+  { id: "admissions", label: "Admissions", icon: ClipboardList },
+  { id: "families", label: "Families", icon: Heart },
+  { id: "look", label: "Look & contact", icon: Palette },
+];
+
+const COLOR_PRESETS = [
+  { name: "Gold & navy", primary: "#e8b86d", secondary: "#08131c" },
+  { name: "Emerald", primary: "#6ee7b7", secondary: "#042f2e" },
+  { name: "Sky", primary: "#93c5fd", secondary: "#0b1220" },
+  { name: "Rose", primary: "#f0ab9a", secondary: "#1c0b12" },
+];
+
+const GENERIC = new Set(["#3b82f6", "#1e40af", "#1d4ed8", "#2563eb", "#1e293b"]);
+
+const EMPTY_COPY = {
+  topbar_text: "",
+  nav_tagline: "",
+  hero_kicker: "",
+  hero_primary_btn: "",
+  hero_secondary_btn: "",
+  campus_caption: "",
+  about_kicker: "",
+  about_title: "",
+  about_fallback: "",
+  about_points: ["", "", ""],
+  features_kicker: "",
+  features_title: "",
+  features_subtitle: "",
+  languages_kicker: "",
+  languages_title: "",
+  programs_kicker: "",
+  programs_title: "",
+  programs_subtitle: "",
+  program_enroll_label: "",
+  program_apply_btn: "",
+  admissions_kicker: "",
+  admissions_title: "",
+  admissions_subtitle: "",
+  admissions_points: ["", "", ""],
+  admissions_button: "",
+  admissions_steps: [
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+  ],
+  reviews_kicker: "",
+  reviews_title: "",
+  cta_title: "",
+  cta_subtitle: "",
+  cta_apply_btn: "",
+  cta_login_btn: "",
+  footer_address: "",
+  apply_kicker: "",
+  apply_title: "",
+  apply_intro: "",
+  apply_steps: [
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+  ],
+  apply_success_title: "",
+  apply_success_text: "",
+  stats_students_label: "",
+  stats_teachers_label: "",
+  stats_classes_label: "",
+  stats_admissions_value: "",
+  stats_admissions_label: "",
+};
+
+const EMPTY = {
+  hero_title: "",
+  hero_subtitle: "",
+  about: "",
+  primary_color: "#e8b86d",
+  secondary_color: "#08131c",
+  contact_email: "",
+  contact_phone: "",
+  show_stats: true,
+  hero_image_url: "",
+  center_image_url: "",
+  features: [],
+  testimonials: [],
+  programs: [],
+  languages: [],
+  copy: EMPTY_COPY,
+};
+
+function landingColors(landing = {}) {
+  const primary = (landing.primary_color || "").toLowerCase();
+  const secondary = (landing.secondary_color || "").toLowerCase();
+  return {
+    primary: !primary || GENERIC.has(primary) ? "#e8b86d" : landing.primary_color,
+    secondary: !secondary || GENERIC.has(secondary) ? "#08131c" : landing.secondary_color,
+  };
+}
+
+function padPoints(list) {
+  const next = [...(list || [])].map((item) => item || "");
+  while (next.length < 3) next.push("");
+  return next.slice(0, 5);
+}
+
+function padSteps(list) {
+  const next = [...(list || [])].map((item) => ({ title: item?.title || "", desc: item?.desc || "" }));
+  while (next.length < 3) next.push({ title: "", desc: "" });
+  return next;
+}
+
+function fromTenant(landing) {
+  if (!landing) return EMPTY;
+  const colors = landingColors(landing);
+  const copy = { ...EMPTY_COPY, ...(landing.copy || {}) };
+  return {
+    hero_title: landing.hero_title || "",
+    hero_subtitle: landing.hero_subtitle || "",
+    about: landing.about || "",
+    primary_color: colors.primary,
+    secondary_color: colors.secondary,
+    contact_email: landing.contact_email || "",
+    contact_phone: landing.contact_phone || "",
+    show_stats: landing.show_stats !== false,
+    hero_image_url: landing.hero_image_url || "",
+    center_image_url: landing.center_image_url || "",
+    features: landing.features || [],
+    testimonials: landing.testimonials || [],
+    programs: landing.programs || [],
+    languages: (landing.languages || []).map((lang) => ({
+      name: lang.name || "",
+      flag: lang.flag || "",
+    })),
+    copy: {
+      ...copy,
+      about_points: padPoints(copy.about_points),
+      admissions_points: padPoints(copy.admissions_points),
+      admissions_steps: padSteps(copy.admissions_steps),
+      apply_steps: padSteps(copy.apply_steps),
+    },
+  };
+}
+
+function TextField({ label, value, onChange, textarea, placeholder, maxLength }) {
+  return (
+    <label className="lps-label">
+      {label}
+      {textarea ? (
+        <textarea className="lps-input lps-textarea" value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} />
+      ) : (
+        <input className="lps-input" value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} />
+      )}
+    </label>
+  );
+}
+
+export default function LandingPageSettings() {
   const tenant = useTenant();
+  const [tab, setTab] = useState("hero");
+  const [settings, setSettings] = useState(EMPTY);
+  const [savedSnapshot, setSavedSnapshot] = useState(JSON.stringify(EMPTY));
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [settings, setSettings] = useState({
-    hero_title: '',
-    hero_subtitle: '',
-    about: '',
-    primary_color: '#F15A24',
-    contact_email: '',
-    contact_phone: '',
-    show_stats: true,
-    hero_image_url: '',
-    center_image_url: '',
-    features: [],
-    testimonials: [],
-    programs: [],
-    languages: [],
-  });
+  const [uploading, setUploading] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const hydrated = useRef(false);
+  const copy = settings.copy || EMPTY_COPY;
 
   useEffect(() => {
-    if (tenant.landing) {
-      setSettings({
-        hero_title: tenant.landing.hero_title || '',
-        hero_subtitle: tenant.landing.hero_subtitle || '',
-        about: tenant.landing.about || '',
-        primary_color: tenant.landing.primary_color || '#F15A24',
-        contact_email: tenant.landing.contact_email || '',
-        contact_phone: tenant.landing.contact_phone || '',
-        show_stats: tenant.landing.show_stats !== undefined ? tenant.landing.show_stats : true,
-        hero_image_url: tenant.landing.hero_image_url || '',
-        center_image_url: tenant.landing.center_image_url || '',
-        features: tenant.landing.features || [],
-        testimonials: tenant.landing.testimonials || [],
-        programs: tenant.landing.programs || [],
-        languages: tenant.landing.languages || [],
-      });
-    }
+    if (!tenant.landing || hydrated.current) return;
+    const next = fromTenant(tenant.landing);
+    setSettings(next);
+    setSavedSnapshot(JSON.stringify(next));
+    hydrated.current = true;
   }, [tenant.landing]);
+
+  const dirty = JSON.stringify(settings) !== savedSnapshot;
+  const previewUrl = tenant.schoolSlug ? `/s/${tenant.schoolSlug}` : "/";
+  const applyUrl = tenant.schoolSlug ? `/s/${tenant.schoolSlug}/apply` : "/apply";
+  const stats = tenant.landing?.stats || {};
+
+  const setField = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
+  const setCopy = (key, value) =>
+    setSettings((prev) => ({ ...prev, copy: { ...prev.copy, [key]: value } }));
+
+  const updateItem = (listKey, index, field, value) => {
+    setSettings((prev) => {
+      const next = [...prev[listKey]];
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, [listKey]: next };
+    });
+  };
+
+  const addItem = (listKey, item) => {
+    setSettings((prev) => ({ ...prev, [listKey]: [...prev[listKey], item] }));
+  };
+
+  const removeItem = (listKey, index) => {
+    setSettings((prev) => ({
+      ...prev,
+      [listKey]: prev[listKey].filter((_, i) => i !== index),
+    }));
+  };
+
+  const uploadImage = async (file, field) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    setUploading(field);
+    setError("");
+    try {
+      const res = await api.post("/school/upload-image/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setField(field, res.data.url);
+    } catch {
+      setError("Image upload failed. Try a smaller JPG or PNG.");
+    } finally {
+      setUploading("");
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
-    setMessage('');
+    setMessage("");
+    setError("");
     try {
-      await api.put('/school/landing-settings/', settings);
-      setMessage('Settings updated successfully!');
-      if (tenant.refreshTenant) {
-        await tenant.refreshTenant();
-      }
-      setTimeout(() => setMessage(''), 3000);
+      await api.put("/school/landing-settings/", settings);
+      const snap = JSON.stringify(settings);
+      setSavedSnapshot(snap);
+      setMessage("All website pages updated. Open Preview to see landing and admission form.");
+      if (tenant.refreshTenant) await tenant.refreshTenant();
+      setTimeout(() => setMessage(""), 4000);
     } catch (err) {
-      setMessage('Failed to update settings.');
+      setError(err.response?.data?.error || "Could not save landing settings.");
     } finally {
       setLoading(false);
     }
   };
 
-  const addFeature = () => {
-    setSettings({...settings, features: [...settings.features, { title: '', desc: '', color: '#F15A24', bg: '#FFF0EB' }]});
-  };
-
-  const removeFeature = (index) => {
-    const updated = settings.features.filter((_, i) => i !== index);
-    setSettings({...settings, features: updated});
-  };
-
-  const addTestimonial = () => {
-    setSettings({...settings, testimonials: [...settings.testimonials, { name: '', quote: '', role: '', img: '' }]});
-  };
-
-  const removeTestimonial = (index) => {
-    const updated = settings.testimonials.filter((_, i) => i !== index);
-    setSettings({...settings, testimonials: updated});
-  };
-
-  const addProgram = () => {
-    setSettings({...settings, programs: [...settings.programs, { title: '', age: '', price: '', badge: '', desc: '', color: '#F15A24' }]});
-  };
-
-  const removeProgram = (index) => {
-    const updated = settings.programs.filter((_, i) => i !== index);
-    setSettings({...settings, programs: updated});
-  };
-
-  const addLanguage = () => {
-    setSettings({...settings, languages: [...settings.languages, { name: '', flag: '', top: '50%', left: '50%' }]});
-  };
-
-  const removeLanguage = (index) => {
-    const updated = settings.languages.filter((_, i) => i !== index);
-    setSettings({...settings, languages: updated});
-  };
+  const preview = useMemo(
+    () => ({
+      title: settings.hero_title || `A brighter future begins at ${tenant.schoolName || "your school"}`,
+      subtitle: settings.hero_subtitle || "Quality education, caring teachers, and a campus where every student is known.",
+      kicker: copy.hero_kicker || tenant.schoolName || "Your school",
+      primary: settings.primary_color || "#e8b86d",
+      secondary: settings.secondary_color || "#08131c",
+    }),
+    [settings.hero_title, settings.hero_subtitle, settings.primary_color, settings.secondary_color, copy.hero_kicker, tenant.schoolName]
+  );
 
   return (
-    <div className="lps-container">
+    <div className="page lps-page">
       <header className="lps-header">
-        <div className="lps-header-text">
-          <h1>Control Center</h1>
-          <p>Full control over your public landing page and school identity.</p>
+        <div>
+          <p className="lps-kicker">Public website</p>
+          <h1>Landing page</h1>
+          <p>
+            Hero, About, Programs, Admissions form, and footer — har section ki text yahan se update hoti hai.
+          </p>
         </div>
-        <button onClick={handleSave} disabled={loading} className="lps-save-btn">
-          {loading ? 'Saving...' : <><Save size={20} /> Deploy Changes</>}
-        </button>
+        <div className="lps-header-actions">
+          {dirty && <span className="lps-dirty">Unsaved changes</span>}
+          <a href={previewUrl} target="_blank" rel="noreferrer" className="lps-btn lps-btn-ghost">
+            <ExternalLink size={16} /> Landing
+          </a>
+          <a href={applyUrl} target="_blank" rel="noreferrer" className="lps-btn lps-btn-ghost">
+            <ExternalLink size={16} /> Apply page
+          </a>
+          <button className="lps-btn lps-btn-primary" onClick={handleSave} disabled={loading || !dirty}>
+            <Save size={16} />
+            {loading ? "Saving…" : "Save changes"}
+          </button>
+        </div>
       </header>
 
-      {message && <div className="lps-success-msg">{message}</div>}
+      {message && (
+        <div className="lps-banner is-ok">
+          <CheckCircle size={16} /> {message}
+        </div>
+      )}
+      {error && <div className="lps-banner is-err">{error}</div>}
 
-      <div className="lps-grid">
-        <div className="lps-col-main">
-          
-          {/* Hero Section */}
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#F15A24' }}><Layout size={24} /> Hero Content</div>
-            <div className="lps-form-group">
-              <label className="lps-label">Main Title</label>
-              <input type="text" value={settings.hero_title} onChange={(e) => setSettings({...settings, hero_title: e.target.value})} className="lps-input" />
-            </div>
-            <div className="lps-form-group">
-              <label className="lps-label">Subtitle</label>
-              <textarea value={settings.hero_subtitle} onChange={(e) => setSettings({...settings, hero_subtitle: e.target.value})} className="lps-input lps-textarea" />
-            </div>
-          </section>
+      <nav className="lps-tabs">
+        {TABS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button key={item.id} type="button" className={tab === item.id ? "is-active" : ""} onClick={() => setTab(item.id)}>
+              <Icon size={16} />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
 
-          {/* Features Management */}
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#22C55E' }}>
-              <Award size={24} /> School Highlights (Bento Grid)
-            </div>
-            <div className="space-y-4">
+      <div className="lps-layout">
+        <div className="lps-editor">
+          {tab === "hero" && (
+            <section className="lps-card">
+              <h2>Hero & header</h2>
+              <p className="lps-help">Top bar, logo line, headline, buttons, and campus caption.</p>
+              <TextField label="Top bar" value={copy.topbar_text} onChange={(v) => setCopy("topbar_text", v)} placeholder="Admissions 2026 are open" />
+              <TextField label="Logo tagline" value={copy.nav_tagline} onChange={(v) => setCopy("nav_tagline", v)} placeholder="Excellence in education" />
+              <TextField label="Small kicker" value={copy.hero_kicker} onChange={(v) => setCopy("hero_kicker", v)} placeholder={`Welcome to ${tenant.schoolName || "school"}`} />
+              <TextField label="Headline" value={settings.hero_title} onChange={(v) => setField("hero_title", v)} maxLength={80} />
+              <TextField label="Introduction" value={settings.hero_subtitle} onChange={(v) => setField("hero_subtitle", v)} textarea />
+              <div className="lps-row">
+                <TextField label="Primary button" value={copy.hero_primary_btn} onChange={(v) => setCopy("hero_primary_btn", v)} placeholder="Apply for admission" />
+                <TextField label="Secondary button" value={copy.hero_secondary_btn} onChange={(v) => setCopy("hero_secondary_btn", v)} placeholder="Learn about us" />
+              </div>
+              <TextField label="Campus caption" value={copy.campus_caption} onChange={(v) => setCopy("campus_caption", v)} placeholder="A tradition of excellence" />
+              <ImageField
+                label="Hero photo"
+                value={settings.hero_image_url}
+                uploading={uploading === "hero_image_url"}
+                onUrl={(url) => setField("hero_image_url", url)}
+                onFile={(file) => uploadImage(file, "hero_image_url")}
+              />
+            </section>
+          )}
+
+          {tab === "about" && (
+            <section className="lps-card">
+              <h2>About</h2>
+              <p className="lps-help">About section headings, story, checklist, and photo.</p>
+              <TextField label="Kicker" value={copy.about_kicker} onChange={(v) => setCopy("about_kicker", v)} />
+              <TextField label="Title" value={copy.about_title} onChange={(v) => setCopy("about_title", v)} />
+              <TextField label="About text" value={settings.about} onChange={(v) => setField("about", v)} textarea />
+              <TextField label="Photo fallback text" value={copy.about_fallback} onChange={(v) => setCopy("about_fallback", v)} />
+              <p className="lps-label-text">Checklist points</p>
+              {copy.about_points.map((point, i) => (
+                <input key={i} className="lps-input" style={{ marginBottom: 10 }} value={point} onChange={(e) => {
+                  const next = [...copy.about_points];
+                  next[i] = e.target.value;
+                  setCopy("about_points", next);
+                }} placeholder={`Point ${i + 1}`} />
+              ))}
+              <ImageField
+                label="About / campus photo"
+                value={settings.center_image_url}
+                uploading={uploading === "center_image_url"}
+                onUrl={(url) => setField("center_image_url", url)}
+                onFile={(file) => uploadImage(file, "center_image_url")}
+              />
+            </section>
+          )}
+
+          {tab === "highlights" && (
+            <section className="lps-card">
+              <div className="lps-card-head">
+                <div>
+                  <h2>Highlights</h2>
+                  <p className="lps-help">Section headings plus the cards shown on the website.</p>
+                </div>
+                <button className="lps-btn lps-btn-ghost" type="button" onClick={() => addItem("features", { title: "", desc: "" })}>
+                  <Plus size={16} /> Add highlight
+                </button>
+              </div>
+              <TextField label="Kicker" value={copy.features_kicker} onChange={(v) => setCopy("features_kicker", v)} />
+              <TextField label="Title" value={copy.features_title} onChange={(v) => setCopy("features_title", v)} />
+              <TextField label="Subtitle" value={copy.features_subtitle} onChange={(v) => setCopy("features_subtitle", v)} textarea />
               {settings.features.map((feature, i) => (
-                <div key={i} className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-100 mb-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-black text-slate-400">FEATURE #{i+1}</span>
-                    <button onClick={() => removeFeature(i)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input type="text" value={feature.title} onChange={(e) => { const updated = [...settings.features]; updated[i].title = e.target.value; setSettings({...settings, features: updated}); }} placeholder="Feature Title" className="lps-input" />
-                    <div className="flex gap-2">
-                      <input type="color" value={feature.color} onChange={(e) => { const updated = [...settings.features]; updated[i].color = e.target.value; setSettings({...settings, features: updated}); }} className="h-12 w-12 rounded-xl cursor-pointer" />
-                      <input type="color" value={feature.bg} onChange={(e) => { const updated = [...settings.features]; updated[i].bg = e.target.value; setSettings({...settings, features: updated}); }} className="h-12 w-12 rounded-xl cursor-pointer" />
-                    </div>
-                  </div>
-                  <textarea value={feature.desc} onChange={(e) => { const updated = [...settings.features]; updated[i].desc = e.target.value; setSettings({...settings, features: updated}); }} placeholder="Short Description" className="lps-input lps-textarea" style={{ minHeight: '80px' }} />
-                </div>
+                <article key={i} className="lps-item">
+                  <header>
+                    <span>Highlight {i + 1}</span>
+                    <button type="button" onClick={() => removeItem("features", i)} aria-label="Remove"><Trash2 size={16} /></button>
+                  </header>
+                  <input className="lps-input" value={feature.title || ""} placeholder="Title" onChange={(e) => updateItem("features", i, "title", e.target.value)} />
+                  <textarea className="lps-input lps-textarea" value={feature.desc || ""} placeholder="Description" onChange={(e) => updateItem("features", i, "desc", e.target.value)} />
+                </article>
               ))}
-              <button onClick={addFeature} className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center justify-center gap-2">
-                <Plus size={20} /> Add New Highlight
-              </button>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* Testimonials */}
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#EF4444' }}>
-              <Heart size={24} /> Parent Testimonials
-            </div>
-            <div className="space-y-4">
-              {settings.testimonials.map((t, i) => (
-                <div key={i} className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-100 mb-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-black text-slate-400">TESTIMONIAL #{i+1}</span>
-                    <button onClick={() => removeTestimonial(i)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={t.name} 
-                    onChange={(e) => {
-                      const updated = [...settings.testimonials];
-                      updated[i].name = e.target.value;
-                      setSettings({...settings, testimonials: updated});
-                    }}
-                    placeholder="Parent Name"
-                    className="lps-input mb-2"
-                  />
-                  <input 
-                    type="text" 
-                    value={t.role} 
-                    onChange={(e) => {
-                      const updated = [...settings.testimonials];
-                      updated[i].role = e.target.value;
-                      setSettings({...settings, testimonials: updated});
-                    }}
-                    placeholder="Role (e.g. Parent of Grade 5)"
-                    className="lps-input mb-4"
-                  />
-                  <textarea 
-                    value={t.quote} 
-                    onChange={(e) => {
-                      const updated = [...settings.testimonials];
-                      updated[i].quote = e.target.value;
-                      setSettings({...settings, testimonials: updated});
-                    }}
-                    placeholder="Their Quote..."
-                    className="lps-input lps-textarea"
-                    style={{ minHeight: '80px' }}
-                  />
+          {tab === "programs" && (
+            <section className="lps-card">
+              <div className="lps-card-head">
+                <div>
+                  <h2>Programs</h2>
+                  <p className="lps-help">Academics headings and each programme card.</p>
                 </div>
-              ))}
-              <button onClick={addTestimonial} className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-pink-400 hover:text-pink-500 transition-all flex items-center justify-center gap-2">
-                <Plus size={20} /> Add Testimonial
-              </button>
-            </div>
-          </section>
-
-          {/* Programs Management */}
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#F15A24' }}>
-              <GraduationCap size={24} /> Offered Programs
-            </div>
-            <div className="space-y-4">
+                <button className="lps-btn lps-btn-ghost" type="button" onClick={() => addItem("programs", { title: "", age: "", price: "", badge: "", desc: "" })}>
+                  <Plus size={16} /> Add program
+                </button>
+              </div>
+              <TextField label="Kicker" value={copy.programs_kicker} onChange={(v) => setCopy("programs_kicker", v)} />
+              <TextField label="Title" value={copy.programs_title} onChange={(v) => setCopy("programs_title", v)} />
+              <TextField label="Subtitle" value={copy.programs_subtitle} onChange={(v) => setCopy("programs_subtitle", v)} textarea />
+              <div className="lps-row">
+                <TextField label="Default fee label" value={copy.program_enroll_label} onChange={(v) => setCopy("program_enroll_label", v)} placeholder="Now enrolling" />
+                <TextField label="Card button" value={copy.program_apply_btn} onChange={(v) => setCopy("program_apply_btn", v)} placeholder="Apply" />
+              </div>
               {settings.programs.map((program, i) => (
-                <div key={i} className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-100 mb-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-black text-slate-400">PROGRAM #{i+1}</span>
-                    <button onClick={() => removeProgram(i)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button>
+                <article key={i} className="lps-item">
+                  <header>
+                    <span>Program {i + 1}</span>
+                    <button type="button" onClick={() => removeItem("programs", i)} aria-label="Remove"><Trash2 size={16} /></button>
+                  </header>
+                  <div className="lps-row">
+                    <input className="lps-input" value={program.title || ""} placeholder="Program title" onChange={(e) => updateItem("programs", i, "title", e.target.value)} />
+                    <input className="lps-input" value={program.age || ""} placeholder="Grades / ages" onChange={(e) => updateItem("programs", i, "age", e.target.value)} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input type="text" value={program.title} onChange={(e) => { const updated = [...settings.programs]; updated[i].title = e.target.value; setSettings({...settings, programs: updated}); }} placeholder="Program Title" className="lps-input" />
-                    <input type="text" value={program.age} onChange={(e) => { const updated = [...settings.programs]; updated[i].age = e.target.value; setSettings({...settings, programs: updated}); }} placeholder="Age Range (e.g. 3-7 YEARS)" className="lps-input" />
+                  <div className="lps-row">
+                    <input className="lps-input" value={program.price || ""} placeholder="Fee note (optional)" onChange={(e) => updateItem("programs", i, "price", e.target.value)} />
+                    <input className="lps-input" value={program.badge || ""} placeholder="Badge, e.g. Popular" onChange={(e) => updateItem("programs", i, "badge", e.target.value)} />
                   </div>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <input type="text" value={program.price} onChange={(e) => { const updated = [...settings.programs]; updated[i].price = e.target.value; setSettings({...settings, programs: updated}); }} placeholder="Price (e.g. 200)" className="lps-input" />
-                    <input type="text" value={program.badge} onChange={(e) => { const updated = [...settings.programs]; updated[i].badge = e.target.value; setSettings({...settings, programs: updated}); }} placeholder="Badge (Optional)" className="lps-input" />
-                    <input type="color" value={program.color} onChange={(e) => { const updated = [...settings.programs]; updated[i].color = e.target.value; setSettings({...settings, programs: updated}); }} className="h-12 w-full rounded-xl cursor-pointer" />
-                  </div>
-                  <textarea value={program.desc} onChange={(e) => { const updated = [...settings.programs]; updated[i].desc = e.target.value; setSettings({...settings, programs: updated}); }} placeholder="Program Description" className="lps-input lps-textarea" />
-                </div>
+                  <textarea className="lps-input lps-textarea" value={program.desc || ""} placeholder="Description" onChange={(e) => updateItem("programs", i, "desc", e.target.value)} />
+                </article>
               ))}
-              <button onClick={addProgram} className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-purple-400 hover:text-purple-500 transition-all flex items-center justify-center gap-2">
-                <Plus size={20} /> Add New Program
-              </button>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* Languages Management */}
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#0F172A' }}>
-              <Globe size={24} /> Language Orbit
-            </div>
-            <div className="space-y-4">
-              {settings.languages.map((lang, i) => (
-                <div key={i} className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 mb-4 flex items-center gap-4">
-                   <input type="text" value={lang.flag} onChange={(e) => { const updated = [...settings.languages]; updated[i].flag = e.target.value; setSettings({...settings, languages: updated}); }} placeholder="Emoji Flag" className="lps-input" style={{ width: '80px' }} />
-                   <input type="text" value={lang.name} onChange={(e) => { const updated = [...settings.languages]; updated[i].name = e.target.value; setSettings({...settings, languages: updated}); }} placeholder="Language Name" className="lps-input" />
-                   <div className="flex gap-2">
-                     <input type="text" value={lang.top} onChange={(e) => { const updated = [...settings.languages]; updated[i].top = e.target.value; setSettings({...settings, languages: updated}); }} placeholder="Top %" className="lps-input" style={{ width: '80px' }} />
-                     <input type="text" value={lang.left} onChange={(e) => { const updated = [...settings.languages]; updated[i].left = e.target.value; setSettings({...settings, languages: updated}); }} placeholder="Left %" className="lps-input" style={{ width: '80px' }} />
-                   </div>
-                   <button onClick={() => removeLanguage(i)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button>
+          {tab === "admissions" && (
+            <>
+              <section className="lps-card">
+                <h2>Landing admissions block</h2>
+                <p className="lps-help">The Apply section on the school website, before the form page.</p>
+                <TextField label="Kicker" value={copy.admissions_kicker} onChange={(v) => setCopy("admissions_kicker", v)} />
+                <TextField label="Title" value={copy.admissions_title} onChange={(v) => setCopy("admissions_title", v)} />
+                <TextField label="Description" value={copy.admissions_subtitle} onChange={(v) => setCopy("admissions_subtitle", v)} textarea />
+                <TextField label="Button" value={copy.admissions_button} onChange={(v) => setCopy("admissions_button", v)} placeholder="Open admission form" />
+                <p className="lps-label-text">Checklist</p>
+                {copy.admissions_points.map((point, i) => (
+                  <input key={i} className="lps-input" style={{ marginBottom: 10 }} value={point} onChange={(e) => {
+                    const next = [...copy.admissions_points];
+                    next[i] = e.target.value;
+                    setCopy("admissions_points", next);
+                  }} placeholder={`Point ${i + 1}`} />
+                ))}
+                <p className="lps-label-text">Three steps</p>
+                {copy.admissions_steps.map((step, i) => (
+                  <div key={i} className="lps-row" style={{ marginBottom: 10 }}>
+                    <input className="lps-input" value={step.title} placeholder={`Step ${i + 1} title`} onChange={(e) => {
+                      const next = [...copy.admissions_steps];
+                      next[i] = { ...next[i], title: e.target.value };
+                      setCopy("admissions_steps", next);
+                    }} />
+                    <input className="lps-input" value={step.desc} placeholder="Description" onChange={(e) => {
+                      const next = [...copy.admissions_steps];
+                      next[i] = { ...next[i], desc: e.target.value };
+                      setCopy("admissions_steps", next);
+                    }} />
+                  </div>
+                ))}
+              </section>
+              <section className="lps-card">
+                <h2>Admission form page</h2>
+                <p className="lps-help">The separate apply page parents open after clicking Apply.</p>
+                <TextField label="Kicker" value={copy.apply_kicker} onChange={(v) => setCopy("apply_kicker", v)} />
+                <TextField label="Title" value={copy.apply_title} onChange={(v) => setCopy("apply_title", v)} />
+                <TextField label="Intro" value={copy.apply_intro} onChange={(v) => setCopy("apply_intro", v)} textarea />
+                <p className="lps-label-text">Apply page steps</p>
+                {copy.apply_steps.map((step, i) => (
+                  <div key={i} className="lps-row" style={{ marginBottom: 10 }}>
+                    <input className="lps-input" value={step.title} placeholder={`Step ${i + 1}`} onChange={(e) => {
+                      const next = [...copy.apply_steps];
+                      next[i] = { ...next[i], title: e.target.value };
+                      setCopy("apply_steps", next);
+                    }} />
+                    <input className="lps-input" value={step.desc} placeholder="Description" onChange={(e) => {
+                      const next = [...copy.apply_steps];
+                      next[i] = { ...next[i], desc: e.target.value };
+                      setCopy("apply_steps", next);
+                    }} />
+                  </div>
+                ))}
+                <TextField label="Success title" value={copy.apply_success_title} onChange={(v) => setCopy("apply_success_title", v)} />
+                <TextField label="Success message" value={copy.apply_success_text} onChange={(v) => setCopy("apply_success_text", v)} textarea />
+                <TextField label="Final CTA title" value={copy.cta_title} onChange={(v) => setCopy("cta_title", v)} />
+                <TextField label="Final CTA text" value={copy.cta_subtitle} onChange={(v) => setCopy("cta_subtitle", v)} textarea />
+                <div className="lps-row">
+                  <TextField label="Apply button" value={copy.cta_apply_btn} onChange={(v) => setCopy("cta_apply_btn", v)} />
+                  <TextField label="Login button" value={copy.cta_login_btn} onChange={(v) => setCopy("cta_login_btn", v)} />
                 </div>
-              ))}
-              <button onClick={addLanguage} className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:text-blue-500 transition-all flex items-center justify-center gap-2">
-                <Plus size={20} /> Add Language to Orbit
-              </button>
-            </div>
-          </section>
+              </section>
+            </>
+          )}
+
+          {tab === "families" && (
+            <>
+              <section className="lps-card">
+                <div className="lps-card-head">
+                  <div>
+                    <h2>Parent testimonials</h2>
+                    <p className="lps-help">Section headings and quotes shown on the website.</p>
+                  </div>
+                  <button className="lps-btn lps-btn-ghost" type="button" onClick={() => addItem("testimonials", { name: "", role: "", quote: "", img: "" })}>
+                    <Plus size={16} /> Add quote
+                  </button>
+                </div>
+                <TextField label="Kicker" value={copy.reviews_kicker} onChange={(v) => setCopy("reviews_kicker", v)} />
+                <TextField label="Title" value={copy.reviews_title} onChange={(v) => setCopy("reviews_title", v)} />
+                {settings.testimonials.map((item, i) => (
+                  <article key={i} className="lps-item">
+                    <header>
+                      <span>Quote {i + 1}</span>
+                      <button type="button" onClick={() => removeItem("testimonials", i)} aria-label="Remove"><Trash2 size={16} /></button>
+                    </header>
+                    <div className="lps-row">
+                      <input className="lps-input" value={item.name || ""} placeholder="Parent name" onChange={(e) => updateItem("testimonials", i, "name", e.target.value)} />
+                      <input className="lps-input" value={item.role || ""} placeholder="Role" onChange={(e) => updateItem("testimonials", i, "role", e.target.value)} />
+                    </div>
+                    <textarea className="lps-input lps-textarea" value={item.quote || ""} placeholder="Their words" onChange={(e) => updateItem("testimonials", i, "quote", e.target.value)} />
+                  </article>
+                ))}
+              </section>
+              <section className="lps-card">
+                <div className="lps-card-head">
+                  <div>
+                    <h2>Languages</h2>
+                    <p className="lps-help">Optional. Leave empty to hide this block on the website.</p>
+                  </div>
+                  <button className="lps-btn lps-btn-ghost" type="button" onClick={() => addItem("languages", { name: "", flag: "" })}>
+                    <Plus size={16} /> Add language
+                  </button>
+                </div>
+                <div className="lps-row">
+                  <TextField label="Kicker" value={copy.languages_kicker} onChange={(v) => setCopy("languages_kicker", v)} />
+                  <TextField label="Title" value={copy.languages_title} onChange={(v) => setCopy("languages_title", v)} />
+                </div>
+                {settings.languages.map((lang, i) => (
+                  <div key={i} className="lps-lang-row">
+                    <Globe size={16} />
+                    <input className="lps-input lps-flag" value={lang.flag || ""} placeholder="🇵🇰" onChange={(e) => updateItem("languages", i, "flag", e.target.value)} />
+                    <input className="lps-input" value={lang.name || ""} placeholder="Language name" onChange={(e) => updateItem("languages", i, "name", e.target.value)} />
+                    <button type="button" onClick={() => removeItem("languages", i)} aria-label="Remove"><Trash2 size={16} /></button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {tab === "look" && (
+            <>
+              <section className="lps-card">
+                <h2>Website colors</h2>
+                <p className="lps-help">Public school site only — admin dashboard colors stay the same.</p>
+                <div className="lps-presets">
+                  {COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      className="lps-preset"
+                      onClick={() => setSettings((prev) => ({ ...prev, primary_color: preset.primary, secondary_color: preset.secondary }))}
+                    >
+                      <span style={{ background: preset.secondary }}><i style={{ background: preset.primary }} /></span>
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+                <div className="lps-row">
+                  <label className="lps-label">
+                    Accent
+                    <div className="lps-color">
+                      <input type="color" value={settings.primary_color} onChange={(e) => setField("primary_color", e.target.value)} />
+                      <span>{settings.primary_color}</span>
+                    </div>
+                  </label>
+                  <label className="lps-label">
+                    Dark base
+                    <div className="lps-color">
+                      <input type="color" value={settings.secondary_color} onChange={(e) => setField("secondary_color", e.target.value)} />
+                      <span>{settings.secondary_color}</span>
+                    </div>
+                  </label>
+                </div>
+              </section>
+              <section className="lps-card">
+                <h2>Contact & footer</h2>
+                <div className="lps-row">
+                  <TextField label="Email" value={settings.contact_email} onChange={(v) => setField("contact_email", v)} placeholder="admissions@school.com" />
+                  <TextField label="Phone" value={settings.contact_phone} onChange={(v) => setField("contact_phone", v)} placeholder="03xx xxx xxxx" />
+                </div>
+                <TextField label="Address line" value={copy.footer_address} onChange={(v) => setCopy("footer_address", v)} placeholder="School campus" />
+                <div className="lps-toggle">
+                  <div>
+                    <strong>Show live stats</strong>
+                    <p>Currently {stats.students ?? "—"} students, {stats.teachers ?? "—"} teachers, {stats.courses ?? "—"} classes.</p>
+                  </div>
+                  <label className="lps-switch">
+                    <input type="checkbox" checked={settings.show_stats} onChange={(e) => setField("show_stats", e.target.checked)} />
+                    <span />
+                  </label>
+                </div>
+                <div className="lps-row">
+                  <TextField label="Students label" value={copy.stats_students_label} onChange={(v) => setCopy("stats_students_label", v)} />
+                  <TextField label="Teachers label" value={copy.stats_teachers_label} onChange={(v) => setCopy("stats_teachers_label", v)} />
+                </div>
+                <div className="lps-row">
+                  <TextField label="Classes label" value={copy.stats_classes_label} onChange={(v) => setCopy("stats_classes_label", v)} />
+                  <TextField label="Admissions value" value={copy.stats_admissions_value} onChange={(v) => setCopy("stats_admissions_value", v)} />
+                </div>
+                <TextField label="Admissions label" value={copy.stats_admissions_label} onChange={(v) => setCopy("stats_admissions_label", v)} />
+              </section>
+            </>
+          )}
         </div>
 
-        <div className="lps-col-side">
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#F15A24' }}><Palette size={24} /> Identity</div>
-            <div className="lps-form-group">
-              <label className="lps-label">Hero Image (URL or Upload)</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <input 
-                  type="text" 
-                  value={settings.hero_image_url} 
-                  onChange={(e) => setSettings({...settings, hero_image_url: e.target.value})} 
-                  className="lps-input" 
-                  placeholder="Paste URL or upload below..."
-                />
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <label className="lps-save-btn" style={{ background: '#f1f5f9', color: '#475569', padding: '12px 20px', fontSize: '13px', borderRadius: '12px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
-                    <ImageIcon size={16} /> Upload from PC
-                    <input 
-                      type="file" 
-                      style={{ display: 'none' }} 
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        const formData = new FormData();
-                        formData.append('image', file);
-                        setLoading(true);
-                        try {
-                          const res = await api.post('/school/upload-image/', formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                          });
-                          setSettings({...settings, hero_image_url: res.data.url});
-                          setMessage('Image uploaded successfully!');
-                          setTimeout(() => setMessage(''), 3000);
-                        } catch (err) {
-                          setMessage('Upload failed.');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    />
-                  </label>
-                  {loading && <div style={{ width: '40px', height: '4px', background: '#F15A24', borderRadius: '10px' }} />}
-                </div>
+        <aside className="lps-preview">
+          <div className="lps-preview-card" style={{ "--preview-primary": preview.primary, "--preview-secondary": preview.secondary }}>
+            <p>Live preview</p>
+            <div className="lps-hero-mock">
+              {settings.hero_image_url ? <img src={settings.hero_image_url} alt="" /> : <div className="lps-hero-fallback">{(tenant.schoolName || "S").slice(0, 1)}</div>}
+              <div className="lps-hero-copy">
+                <small>{preview.kicker}</small>
+                <strong>{preview.title}</strong>
+                <span>{preview.subtitle}</span>
               </div>
             </div>
-            <div className="lps-form-group">
-              <label className="lps-label">Orbit Center Image (Student Image)</label>
-              <input type="text" value={settings.center_image_url} onChange={(e) => setSettings({...settings, center_image_url: e.target.value})} className="lps-input" placeholder="Paste image URL..." />
+            <div className="lps-preview-meta">
+              <span><Phone size={14} /> {settings.contact_phone || "Phone not set"}</span>
+              <a href={tab === "admissions" ? applyUrl : previewUrl} target="_blank" rel="noreferrer">
+                Open {tab === "admissions" ? "apply page" : "website"} <ExternalLink size={12} />
+              </a>
             </div>
-            <div className="lps-form-group">
-              <label className="lps-label">Primary Color</label>
-              <div className="lps-color-picker">
-                <input type="color" value={settings.primary_color} onChange={(e) => setSettings({...settings, primary_color: e.target.value})} className="lps-color-input" />
-                <span className="font-black text-slate-500 uppercase">{settings.primary_color}</span>
-              </div>
-            </div>
-          </section>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
-          <section className="lps-card">
-            <div className="lps-card-title" style={{ color: '#F15A24' }}><Mail size={24} /> Contact</div>
-            <div className="lps-form-group">
-              <label className="lps-label">Email</label>
-              <input type="email" value={settings.contact_email} onChange={(e) => setSettings({...settings, contact_email: e.target.value})} className="lps-input" />
-            </div>
-            <div className="lps-form-group">
-              <label className="lps-label">Phone</label>
-              <input type="text" value={settings.contact_phone} onChange={(e) => setSettings({...settings, contact_phone: e.target.value})} className="lps-input" />
-            </div>
-            <div className="lps-toggle">
-              <div className="lps-toggle-text">
-                <h4>Display Statistics</h4>
-                <p>Show real-time student counts.</p>
-              </div>
-              <label className="lps-switch">
-                <input type="checkbox" checked={settings.show_stats} onChange={(e) => setSettings({...settings, show_stats: e.target.checked})} />
-                <span className="lps-slider"></span>
-              </label>
-            </div>
-          </section>
-
-          <section className="lps-card">
-             <div className="lps-card-title" style={{ color: '#0F172A' }}><FileText size={24} /> About Summary</div>
-             <textarea value={settings.about} onChange={(e) => setSettings({...settings, about: e.target.value})} className="lps-input" style={{ minHeight: '150px' }} />
-          </section>
+function ImageField({ label, value, uploading, onUrl, onFile }) {
+  return (
+    <div className="lps-field">
+      <span className="lps-label-text">{label}</span>
+      <div className="lps-image-field">
+        <div className="lps-thumb">{value ? <img src={value} alt="" /> : <ImageIcon size={22} />}</div>
+        <div className="lps-image-controls">
+          <input className="lps-input" value={value} onChange={(e) => onUrl(e.target.value)} placeholder="Paste image URL" />
+          <label className="lps-btn lps-btn-ghost lps-upload">
+            <Upload size={16} />
+            {uploading ? "Uploading…" : "Upload from PC"}
+            <input type="file" accept="image/*" hidden onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
         </div>
       </div>
     </div>
   );
-};
-
-export default LandingPageSettings;
+}

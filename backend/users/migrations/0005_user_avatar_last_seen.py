@@ -1,0 +1,21 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("users", "0004_user_role_parent"),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name="user",
+            name="avatar_url",
+            field=models.TextField(blank=True, default=""),
+        ),
+        migrations.AddField(
+            model_name="user",
+            name="last_seen",
+            field=models.DateTimeField(blank=True, null=True),
+        ),
+    ]

@@ -16,13 +16,18 @@ def seed_data():
         code="BFA001",
         defaults={
             "name": "Bright Future Academy",
+            "domain": "bright-future-academy.localhost",
             "status": "Approved",
             "plan_status": "Active"
         }
     )
-    
-    # Ensure dedicated database exists
-    create_tenant_database(school)
+    if not school.domain:
+        school.domain = "bright-future-academy.localhost"
+        school.save()
+
+    from django.conf import settings
+    if getattr(settings, "ENABLE_TENANT_DB_CREATION", False):
+        create_tenant_database(school)
     if created:
         print(f"Created School: {school.name}")
     else:

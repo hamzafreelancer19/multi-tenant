@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'transport',
     'staff',
     'inventory',
+    'chat',
 ]
 
 # Groq AI Settings
@@ -81,6 +82,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.PlatformAccessMiddleware',
     'core.middleware.TenantMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -109,23 +111,11 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=f"postgres://postgres:hamza123@localhost:5432/school_db",
-#         conn_max_age=0
-#     )
-# }
-
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway',
-        'USER': 'postgres',
-        'PASSWORD': 'LmnycnuIwDVqrhRZmHDPVmnTIsKSVmwQ',
-        'HOST': 'switchyard.proxy.rlwy.net',
-        'PORT': '26790',
-    }
+    'default': dj_database_url.config(
+        default="postgres://postgres:hamza123@127.0.0.1:5432/school_db",
+        conn_max_age=0
+    )
 }
 
 # Future: Tenant databases will be injected dynamically at runtime
@@ -145,9 +135,9 @@ DATABASE_ROUTERS = [
 ]
 
 # SaaS Architecture Control Flags
-# SaaS Architecture Control Flags
+# Shared-schema tenancy (school FK) is the default. Dedicated DBs are opt-in.
 ENABLE_TENANT_DB_CREATION = os.getenv('ENABLE_TENANT_DB_CREATION', 'False') == 'True'
-TENANT_DB_SWITCHING_ENABLED = True 
+TENANT_DB_SWITCHING_ENABLED = os.getenv('TENANT_DB_SWITCHING_ENABLED', 'False') == 'True' 
 
 
 # Password validation
@@ -209,10 +199,14 @@ REST_FRAMEWORK = {
     ),
 }
 
+SIMPLE_JWT = {
+    'UPDATE_LAST_LOGIN': True,
+}
+
 # CORS & CSRF
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,https://multi-tenant-production-6364.up.railway.app').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,https://multi-tenant-production-6364.up.railway.app').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,https://multi-tenant-production-6364.up.railway.app').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,https://multi-tenant-production-6364.up.railway.app').split(',')
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-tenant-domain',

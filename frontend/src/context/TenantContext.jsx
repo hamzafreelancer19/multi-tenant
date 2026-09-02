@@ -3,87 +3,95 @@ import api from '../api/axios';
 
 const TenantContext = createContext();
 
+const isPlatformHost = (hostname) => {
+  const host = (hostname || '').toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app');
+};
+
 export const TenantProvider = ({ children }) => {
   const [tenant, setTenant] = useState({
     hostname: window.location.hostname,
     schoolId: null,
     schoolName: null,
+    schoolDomain: null,
+    schoolSlug: null,
     landing: null,
+    branding: null,
     loading: true,
     error: null,
   });
 
-  const fetchTenantInfo = useCallback(async () => {
-    setTenant(prev => ({ ...prev, loading: true }));
-    try {
-      const response = await api.get('/tenant-info/');
-      if (response.data.school_id) {
-        setTenant(prev => ({
-          ...prev,
-          schoolId: response.data.school_id,
-          schoolName: response.data.school_name,
-          landing: response.data.landing,
-          loading: false,
-        }));
-      } else {
-        setTenant(prev => ({
-          ...prev,
-          loading: false,
-          schoolName: null,
-          landing: null,
-        }));
-      }
-    } catch (err) {
-      setTenant(prev => ({
+  const applyTenant = useCallback((data) => {
+    if (data?.school_id) {
+      setTenant((prev) => ({
         ...prev,
+        schoolId: data.school_id,
+        schoolName: data.school_name,
+        schoolDomain: data.school_domain || null,
+        schoolSlug: data.school_slug || null,
+        landing: data.landing,
+        branding: data.branding,
         loading: false,
-        error: err.response?.data?.detail || 'Tenant not found',
+        error: null,
+      }));
+    } else {
+      setTenant((prev) => ({
+        ...prev,
+        schoolId: null,
+        schoolName: null,
+        schoolDomain: null,
+        schoolSlug: null,
+        landing: null,
+        branding: null,
+        loading: false,
+        error: data?.detail || null,
       }));
     }
   }, []);
 
+  const fetchTenantInfo = useCallback(async () => {
+    setTenant((prev) => ({ ...prev, loading: true }));
+    try {
+      const hostname = window.location.hostname;
+      const params = isPlatformHost(hostname) ? {} : { domain: hostname };
+      const response = await api.get('/tenant-info/', { params });
+      applyTenant(response.data);
+    } catch (err) {
+      setTenant((prev) => ({
+        ...prev,
+        loading: false,
+        schoolName: null,
+        error: err.response?.data?.detail || 'Tenant not found',
+      }));
+    }
+  }, [applyTenant]);
+
   const setForcedSchool = useCallback(async (slug) => {
     if (!slug) return;
-    setTenant(prev => ({ ...prev, loading: true }));
+    setTenant((prev) => ({ ...prev, loading: true }));
     try {
-      const response = await api.get(`/tenant-info/?domain=${slug}`);
-      if (response.data.school_id) {
-        setTenant(prev => ({
-          ...prev,
-          schoolId: response.data.school_id,
-          schoolName: response.data.school_name,
-          landing: response.data.landing,
-          loading: false,
-        }));
-      }
+      const response = await api.get('/tenant-info/', { params: { domain: slug } });
+      applyTenant(response.data);
     } catch (err) {
-      setTenant(prev => ({ ...prev, loading: false }));
+      setTenant((prev) => ({ ...prev, loading: false }));
     }
+  }, [applyTenant]);
+
+  useEffect(() => {
+    const slugMatch = window.location.pathname.match(/^\/s\/([^/]+)/);
+    if (slugMatch) {
+      setForcedSchool(decodeURIComponent(slugMatch[1]));
+    } else {
+      fetchTenantInfo();
+    }
+  }, [fetchTenantInfo, setForcedSchool]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    ["--dashboard-primary", "--dashboard-secondary", "--dashboard-accent", "--landing-primary", "--landing-secondary"].forEach((prop) => {
+      root.style.removeProperty(prop);
+    });
   }, []);
-
-  useEffect(() => {
-    fetchTenantInfo();
-  }, [fetchTenantInfo]);
-
-  // Apply Branding Colors to CSS Variables
-  useEffect(() => {
-    if (tenant.branding) {
-      const root = document.documentElement;
-      
-      // Dashboard Colors
-      if (tenant.branding.dashboard) {
-        root.style.setProperty('--dashboard-primary', tenant.branding.dashboard.primary_color);
-        root.style.setProperty('--dashboard-secondary', tenant.branding.dashboard.secondary_color);
-        root.style.setProperty('--dashboard-accent', tenant.branding.dashboard.accent_color);
-      }
-      
-      // Landing Colors
-      if (tenant.branding.landing) {
-        root.style.setProperty('--landing-primary', tenant.branding.landing.primary_color);
-        root.style.setProperty('--landing-secondary', tenant.branding.landing.secondary_color);
-      }
-    }
-  }, [tenant.branding]);
 
   return (
     <TenantContext.Provider value={{ ...tenant, refreshTenant: fetchTenantInfo, setForcedSchool }}>

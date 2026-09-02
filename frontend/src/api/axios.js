@@ -29,13 +29,28 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // 1. Priority: Domain from localStorage (for single-domain testing like Vercel)
+
+    const hostname = window.location.hostname.toLowerCase();
+    const isPlatformHost =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.endsWith(".vercel.app");
     const storedDomain = localStorage.getItem("schoolDomain");
-    
-    // 2. Fallback: Actual hostname (for production with subdomains)
-    config.headers["X-Tenant-Domain"] = storedDomain || window.location.hostname;
-    
+
+    // On a real school host, always use that host so the public landing resolves.
+    // On the platform host, keep stored school domain for dashboard API scoping.
+    config.headers["X-Tenant-Domain"] = isPlatformHost
+      ? (storedDomain || hostname)
+      : hostname;
+
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (typeof config.headers?.delete === "function") {
+        config.headers.delete("Content-Type");
+      } else {
+        delete config.headers["Content-Type"];
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -46,6 +61,33 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    if (error.response?.status === 503 && error.response?.data?.code === "maintenance") {
+      const url = originalRequest?.url || "";
+      const isPublicAuth =
+        (url.includes("token/") && !url.includes("refresh")) ||
+        url.includes("auth/google") ||
+        url.includes("signup") ||
+        url.includes("platform/status");
+      if (!isPublicAuth) {
+        let role = "";
+        try {
+          role = JSON.parse(localStorage.getItem("user") || "{}")?.role || "";
+        } catch {
+          role = "";
+        }
+        if (role !== "superadmin") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          const path = window.location.pathname;
+          if (path !== "/" && path !== "/login" && path !== "/signup") {
+            window.location.href = "/login?maintenance=1";
+          }
+        }
+      }
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       const isLoginRequest = originalRequest.url?.includes("token/");

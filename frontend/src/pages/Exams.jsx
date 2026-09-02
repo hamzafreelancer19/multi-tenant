@@ -1,138 +1,169 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Trophy, 
-  BookOpen, 
-  Calendar, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  ChevronRight,
-  GraduationCap,
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
+import {
   ClipboardList,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  BarChart3,
-  X,
-  Loader2,
-  Trash2,
   Edit,
-  Sparkles,
-  ArrowUpRight,
-  Send,
+  Loader2,
   MessageCircle,
-  Zap,
-  Play
-} from 'lucide-react';
-import { getExams, createExam, updateExam, deleteExam } from '../api/examsApi';
-import { getStudents } from '../api/studentsApi';
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import { getExams, createExam, updateExam, deleteExam, getExamResults, saveExamResults } from "../api/examsApi";
+import { getStudents } from "../api/studentsApi";
+import { getClasses } from "../api/classesApi";
+import { useTenant } from "../context/TenantContext";
+import AppModal from "../components/AppModal";
+import "./Dashboard.css";
+import "./Students.css";
+import "./Exams.css";
 
-const EXAM_TYPES = ['Midterm', 'Final', 'Monthly', 'Other'];
-const CLASS_OPTIONS = [
-  "Nursery", "Prep",
-  "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
-  "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"
+const EXAM_TYPES = ["Midterm", "Final", "Monthly", "Quiz", "Other"];
+const SUBJECTS = [
+  "Mathematics", "English", "Urdu", "Physics", "Chemistry", "Biology",
+  "Computer Science", "Islamiat", "Pakistan Studies", "General",
 ];
 
-const Exams = () => {
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function unique(list) {
+  return [...new Set(list.map((v) => (v || "").trim()).filter(Boolean))];
+}
+
+function classLabel(c) {
+  return c.section ? `${c.name} - ${c.section}` : c.name;
+}
+
+function contactPhone(s) {
+  return s?.father_phone || s?.phone || s?.mother_phone || "";
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(`${value}T12:00:00`).toLocaleDateString("en-PK", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function examStatus(exam) {
+  if (exam.status) return exam.status;
+  const today = todayISO();
+  if (exam.start_date > today) return "Upcoming";
+  if (exam.end_date < today) return "Completed";
+  return "Ongoing";
+}
+
+const EMPTY_FORM = {
+  title: "",
+  class_name: "",
+  exam_type: "Monthly",
+  subject: "Mathematics",
+  start_date: todayISO(),
+  end_date: todayISO(),
+  total_marks: "100",
+  venue: "",
+  description: "",
+};
+
+export default function Exams() {
+  const tenant = useTenant();
+  const location = useLocation();
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
+  const [schoolClasses, setSchoolClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  
+  const [tab, setTab] = useState("All");
+  const [selectedClass, setSelectedClass] = useState(location.state?.className || "All");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  
-  const [showDistModal, setShowDistModal] = useState(false);
-  const [selectedExam, setSelectedExam] = useState(null);
-  const [distStudents, setDistStudents] = useState([]);
-  const [isSendingAll, setIsSendingAll] = useState(false);
-  const [sendProgress, setSendProgress] = useState(0);
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [resultsExam, setResultsExam] = useState(null);
+  const [resultMarks, setResultMarks] = useState({});
+  const [notifyExam, setNotifyExam] = useState(null);
 
-  const emptyForm = {
-    title: "",
-    class_name: "Grade 10",
-    exam_type: "Midterm",
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0],
-    description: ""
-  };
-  const [formData, setFormData] = useState(emptyForm);
+  const classOptions = useMemo(() => {
+    const fromApi = schoolClasses.map(classLabel);
+    const fromStudents = students.map((s) => s.class_name);
+    const fromExams = exams.map((e) => e.class_name);
+    return unique([...fromApi, ...fromStudents, ...fromExams]);
+  }, [schoolClasses, students, exams]);
 
-  useEffect(() => {
-    fetchExams();
-    fetchStudents();
-  }, []);
-
-  const fetchExams = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const response = await getExams();
-      setExams(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Error fetching exams:', error);
+      const [examRes, studentRes, classRes] = await Promise.all([
+        getExams(),
+        getStudents().catch(() => ({ data: [] })),
+        getClasses().catch(() => ({ data: [] })),
+      ]);
+      setExams(Array.isArray(examRes.data) ? examRes.data : []);
+      setStudents(Array.isArray(studentRes.data) ? studentRes.data : []);
+      setSchoolClasses(Array.isArray(classRes.data) ? classRes.data : []);
+    } catch (err) {
+      console.error("Failed to load exams:", err);
       setExams([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const response = await getStudents();
-      setStudents(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error("Failed to fetch students:", err);
-    }
-  };
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const setField = (key) => (e) => setFormData((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const classStudents = (className) =>
+    students.filter((s) => (s.status || "Active") === "Active" && (!className || s.class_name === className));
 
   const openAdd = () => {
-    setFormData(emptyForm);
+    setFormData({ ...EMPTY_FORM, class_name: classOptions[0] || "", start_date: todayISO(), end_date: todayISO() });
     setEditingId(null);
     setShowModal(true);
   };
 
   const openEdit = (exam) => {
     setFormData({
-      title: exam.title,
-      class_name: exam.class_name || "Grade 10",
-      exam_type: exam.exam_type,
-      start_date: exam.start_date,
-      end_date: exam.end_date,
-      description: exam.description || ""
+      title: exam.title || "",
+      class_name: exam.class_name || "",
+      exam_type: exam.exam_type || "Monthly",
+      subject: exam.subject || "Mathematics",
+      start_date: exam.start_date || todayISO(),
+      end_date: exam.end_date || todayISO(),
+      total_marks: String(exam.total_marks || 100),
+      venue: exam.venue || "",
+      description: exam.description || "",
     });
     setEditingId(exam.id);
     setShowModal(true);
   };
 
-  const openDist = (exam) => {
-    setSelectedExam(exam);
-    const relevantStudents = students.filter(s => s.class_name === exam.class_name);
-    setDistStudents(relevantStudents);
-    setShowDistModal(true);
-    setSendProgress(0);
-    setIsSendingAll(false);
-  };
-
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
-    setFormData(emptyForm);
+    setFormData(EMPTY_FORM);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return alert("Title is required");
+    if (formData.end_date < formData.start_date) return alert("End date cannot be before start date");
     setSaving(true);
     try {
-      if (editingId) await updateExam(editingId, formData);
-      else await createExam(formData);
+      const payload = { ...formData, total_marks: Number(formData.total_marks) || 100 };
+      if (editingId) await updateExam(editingId, payload);
+      else await createExam(payload);
       closeModal();
-      await fetchExams();
-    } catch (error) {
+      await fetchAll();
+    } catch {
       alert("Failed to save exam.");
     } finally {
       setSaving(false);
@@ -140,203 +171,381 @@ const Exams = () => {
   };
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`Delete "${title}"?`)) return;
+    if (!window.confirm(`Delete "${title}"? Results for this exam will also be removed.`)) return;
     try {
       await deleteExam(id);
-      await fetchExams();
-    } catch (error) {
+      setResultsExam(null);
+      await fetchAll();
+    } catch {
       alert("Failed to delete exam.");
     }
   };
 
-  const getWAMessage = (student, exam) => {
-    return encodeURIComponent(
-      `📚 *NEW EXAM ANNOUNCEMENT*\n\n` +
-      `The *${exam.title}* is scheduled for *${exam.class_name}*.\n\n` +
-      `📅 Dates: ${exam.start_date} to ${exam.end_date}\n\n` +
-      `Management`
-    );
-  };
-
-  const sendAllAutomatically = async () => {
-    if (!window.confirm(`Start sequence for ${distStudents.filter(s => s.phone).length} students?`)) return;
-    
-    setIsSendingAll(true);
-    const hasPhones = distStudents.filter(s => s.phone);
-    
-    for (let i = 0; i < hasPhones.length; i++) {
-      const s = hasPhones[i];
-      setSendProgress(((i + 1) / hasPhones.length) * 100);
-      window.open(`https://wa.me/${s.phone.replace(/[^0-9]/g, '')}?text=${getWAMessage(s, selectedExam)}`, '_blank');
-      await new Promise(resolve => setTimeout(resolve, 1500));
+  const openResults = async (exam) => {
+    setResultsExam(exam);
+    const roster = classStudents(exam.class_name);
+    const next = {};
+    roster.forEach((s) => {
+      next[s.id] = { marks: "", remarks: "" };
+    });
+    try {
+      const res = await getExamResults(exam.id);
+      const rows = Array.isArray(res.data) ? res.data : res.data?.results || [];
+      rows.forEach((row) => {
+        next[row.student] = { marks: String(row.marks_obtained ?? ""), remarks: row.remarks || "" };
+      });
+    } catch {
+      /* empty marks */
     }
-    
-    setIsSendingAll(false);
-    alert("Broadcast completed.");
+    setResultMarks(next);
   };
 
-  const filteredExams = exams.filter(exam => {
-    const q = search.toLowerCase();
-    const matchesSearch = exam.title.toLowerCase().includes(q) || (exam.class_name && exam.class_name.toLowerCase().includes(q));
-    const today = new Date().toISOString().split('T')[0];
-    if (activeTab === 'upcoming') return matchesSearch && exam.start_date >= today;
-    if (activeTab === 'completed') return matchesSearch && exam.end_date < today;
-    return matchesSearch;
+  const saveResults = async () => {
+    if (!resultsExam) return;
+    const results = Object.entries(resultMarks)
+      .filter(([, row]) => row.marks !== "" && row.marks != null)
+      .map(([student_id, row]) => ({
+        student_id: Number(student_id),
+        marks_obtained: Number(row.marks),
+        remarks: row.remarks || "",
+      }));
+    if (!results.length) return alert("Enter marks for at least one student.");
+    setSaving(true);
+    try {
+      await saveExamResults(resultsExam.id, {
+        subject: resultsExam.subject || "General",
+        total_marks: resultsExam.total_marks || 100,
+        results,
+      });
+      setResultsExam(null);
+      await fetchAll();
+    } catch {
+      alert("Failed to save results.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const notifyList = notifyExam ? classStudents(notifyExam.class_name) : [];
+
+  const sendNotice = (student, exam) => {
+    const phone = contactPhone(student);
+    if (!phone) return;
+    const msg = encodeURIComponent(
+      `Exam notice\n\n${exam.title} (${exam.exam_type}) for ${exam.class_name || "your class"}.\nDates: ${formatDate(exam.start_date)} to ${formatDate(exam.end_date)}${exam.subject ? `\nSubject: ${exam.subject}` : ""}${exam.venue ? `\nVenue: ${exam.venue}` : ""}\n\n${tenant.schoolName || "School"}`
+    );
+    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, "")}?text=${msg}`, "_blank");
+  };
+
+  const filtered = exams.filter((exam) => {
+    const q = search.toLowerCase().trim();
+    const blob = [exam.title, exam.class_name, exam.exam_type, exam.subject, exam.venue].join(" ").toLowerCase();
+    const matchSearch = !q || blob.includes(q);
+    const matchClass = selectedClass === "All" || exam.class_name === selectedClass;
+    const st = examStatus(exam);
+    const matchTab = tab === "All" || st === tab;
+    return matchSearch && matchClass && matchTab;
   });
 
+  const stats = {
+    total: exams.length,
+    upcoming: exams.filter((e) => examStatus(e) === "Upcoming").length,
+    ongoing: exams.filter((e) => examStatus(e) === "Ongoing").length,
+    completed: exams.filter((e) => examStatus(e) === "Completed").length,
+  };
+
   return (
-    <div className="page" style={{ position: 'relative', minHeight: '100%', background: 'transparent' }}>
-      <style>{`
-        .p-card { background: var(--bg-card); backdrop-filter: var(--glass-blur); border-radius: 24px; padding: 24px; border: 1px solid var(--border-glass); box-shadow: 0 10px 30px rgba(0,0,0,0.03); transition: all 0.3s; position: relative; }
-        .p-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
-        .p-btn-indigo { background: var(--gradient-primary) !important; color: white !important; font-weight: 800 !important; padding: 12px 24px !important; border-radius: 16px !important; border: none !important; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2) !important; cursor: pointer !important; display: flex; align-items: center; gap: 8px; font-size: 13px; }
-        .p-btn-indigo:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .p-btn-wa-auto { background: #25D366 !important; color: white !important; font-weight: 800 !important; padding: 14px 28px !important; border-radius: 20px !important; border: none !important; box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2) !important; cursor: pointer !important; transition: all 0.2s !important; display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0 auto; }
-        .p-btn-wa-auto:hover { transform: scale(1.02); }
-        .p-progress-bar { height: 8px; background: var(--bg-hover); border-radius: 4px; overflow: hidden; margin-top: 10px; width: 100%; }
-        .p-progress-fill { height: 100%; background: #25D366; transition: width 0.3s; }
-      `}</style>
-
-      {/* Decorative Blur */}
-      <div style={{ position: 'absolute', top: 0, right: 0, width: 300, height: 300, background: 'rgba(79, 70, 229, 0.05)', filter: 'blur(100px)', pointerEvents: 'none', zIndex: -1 }} />
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+    <div className="page dash-page st-page">
+      <header className="dash-hero">
         <div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <div style={{ background: 'var(--accent)', padding: 4, borderRadius: 6, color: 'white' }}><GraduationCap size={14} /></div>
-              <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>Academic Portal</span>
-           </div>
-           <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-1px' }}>Exam Management</h1>
-           <p style={{ fontSize: 15, color: 'var(--text-secondary)', fontWeight: 600 }}>Schedule and distribute assessments instantly.</p>
+          <p className="dash-kicker">Assessments</p>
+          <h1>Exams</h1>
+          <p>Schedule papers, enter marks, and notify families at {tenant.schoolName || "your school"}.</p>
         </div>
-        <button onClick={openAdd} className="p-btn-indigo"><Plus size={20} /> Schedule Exam</button>
+        <div className="dash-hero-meta">
+          <button type="button" className="st-add-btn" onClick={openAdd}>
+            <Plus size={16} /> Schedule exam
+          </button>
+        </div>
+      </header>
+
+      <div className="dash-stats">
+        <button type="button" className="dash-stat dash-stat-orange" onClick={() => setTab("All")}>
+          <span>Total</span>
+          <strong>{loading ? "—" : stats.total}</strong>
+          <small>exams</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-navy" onClick={() => setTab("Upcoming")}>
+          <span>Upcoming</span>
+          <strong>{loading ? "—" : stats.upcoming}</strong>
+          <small>not started</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-gold" onClick={() => setTab("Ongoing")}>
+          <span>Ongoing</span>
+          <strong>{loading ? "—" : stats.ongoing}</strong>
+          <small>this week</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-green" onClick={() => setTab("Completed")}>
+          <span>Completed</span>
+          <strong>{loading ? "—" : stats.completed}</strong>
+          <small>ready for results</small>
+        </button>
       </div>
 
-      {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
-        {exams.length > 0 ? filteredExams.map(exam => (
-          <div key={exam.id} className="p-card">
-            <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--accent)', color: 'white', fontSize: 9, fontWeight: 900, padding: '4px 12px', borderRadius: '0 0 0 16px' }}>{exam.class_name}</div>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-               <span style={{ padding: '4px 10px', background: 'var(--bg-base)', borderRadius: 8, fontSize: 9, fontWeight: 900, color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{exam.exam_type}</span>
-               <div style={{ display: 'flex', gap: 4 }}>
-                  <button onClick={() => openEdit(exam)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><Edit size={16} /></button>
-                  <button onClick={() => handleDelete(exam.id, exam.title)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#fee2e2' }}><Trash2 size={16} /></button>
-               </div>
-            </div>
-
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 16 }}>{exam.title}</h3>
-
-            <div style={{ background: 'var(--bg-base)', padding: 14, borderRadius: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
-               <Calendar size={16} color="var(--accent)" />
-               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-secondary)' }}>{exam.start_date} - {exam.end_date}</span>
-            </div>
-
-            <button 
-              onClick={() => openDist(exam)}
-              style={{ width: '100%', padding: 14, background: '#25D366', color: 'white', border: 'none', borderRadius: 16, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}
-            >
-              <MessageCircle size={18} />
-              Auto Broadcast to {exam.class_name}
+      <div className="st-toolbar">
+        <div className="st-search">
+          <Search size={16} />
+          <input
+            placeholder="Search title, class, subject…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} aria-label="Clear search">
+              <X size={14} />
             </button>
+          )}
+        </div>
+        <div className="st-filters">
+          {["All", "Upcoming", "Ongoing", "Completed"].map((f) => (
+            <button key={f} type="button" className={tab === f ? "is-on" : ""} onClick={() => setTab(f)}>
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="st-classes">
+        <button type="button" className={selectedClass === "All" ? "is-on" : ""} onClick={() => setSelectedClass("All")}>
+          All classes
+        </button>
+        {classOptions.map((c) => (
+          <button key={c} type="button" className={selectedClass === c ? "is-on" : ""} onClick={() => setSelectedClass(c)}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <section className="dash-panel st-panel">
+        {loading ? (
+          <div className="st-empty">
+            <Loader2 className="spin" size={32} />
+            <p>Loading exams…</p>
           </div>
-        )) : (
-          <div className="col-span-full" style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: 32, border: '2px dashed var(--border)' }}>
-            <BarChart3 size={48} color="#e2e8f0" style={{ marginBottom: 16 }} />
-            <h2 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>No Assessments</h2>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: 24, fontSize: 14 }}>Schedule your first exam to get started.</p>
-            <button onClick={openAdd} className="p-btn-indigo" style={{ margin: '0 auto' }}>Create Exam <Plus size={20} /></button>
+        ) : filtered.length === 0 ? (
+          <div className="st-empty">
+            <ClipboardList size={36} />
+            <p>{exams.length ? "No exams match these filters." : "No exams yet. Schedule the first paper."}</p>
+            {!exams.length && <button type="button" onClick={openAdd}>Schedule exam</button>}
+          </div>
+        ) : (
+          <div className="st-table-wrap">
+            <table className="st-table">
+              <thead>
+                <tr>
+                  <th>Exam</th>
+                  <th>Class</th>
+                  <th>Dates</th>
+                  <th>Marks</th>
+                  <th>Status</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((exam) => {
+                  const st = examStatus(exam);
+                  return (
+                    <tr key={exam.id}>
+                      <td>
+                        <div className="st-cell-stack">
+                          <b>{exam.title}</b>
+                          <small>{exam.exam_type}{exam.subject ? ` · ${exam.subject}` : ""}{exam.venue ? ` · ${exam.venue}` : ""}</small>
+                        </div>
+                      </td>
+                      <td>{exam.class_name || "—"}</td>
+                      <td>{formatDate(exam.start_date)} – {formatDate(exam.end_date)}</td>
+                      <td className="st-mono">{exam.total_marks || 100}</td>
+                      <td>
+                        <span className={`st-badge ${st === "Completed" ? "is-on" : st === "Ongoing" ? "is-warn" : "is-off"}`}>
+                          {st}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="st-actions">
+                          <button type="button" title="Results" onClick={() => openResults(exam)}><ClipboardList size={15} /></button>
+                          <button type="button" title="Notify" onClick={() => setNotifyExam(exam)}><MessageCircle size={15} /></button>
+                          <button type="button" title="Edit" onClick={() => openEdit(exam)}><Edit size={15} /></button>
+                          <button type="button" className="is-danger" title="Delete" onClick={() => handleDelete(exam.id, exam.title)}>
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* COMPACT AUTO BROADCAST MODAL */}
-      {showDistModal && selectedExam && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => e.target === e.currentTarget && !isSendingAll && setShowDistModal(false)}>
-           <div style={{ background: 'var(--bg-card)', backdropFilter: 'var(--glass-blur)', border: '1px solid var(--border-glass)', width: '100%', maxWidth: 480, borderRadius: 40, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.3)', position: 'relative' }}>
-              <div style={{ background: '#25D366', padding: 32, color: 'white', textAlign: 'center' }}>
-                 <h2 style={{ fontSize: 24, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                    <Zap size={28} className={isSendingAll ? 'animate-pulse' : ''} /> Auto-Broadcast
-                 </h2>
-                 <p style={{ fontSize: 14, fontWeight: 700, opacity: 0.9, marginTop: 8 }}>Sending to {distStudents.length} students ({selectedExam.class_name})</p>
-                 {!isSendingAll && <button onClick={() => setShowDistModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: 'rgba(0,0,0,0.08)', border: 'none', padding: 8, borderRadius: '50%', color: 'white', cursor: 'pointer' }}><X size={18} /></button>}
+      <p className="st-count">Showing {filtered.length} of {exams.length} exams</p>
+
+      {showModal && (
+        <AppModal onClose={closeModal}>
+          <form className="st-modal" onSubmit={handleSave}>
+            <header>
+              <div>
+                <p>Exam record</p>
+                <h2>{editingId ? "Edit exam" : "Schedule exam"}</h2>
               </div>
-
-              <div style={{ padding: 32 }}>
-                 {isSendingAll ? (
-                   <div style={{ textAlign: 'center' }}>
-                      <Loader2 size={40} className="animate-spin" style={{ color: '#25D366', margin: '0 auto 16px' }} />
-                      <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>Broadcasting...</h3>
-                      <div className="p-progress-bar">
-                         <div className="p-progress-fill" style={{ width: `${sendProgress}%` }} />
-                      </div>
-                      <p style={{ fontSize: 10, fontWeight: 900, color: '#25D366', marginTop: 10 }}>{Math.round(sendProgress)}% COMPLETED</p>
-                   </div>
-                 ) : (
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      <div style={{ background: 'var(--bg-base)', padding: 24, borderRadius: 24, border: '1px solid var(--border)', textAlign: 'center' }}>
-                         <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 16 }}>Clicking below will start the automatic sequence.</p>
-                         <button onClick={sendAllAutomatically} className="p-btn-wa-auto">
-                            <Play size={18} /> START BROADCAST
-                         </button>
-                      </div>
-
-                      <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 16, padding: 10 }}>
-                         <h4 style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Queue:</h4>
-                         {distStudents.map(s => (
-                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', borderBottom: '1px solid var(--bg-base)' }}>
-                               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>{s.name}</span>
-                               <span style={{ fontSize: 10, fontWeight: 700, color: s.phone ? '#25D366' : '#ef4444' }}>{s.phone ? s.phone : 'No Phone'}</span>
-                            </div>
-                         ))}
-                      </div>
-                   </div>
-                 )}
+              <button type="button" onClick={closeModal}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <p className="st-section">Details</p>
+              <div className="st-grid">
+                <label className="st-span-2">
+                  Title *
+                  <input required value={formData.title} onChange={setField("title")} placeholder="e.g. Midterm Mathematics" />
+                </label>
+                <label>
+                  Class
+                  <select value={formData.class_name} onChange={setField("class_name")}>
+                    <option value="">Select class</option>
+                    {classOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Type
+                  <select value={formData.exam_type} onChange={setField("exam_type")}>
+                    {EXAM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Subject
+                  <select value={formData.subject} onChange={setField("subject")}>
+                    {unique([...SUBJECTS, formData.subject]).map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Total marks
+                  <input type="number" min="1" value={formData.total_marks} onChange={setField("total_marks")} />
+                </label>
+                <label>
+                  Start date
+                  <input type="date" value={formData.start_date} onChange={setField("start_date")} />
+                </label>
+                <label>
+                  End date
+                  <input type="date" value={formData.end_date} onChange={setField("end_date")} />
+                </label>
+                <label className="st-span-2">
+                  Venue / room
+                  <input value={formData.venue} onChange={setField("venue")} placeholder="e.g. Hall 2" />
+                </label>
+                <label className="st-span-2">
+                  Syllabus / notes
+                  <textarea rows={3} value={formData.description} onChange={setField("description")} placeholder="Chapters, instructions…" />
+                </label>
               </div>
-
-              <div style={{ background: 'var(--bg-base)', padding: 16, textAlign: 'center' }}>
-                 <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)' }}>TIP: PLEASE ALLOW POPUPS IN BROWSER SETTINGS.</p>
-              </div>
-           </div>
-        </div>
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={closeModal}>Cancel</button>
+              <button type="submit" className="st-add-btn" disabled={saving}>
+                {saving ? <Loader2 size={16} className="spin" /> : editingId ? "Save changes" : "Create exam"}
+              </button>
+            </footer>
+          </form>
+        </AppModal>
       )}
 
-      {/* Standard Modal */}
-      {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div style={{ background: 'var(--bg-card)', backdropFilter: 'var(--glass-blur)', border: '1px solid var(--border-glass)', width: '100%', maxWidth: 500, borderRadius: 32, overflow: 'hidden' }}>
-             <div style={{ background: 'var(--bg-surface)', padding: 32, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-                <h2 style={{ fontSize: 24, fontWeight: 900 }}>{editingId ? "Edit Exam" : "New Exam"}</h2>
-                <button onClick={closeModal} style={{ position: 'absolute', top: 24, right: 24, background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={20} /></button>
-             </div>
-             <form onSubmit={handleSave} style={{ padding: 32 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                   <input required style={{ width: '100%', padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 700, color: 'var(--text-primary)' }} placeholder="Exam Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <select style={{ width: '100%', padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 700, color: 'var(--text-primary)' }} value={formData.class_name} onChange={(e) => setFormData({...formData, class_name: e.target.value})}>
-                        {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <select style={{ width: '100%', padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 700, color: 'var(--text-primary)' }} value={formData.exam_type} onChange={(e) => setFormData({...formData, exam_type: e.target.value})}>
-                        {EXAM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                   </div>
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <input type="date" style={{ width: '100%', padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 700, color: 'var(--text-primary)' }} value={formData.start_date} onChange={(e) => setFormData({...formData, start_date: e.target.value})} />
-                      <input type="date" style={{ width: '100%', padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 12, fontWeight: 700, color: 'var(--text-primary)' }} value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} />
-                   </div>
+      {resultsExam && (
+        <AppModal onClose={() => setResultsExam(null)}>
+          <div className="st-modal">
+            <header>
+              <div>
+                <p>{resultsExam.class_name} · {resultsExam.subject || "General"}</p>
+                <h2>Results · {resultsExam.title}</h2>
+              </div>
+              <button type="button" onClick={() => setResultsExam(null)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <p className="st-hint">Total marks: {resultsExam.total_marks || 100}. Grade is calculated automatically.</p>
+              {classStudents(resultsExam.class_name).length === 0 ? (
+                <p className="st-hint">No students in this class yet.</p>
+              ) : (
+                <div className="exam-result-list">
+                  {classStudents(resultsExam.class_name).map((s) => (
+                    <div key={s.id} className="exam-result-row">
+                      <div>
+                        <b>{s.name}</b>
+                        <small>{s.roll_no || "No roll"}</small>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        max={resultsExam.total_marks || 100}
+                        placeholder="Marks"
+                        value={resultMarks[s.id]?.marks || ""}
+                        onChange={(e) => setResultMarks((prev) => ({
+                          ...prev,
+                          [s.id]: { ...(prev[s.id] || {}), marks: e.target.value },
+                        }))}
+                      />
+                    </div>
+                  ))}
                 </div>
-                <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
-                   <button type="button" onClick={closeModal} style={{ flex: 1, padding: 14, borderRadius: 16, border: 'none', fontWeight: 800, color: 'var(--text-primary)' }}>Cancel</button>
-                   <button type="submit" className="p-btn-indigo" style={{ flex: 1.5, justifyContent: 'center' }}>Save</button>
-                </div>
-             </form>
+              )}
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setResultsExam(null)}>Cancel</button>
+              <button type="button" className="st-add-btn" disabled={saving} onClick={saveResults}>
+                {saving ? <Loader2 size={16} className="spin" /> : "Save results"}
+              </button>
+            </footer>
           </div>
-        </div>
+        </AppModal>
+      )}
+
+      {notifyExam && (
+        <AppModal onClose={() => setNotifyExam(null)}>
+          <div className="st-modal">
+            <header>
+              <div>
+                <p>{notifyExam.class_name}</p>
+                <h2>Notify · {notifyExam.title}</h2>
+              </div>
+              <button type="button" onClick={() => setNotifyExam(null)}><X size={18} /></button>
+            </header>
+            <div className="st-modal-body">
+              <p className="st-hint">Opens WhatsApp for one parent at a time. Use father/guardian phone from the student record.</p>
+              {notifyList.length === 0 ? (
+                <p className="st-hint">No students in this class.</p>
+              ) : (
+                <ul className="exam-notify-list">
+                  {notifyList.map((s) => {
+                    const phone = contactPhone(s);
+                    return (
+                      <li key={s.id}>
+                        <div>
+                          <b>{s.name}</b>
+                          <small>{phone || "No phone"}</small>
+                        </div>
+                        <button type="button" className="fee-wa" disabled={!phone} onClick={() => sendNotice(s, notifyExam)}>
+                          <MessageCircle size={14} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <footer>
+              <button type="button" className="st-ghost" onClick={() => setNotifyExam(null)}>Close</button>
+            </footer>
+          </div>
+        </AppModal>
       )}
     </div>
   );
-};
-
-export default Exams;
+}

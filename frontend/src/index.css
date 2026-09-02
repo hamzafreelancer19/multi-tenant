@@ -50,13 +50,14 @@
   --glass-blur: blur(20px);
 }
 
-/* Dashboard Branding Overrides */
+/* Dashboard Branding Overrides — keep Classora orange unless a school set custom colors */
 .layout {
   --accent: var(--dashboard-primary, #F15A24);
-  --secondary: var(--dashboard-accent, #0F172A);
+  --secondary: var(--dashboard-secondary, #0F172A);
+  --accent-rgb: var(--dashboard-primary-rgb, 241, 90, 36);
   --accent-soft: #FFF0EB;
   --accent-hover: color-mix(in srgb, var(--accent) 85%, black);
-  --gradient-primary: linear-gradient(135deg, var(--accent), #FF8C42);
+  --gradient-primary: linear-gradient(135deg, var(--accent), var(--dashboard-accent, #FF8C42));
 }
 
 .layout .sidebar {
@@ -381,19 +382,74 @@ select {
   font-size: 13px;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.avatar-sm {
-  width: 32px;
-  height: 32px;
-  background: var(--gradient-primary);
-  border-radius: 50%;
+.avatar img,
+.avatar-sm img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-menu-wrap {
+  position: relative;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 240px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: notifSlideIn 0.2s ease-out;
+  z-index: 1000;
+}
+
+.profile-dropdown-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 12px;
-  color: white;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-dropdown-head .user-name {
+  color: var(--text-primary);
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.profile-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.profile-menu-item.danger {
+  color: var(--red);
+}
+
+.profile-menu-item.danger:hover {
+  background: var(--red-soft);
 }
 
 .logout-btn {
@@ -427,51 +483,148 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 28px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  gap: 20px;
+  height: 72px;
+  padding: 0 28px;
+  background: var(--bg-base);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 90;
 }
 
 .dark .topbar {
-  background: var(--glass-bg-dark);
+  background: transparent;
 }
 
-.topbar-title {
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.topbar-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
+.topbar-left,
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+}
+
+.topbar-left {
+  flex: 1;
+}
+
+.topbar-hello {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-hello strong {
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.topbar-when {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.topbar-when::after {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px 0 16px;
+  background: var(--border);
+  vertical-align: middle;
+}
+
+.topbar-pop {
+  position: relative;
 }
 
 .icon-btn {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-hover);
-  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 50%;
   color: var(--text-secondary);
-  transition: var(--transition);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.icon-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-card);
+.icon-btn:hover,
+.icon-btn.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dark .icon-btn {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.avatar-sm {
+  width: 40px;
+  height: 40px;
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(241, 90, 36, 0.28);
+}
+
+.avatar-sm.is-open,
+.avatar-sm:hover {
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 6px 14px rgba(241, 90, 36, 0.28);
+}
+
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: flex;
+}
+
+@media (max-width: 1100px) {
+  .topbar-when {
+    display: none;
+  }
+}
+
+.notif-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.notif-empty svg {
+  opacity: 0.25;
+  margin-bottom: 10px;
+}
+
+.notif-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .badge {
@@ -497,6 +650,12 @@ select {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+}
+
+.page-body.is-chat {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .page {
@@ -2526,19 +2685,11 @@ select {
   }
 
   .topbar {
-    padding: 16px;
-    gap: 12px;
+    height: 64px;
+    padding: 0 16px;
   }
 
-  .topbar-title {
-    font-size: 14px;
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .topbar-sub {
+  .topbar-when {
     display: none;
   }
 

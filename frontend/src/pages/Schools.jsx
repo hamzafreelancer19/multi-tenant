@@ -1,25 +1,89 @@
-import { useEffect, useState } from "react";
-import { Search, Plus, X, Edit, Trash2, Loader2, School as SchoolIcon, Calendar, Hash, Zap, CheckCircle2 } from "lucide-react";
-import { getSchools, createSchool, updateSchool, deleteSchool, approveSchool, rejectSchool, approvePlan, rejectPlan } from "../api/adminApi";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Ban,
+  Calendar,
+  CheckCircle2,
+  ExternalLink,
+  Eye,
+  Loader2,
+  Plus,
+  School as SchoolIcon,
+  Search,
+  Trash2,
+  Undo2,
+  X,
+  Pencil,
+} from "lucide-react";
+import {
+  getSchools,
+  createSchool,
+  updateSchool,
+  deleteSchool,
+  approveSchool,
+  rejectSchool,
+  approvePlan,
+  rejectPlan,
+  suspendSchool,
+} from "../api/adminApi";
+import "./Schools.css";
+
+const emptyForm = {
+  name: "",
+  code: "",
+  domain: "",
+  landing_contact_email: "",
+  landing_contact_phone: "",
+  status: "Approved",
+  ai_api_key: "",
+};
+
+function apiError(err, fallback) {
+  const data = err.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.error) return data.error;
+  if (data.detail) return Array.isArray(data.detail) ? data.detail[0] : data.detail;
+  const first = Object.values(data).flat()?.[0];
+  return first || fallback;
+}
+
+function slugFromName(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 24);
+}
 
 export default function Schools() {
+  const navigate = useNavigate();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-
-  const emptyForm = { name: "", code: "", address: "TBD", contact_number: "TBD" };
+  const [busyId, setBusyId] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState(emptyForm);
+
+  const schoolLandingPath = (s) => {
+    const slug =
+      (s.domain || "").split(":")[0].replace(/^www\./i, "").split(".")[0] ||
+      (s.code || "").toLowerCase();
+    return `/s/${slug}`;
+  };
 
   const fetchSchools = async (isFirst = false) => {
     if (isFirst) setLoading(true);
     try {
       const res = await getSchools();
-      setSchools(res.data || []);
+      setSchools(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Failed to fetch schools:", err);
+      if (isFirst) setError(apiError(err, "Could not load schools."));
       setSchools([]);
     } finally {
       if (isFirst) setLoading(false);
@@ -28,14 +92,36 @@ export default function Schools() {
 
   useEffect(() => {
     fetchSchools(true);
-    const interval = setInterval(() => fetchSchools(false), 10000);
+    const interval = setInterval(() => fetchSchools(false), 12000);
     return () => clearInterval(interval);
   }, []);
 
-  const filtered = schools.filter((s) => {
-    const q = search.toLowerCase();
-    return !q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
-  });
+  const counts = useMemo(
+    () => ({
+      all: schools.length,
+      pending: schools.filter((s) => s.status === "Pending").length,
+      approved: schools.filter((s) => s.status === "Approved").length,
+      suspended: schools.filter((s) => s.status === "Rejected").length,
+      plans: schools.filter((s) => s.plan_status === "Pending").length,
+    }),
+    [schools]
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return schools.filter((s) => {
+      if (filter === "pending" && s.status !== "Pending") return false;
+      if (filter === "approved" && s.status !== "Approved") return false;
+      if (filter === "suspended" && s.status !== "Rejected") return false;
+      if (filter === "plans" && s.plan_status !== "Pending") return false;
+      if (!q) return true;
+      const blob = [s.name, s.code, s.domain, s.landing_contact_email, s.landing_contact_phone, s.plan_type]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return blob.includes(q);
+    });
+  }, [schools, search, filter]);
 
   const openAdd = () => {
     setFormData(emptyForm);
@@ -47,8 +133,11 @@ export default function Schools() {
     setFormData({
       name: s.name || "",
       code: s.code || "",
-      address: s.address || "TBD",
-      contact_number: s.contact_number || "TBD",
+      domain: s.domain || "",
+      landing_contact_email: s.landing_contact_email || "",
+      landing_contact_phone: s.landing_contact_phone || "",
+      status: s.status || "Approved",
+      ai_api_key: s.ai_api_key || "",
     });
     setEditingId(s.id);
     setShowModal(true);
@@ -62,231 +151,286 @@ export default function Schools() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return alert("Name is required");
-    if (!formData.code.trim()) return alert("School Code is required");
+    if (!formData.name.trim()) {
+      setError("School name is required.");
+      return;
+    }
     setSaving(true);
+    setError("");
     try {
-      if (editingId) {
-        await updateSchool(editingId, formData);
-      } else {
-        await createSchool(formData);
-      }
+      const slug = slugFromName(formData.name);
+      const payload = {
+        ...formData,
+        code: formData.code.trim() || slug.toUpperCase(),
+        domain: formData.domain.trim() || `${slug}.localhost`,
+      };
+      if (editingId) await updateSchool(editingId, payload);
+      else await createSchool(payload);
       closeModal();
+      setMessage(editingId ? "School updated." : "School registered.");
+      setTimeout(() => setMessage(""), 3500);
       await fetchSchools();
     } catch (err) {
-      alert("Failed to save school. Make sure the code is unique.");
+      setError(apiError(err, "Could not save school. Code and domain must be unique."));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleStatusUpdate = async (id, action) => {
+  const runAction = async (id, action) => {
+    setBusyId(id);
+    setError("");
     try {
       if (action === "approve") await approveSchool(id);
       else if (action === "reject") await rejectSchool(id);
+      else if (action === "suspend") await suspendSchool(id);
       else if (action === "approvePlan") await approvePlan(id);
       else if (action === "rejectPlan") await rejectPlan(id);
       await fetchSchools();
+      setMessage("Updated.");
+      setTimeout(() => setMessage(""), 2500);
     } catch (err) {
-      alert(`Failed to ${action} school.`);
+      setError(apiError(err, "Could not update school."));
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete school "${name}"? This will delete all associated data (students, teachers, etc).`)) return;
+    if (!window.confirm(`Delete "${name}"? This removes students, teachers, and all school data.`)) return;
+    setBusyId(id);
     try {
       await deleteSchool(id);
       await fetchSchools();
     } catch (err) {
-      alert("Failed to delete school");
+      setError(apiError(err, "Could not delete school."));
+    } finally {
+      setBusyId(null);
     }
   };
 
   return (
-    <div className="page" style={{ position: 'relative', minHeight: '100%' }}>
-      {/* Decorative Background Blobs for Glass Effect */}
-      <div 
-        className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none z-0"
-        style={{ 
-          background: 'radial-gradient(circle, rgba(241, 90, 36, 0.15) 0%, transparent 70%)',
-          filter: 'blur(80px)',
-          animation: 'float 15s infinite alternate ease-in-out'
-        }}
-      ></div>
-      <div 
-        className="absolute bottom-[20%] left-[-10%] w-[400px] h-[400px] rounded-full pointer-events-none z-0"
-        style={{ 
-          background: 'radial-gradient(circle, rgba(15, 23, 42, 0.1) 0%, transparent 70%)',
-          filter: 'blur(100px)',
-          animation: 'float 20s infinite alternate-reverse ease-in-out',
-          animationDelay: '-5s'
-        }}
-      ></div>
-
-      <div className="relative z-10">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Manage Schools</h1>
-            <p className="page-subtitle">Platform-wide multi-tenant management</p>
-          </div>
-          <button className="primary-btn" onClick={openAdd}>
-            <Plus size={18} /> Add New School
-          </button>
+    <div className="page sch-page">
+      <div className="sch-hero">
+        <div>
+          <p className="sch-kicker">Platform</p>
+          <h1>Schools</h1>
+          <p>Approve tenants, manage plans, and open each school's public site.</p>
         </div>
+        <button className="primary-btn" onClick={openAdd}>
+          <Plus size={18} /> Add school
+        </button>
+      </div>
 
-        <div className="toolbar" style={{ marginTop: 24 }}>
-          <div className="search-box">
-            <Search size={16} className="search-icon" />
-            <input
-              className="search-input"
-              placeholder="Search schools by name or code..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
-                <X size={14} />
+      <div className="sch-stats">
+        {[
+          { id: "all", label: "Total", value: counts.all, hint: "All tenants", tone: "navy" },
+          { id: "approved", label: "Approved", value: counts.approved, hint: "Live schools", tone: "green" },
+          { id: "pending", label: "Pending", value: counts.pending, hint: "Awaiting review", tone: "gold" },
+          { id: "plans", label: "Plan review", value: counts.plans, hint: "Subscription requests", tone: "orange" },
+        ].map((row) => (
+          <button
+            key={row.id}
+            type="button"
+            className={`sch-stat sch-stat-${row.tone} ${filter === row.id ? "is-on" : ""}`}
+            onClick={() => setFilter(row.id)}
+          >
+            <span>{row.label}</span>
+            <strong>{row.value}</strong>
+            <small>{row.hint}</small>
+          </button>
+        ))}
+      </div>
+
+      {error && <div className="sch-alert">{error}</div>}
+      {message && <div className="sch-alert is-ok">{message}</div>}
+
+      <div className="sch-toolbar">
+        <div className="search-box">
+          <Search size={16} className="search-icon" />
+          <input
+            className="search-input"
+            placeholder="Search name, code, domain, or phone"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <button type="button" className={`sch-pill ${filter === "suspended" ? "is-warn" : ""}`} onClick={() => setFilter(filter === "suspended" ? "all" : "suspended")}>
+          Suspended ({counts.suspended})
+        </button>
+      </div>
+
+      <div className="card table-card">
+        {loading ? (
+          <div style={{ padding: 60, textAlign: "center", color: "var(--text-muted)" }}>
+            <Loader2 className="spin" size={36} />
+            <p style={{ marginTop: 12 }}>Loading schools…</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="sch-empty">
+            <SchoolIcon size={36} />
+            <h3>{search || filter !== "all" ? "No matching schools" : "No schools yet"}</h3>
+            <p>{search || filter !== "all" ? "Try another search or filter." : "Register the first school to start."}</p>
+            {!search && filter === "all" && (
+              <button className="primary-btn" style={{ margin: "16px auto 0" }} onClick={openAdd}>
+                <Plus size={16} /> Add school
               </button>
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="card table-card sazzad-card">
-        <div className="sazzad-bg"></div>
-        <div className="sazzad-aurora"></div>
-        <div className="sazzad-content">
-          {loading ? (
-            <div style={{ padding: 60, textAlign: "center", color: "var(--text-muted)" }}>
-              <Loader2 className="spin" size={36} />
-              <p style={{ marginTop: 12 }}>Loading schools...</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="empty-state">No schools found.</div>
-          ) : (
+        ) : (
+          <div className="sch-table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>School Name</th>
-                  <th>School Code</th>
+                  <th>School</th>
                   <th>Status</th>
-                  <th>Plan Info</th>
-                  <th>Registered Date</th>
+                  <th>Plan</th>
+                  <th>Contact</th>
+                  <th>Registered</th>
                   <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((s) => (
-                  <tr key={s.id} className="table-row">
+                  <tr
+                    key={s.id}
+                    className="table-row sch-row"
+                    title="Open school profile"
+                    onClick={() => navigate(`/schools/${s.id}`)}
+                  >
                     <td>
-                      <div className="table-name-cell">
-                        <div className="table-avatar" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-                          <SchoolIcon size={16} />
+                      <Link className="sch-name" to={`/schools/${s.id}`} onClick={(e) => e.stopPropagation()}>
+                        {s.logo_url ? (
+                          <img src={s.logo_url} alt="" />
+                        ) : (
+                          <span className="sch-logo">
+                            <SchoolIcon size={16} />
+                          </span>
+                        )}
+                        <div>
+                          <b>{s.name}</b>
+                          <small>{[s.code, s.domain].filter(Boolean).join(" · ") || "No domain yet"}</small>
                         </div>
-                        <p className="table-name">{s.name}</p>
-                      </div>
+                      </Link>
                     </td>
-                    <td className="table-mono">{s.code}</td>
                     <td>
-                      <span className={`badge-status ${
-                        s.status === 'Approved' ? 'badge-active' : 
-                        s.status === 'Pending' ? 'badge-warning' : 'badge-inactive'
-                      }`}>
-                        {s.status}
+                      <span
+                        className={`badge-status ${
+                          s.status === "Approved" ? "badge-active" : s.status === "Pending" ? "badge-warning" : "badge-inactive"
+                        }`}
+                      >
+                        {s.status === "Rejected" ? "Suspended" : s.status}
                       </span>
                     </td>
                     <td>
-                      {s.plan_type !== "None" ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.plan_type}</span>
-                            <span className={`badge-status ${
-                              s.plan_status === 'Active' ? 'badge-active' : 
-                              s.plan_status === 'Pending' ? 'badge-warning' : 'badge-inactive'
-                            }`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                      {s.plan_type && s.plan_type !== "None" ? (
+                        <div className="sch-plan">
+                          <b>
+                            {s.plan_type}{" "}
+                            <span
+                              className={`badge-status ${
+                                s.plan_status === "Active" ? "badge-active" : s.plan_status === "Pending" ? "badge-warning" : "badge-inactive"
+                              }`}
+                            >
                               {s.plan_status}
                             </span>
-                          </div>
-                          {s.transaction_id && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TXID: {s.transaction_id}</span>
-                          )}
+                          </b>
+                          <small style={{ color: "var(--text-muted)" }}>
+                            {s.plan_amount ? `Rs ${Number(s.plan_amount).toLocaleString()}` : ""}
+                            {s.transaction_id ? ` · ${s.transaction_id}` : ""}
+                          </small>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No Active Plan</span>
+                        <span style={{ color: "var(--text-muted)", fontSize: 13 }}>No plan</span>
                       )}
                     </td>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                        <Calendar size={14} />
-                        {new Date(s.created_at).toLocaleDateString()}
-                      </div>
+                    <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                      {s.landing_contact_email || s.landing_contact_phone || "—"}
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)" }}>
+                        <Calendar size={14} />
+                        {s.created_at ? new Date(s.created_at).toLocaleDateString() : "—"}
+                      </div>
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="sch-actions">
+                        <Link className="icon-btn-sm" to={`/schools/${s.id}`} title="Open profile">
+                          <Eye size={15} />
+                        </Link>
                         {s.status === "Pending" && (
                           <>
-                            <button 
-                              className="icon-btn-sm" 
-                              style={{ color: "var(--green)" }} 
-                              title="Approve School"
-                              onClick={() => handleStatusUpdate(s.id, "approve")}
-                            >
-                              <Plus size={15} />
+                            <button type="button" className="sch-pill is-ok" disabled={busyId === s.id} onClick={() => runAction(s.id, "approve")}>
+                              <CheckCircle2 size={14} /> Approve
                             </button>
-                            <button 
-                              className="icon-btn-sm" 
-                              style={{ color: "var(--red)" }} 
-                              title="Reject School"
-                              onClick={() => handleStatusUpdate(s.id, "reject")}
-                            >
-                              <X size={15} />
+                            <button type="button" className="sch-pill is-bad" disabled={busyId === s.id} onClick={() => runAction(s.id, "reject")}>
+                              <X size={14} /> Reject
                             </button>
                           </>
                         )}
-                        {s.plan_status === "Pending" && (
-                          <div style={{ display: 'flex', gap: 4, background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: 8 }}>
-                            <button 
-                              className="icon-btn-sm" 
-                              style={{ color: "var(--green)" }} 
-                              title="Approve Subscription"
-                              onClick={() => handleStatusUpdate(s.id, "approvePlan")}
-                            >
-                              <CheckCircle2 size={15} />
-                            </button>
-                            <button 
-                              className="icon-btn-sm" 
-                              style={{ color: "var(--red)" }} 
-                              title="Reject Subscription"
-                              onClick={() => handleStatusUpdate(s.id, "rejectPlan")}
-                            >
-                              <X size={15} />
-                            </button>
-                          </div>
+                        {s.status === "Approved" && (
+                          <button
+                            type="button"
+                            className="sch-pill is-warn"
+                            disabled={busyId === s.id}
+                            onClick={() => {
+                              if (window.confirm(`Suspend "${s.name}"? School users will be disabled.`)) runAction(s.id, "suspend");
+                            }}
+                          >
+                            <Ban size={14} /> Suspend
+                          </button>
                         )}
-                        <button className="icon-btn-sm" onClick={() => openEdit(s)}><Edit size={15} /></button>
-                        <button className="icon-btn-danger" onClick={() => handleDelete(s.id, s.name)}><Trash2 size={15} /></button>
+                        {s.status === "Rejected" && (
+                          <button type="button" className="sch-pill is-ok" disabled={busyId === s.id} onClick={() => runAction(s.id, "approve")}>
+                            <Undo2 size={14} /> Restore
+                          </button>
+                        )}
+                        {s.plan_status === "Pending" && (
+                          <>
+                            <button type="button" className="sch-pill is-ok" disabled={busyId === s.id} onClick={() => runAction(s.id, "approvePlan")}>
+                              Approve plan
+                            </button>
+                            <button type="button" className="sch-pill is-bad" disabled={busyId === s.id} onClick={() => runAction(s.id, "rejectPlan")}>
+                              Reject plan
+                            </button>
+                          </>
+                        )}
+                        <button className="icon-btn-sm" title="Open landing page" onClick={() => window.open(schoolLandingPath(s), "_blank")}>
+                          <ExternalLink size={15} />
+                        </button>
+                        <button className="icon-btn-sm" title="Edit" onClick={() => openEdit(s)}>
+                          <Pencil size={15} />
+                        </button>
+                        <button className="icon-btn-danger" title="Delete" onClick={() => handleDelete(s.id, s.name)}>
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {showModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">{editingId ? "Edit School" : "Register School"}</h2>
+              <h2 className="modal-title">{editingId ? "Edit school" : "Register school"}</h2>
               <button className="close-btn" onClick={closeModal}><X size={20} /></button>
             </div>
             <form onSubmit={handleSave}>
               <div className="modal-body">
                 <div className="modal-form">
                   <div className="input-group">
-                    <label className="input-label">School Name *</label>
+                    <label className="input-label">School name *</label>
                     <input
                       required
                       className="input-field"
@@ -296,21 +440,72 @@ export default function Schools() {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">School Code (Unique) *</label>
+                    <label className="input-label">School code</label>
                     <input
-                      required
                       className="input-field"
-                      placeholder="e.g. GREEN-01"
+                      placeholder="Auto from name if empty"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Domain</label>
+                    <input
+                      className="input-field"
+                      placeholder="e.g. greenway.localhost"
+                      value={formData.domain}
+                      onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Contact email</label>
+                    <input
+                      type="email"
+                      className="input-field"
+                      value={formData.landing_contact_email}
+                      onChange={(e) => setFormData({ ...formData, landing_contact_email: e.target.value })}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Contact phone</label>
+                    <input
+                      className="input-field"
+                      value={formData.landing_contact_phone}
+                      onChange={(e) => setFormData({ ...formData, landing_contact_phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Status</label>
+                    <select
+                      className="input-field"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Suspended</option>
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Groq API key</label>
+                    <input
+                      type="password"
+                      className="input-field"
+                      placeholder="gsk_…"
+                      autoComplete="off"
+                      value={formData.ai_api_key || ""}
+                      onChange={(e) => setFormData({ ...formData, ai_api_key: e.target.value })}
+                    />
+                    <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+                      Optional. School admins cannot see this. Leave blank to use the platform key.
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
                 <button type="submit" className="primary-btn" disabled={saving}>
-                  {saving ? <Loader2 size={16} className="spin" /> : editingId ? "Save Changes" : "Register School"}
+                  {saving ? <Loader2 size={16} className="spin" /> : editingId ? "Save changes" : "Register school"}
                 </button>
               </div>
             </form>

@@ -1,72 +1,109 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from rest_framework.exceptions import ValidationError
 from .models import Teacher
 from .serializers import TeacherSerializer
+from .services import ensure_portal_user, next_employee_id
+from .scoping import (
+    build_classroom_scope,
+    colleague_teacher_ids,
+    deny_teacher_writes,
+    get_teacher_for_request,
+    is_teacher_request,
+)
 from core.models import ActivityLog, Notification
-from core.utils import get_current_school
+from core.utils import get_current_school, school_queryset
+from core.mixins import SchoolOpsMixin
 from core.plan_limits import check_teacher_limit
 
 
-from django.contrib.auth import get_user_model
-User = get_user_model()
-from django.utils.text import slugify
-
-class TeacherViewSet(viewsets.ModelViewSet):
+class TeacherViewSet(SchoolOpsMixin, viewsets.ModelViewSet):
     serializer_class = TeacherSerializer
+    lookup_value_regex = r"[0-9]+"
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if getattr(self, "action", None) != "me":
+            deny_teacher_writes(request, "Only school admin can add or edit teachers.")
 
     def get_queryset(self):
-        school = get_current_school(self.request)
-        if school:
-            return Teacher.objects.filter(school=school)
-        return Teacher.objects.none()
+        qs = school_queryset(self.request, Teacher).select_related("user")
+        if is_teacher_request(self.request):
+            ids = colleague_teacher_ids(get_teacher_for_request(self.request))
+            return qs.filter(id__in=ids) if ids else qs.none()
+        return qs
+
+    def _sync_login(self, teacher, password=None):
+        raw = password if password else None
+        if not teacher.email and not raw:
+            return None
+        if not teacher.user_id and not raw:
+            return None
+        return ensure_portal_user(teacher, password=raw)
 
     def perform_create(self, serializer):
         school = get_current_school(self.request)
-
-        # ---- Plan Enforcement ----
         check_teacher_limit(school)
-        # --------------------------
-
-        teacher = serializer.save(school=school)
-        
-        # Create User account for Teacher
+        password = serializer.validated_data.pop("password", None)
+        teacher = serializer.save(school=school, employee_id=next_employee_id(school))
         try:
-            # Pattern: [name]@[school_name].com
-            name_slug = slugify(teacher.name)
-            school_slug = slugify(school.name)
-            username = f"{name_slug}@{school_slug}.com"
-            
-            # Ensure unique username
-            base_username = username
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{name_slug}{counter}@{school_slug}.com"
-                counter += 1
-            
-            user = User.objects.create(
-                username=username,
-                email=username, # Use same as username for login ease
-                role="teacher",
-                school=school
-            )
-            user.set_password("Teacher@123") # Default password
-            user.save()
-            
-            # Update teacher email if it was empty
-            if not teacher.email:
-                teacher.email = username
-                teacher.save()
-
+            username = self._sync_login(teacher, password)
+            initial = teacher.name[0].upper() if teacher.name else "T"
             ActivityLog.objects.create(
                 school=school,
                 name=teacher.name,
-                action=f"joined as {teacher.subject} Teacher (User: {username})",
-                avatar=teacher.name.split(" ")[1][0].upper() if " " in teacher.name else teacher.name[0].upper()
+                action=f"joined as {teacher.subject} Teacher (Login: {username or teacher.email})",
+                avatar=initial,
             )
             Notification.objects.create(
                 school=school,
-                message=f"New teacher {teacher.name} has joined the faculty. Login: {username}"
+                audience="Admin",
+                message=f"New teacher {teacher.name} added. They can log in with {teacher.email}.",
             )
+        except ValueError as e:
+            raise ValidationError({"password": str(e)})
+
+    def perform_update(self, serializer):
+        password = serializer.validated_data.pop("password", None)
+        teacher = serializer.save()
+        try:
+            self._sync_login(teacher, password)
         except Exception as e:
-            print(f"[Warning] Could not create teacher user: {e}")
+            print(f"[Warning] Could not update teacher login: {e}")
 
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        if user and user.role == "teacher":
+            user.is_active = False
+            user.save(update_fields=["is_active"])
 
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        teacher = get_teacher_for_request(request)
+        if not teacher:
+            return Response({})
+        data = self.get_serializer(teacher).data
+        data["classroom_scope"] = build_classroom_scope(teacher)
+        return Response(data)
+
+    @action(detail=True, methods=["post"], url_path="set-login")
+    def set_login(self, request, pk=None):
+        teacher = self.get_object()
+        email = (request.data.get("email") or teacher.email or "").strip().lower()
+        password = request.data.get("password") or ""
+        if not email:
+            return Response({"email": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not password or len(password) < 6:
+            return Response({"password": "Password must be at least 6 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        teacher.email = email
+        teacher.save(update_fields=["email"])
+        username = ensure_portal_user(teacher, password=password, login_email=email)
+        return Response({
+            "message": "Teacher login saved.",
+            "login_username": username,
+            "email": email,
+            "has_login": True,
+        })

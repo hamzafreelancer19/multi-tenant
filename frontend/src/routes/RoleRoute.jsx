@@ -13,6 +13,15 @@ export default function RoleRoute({ children, allowedRoles }) {
   }
 
   if (!allowedRoles.includes(role)) {
+    if (role === "superadmin") {
+      return <Navigate to="/schools" replace />;
+    }
+    if (role === "teacher") {
+      return <Navigate to="/teacher" replace />;
+    }
+    if (role === "parent") {
+      return <Navigate to="/parent" replace />;
+    }
     return (
       <div className="access-denied">
         <div className="access-denied-card">

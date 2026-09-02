@@ -1,236 +1,390 @@
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Loader2,
+  MinusCircle,
+  Search,
+  X,
+  XCircle,
+} from "lucide-react";
 import { getStudents } from "../api/studentsApi";
+import { getClasses } from "../api/classesApi";
+import { getMyTeacherProfile } from "../api/teachersApi";
 import { bulkMarkAttendance, getAttendance } from "../api/attendanceApi";
-import PremiumCard from "../components/ui/PremiumCard";
+import { getRole } from "../store/authStore";
+import { useTenant } from "../context/TenantContext";
+import { useLocation } from "react-router-dom";
+import TeacherAttendance from "./TeacherAttendance";
+import "./Dashboard.css";
+import "./Students.css";
+import "./Attendance.css";
 
-const classes = [
-  "Nursery", "Prep",
-  "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
-  "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"
-];
+const STATUSES = ["Present", "Absent", "Late", "Leave"];
+
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function shiftDate(value, days) {
+  const d = new Date(`${value}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatDay(value) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString("en-PK", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function unique(list) {
+  return [...new Set(list.map((v) => (v || "").trim()).filter(Boolean))];
+}
+
+function classLabel(c) {
+  return c.section ? `${c.name} - ${c.section}` : c.name;
+}
+
+function normalizeClass(value) {
+  return (value || "").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function classAllowed(className, labels) {
+  if (!className) return false;
+  const target = normalizeClass(className);
+  return (labels || []).some((item) => item === className || normalizeClass(item) === target);
+}
 
 export default function Attendance() {
-  const today = new Date().toISOString().split("T")[0];
+  if (getRole() === "admin") return <TeacherAttendance />;
+  return <StudentAttendance />;
+}
+
+function StudentAttendance() {
+  const tenant = useTenant();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [students, setStudents] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(classes[0]);
-  const [date, setDate] = useState(today);
-  const [attendance, setAttendance] = useState({});
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [schoolClasses, setSchoolClasses] = useState([]);
+  const [inchargeClasses, setInchargeClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(location.state?.className || "All");
+  const [date, setDate] = useState(todayISO());
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [marks, setMarks] = useState({});
+  const [remarks, setRemarks] = useState({});
 
-  useEffect(() => {
-    fetchStudents();
-  }, [selectedClass, date]);
+  const classOptions = useMemo(() => {
+    const fromApi = schoolClasses.map(classLabel);
+    const fromStudents = students.map((s) => s.class_name);
+    const merged = unique([...fromApi, ...fromStudents]);
+    if (!inchargeClasses.length) return [];
+    return merged.filter((label) => classAllowed(label, inchargeClasses));
+  }, [schoolClasses, students, inchargeClasses]);
 
-  const fetchStudents = async (isFirst = false) => {
-    if (isFirst) setLoading(true);
+  const fetchRegister = async () => {
+    setLoading(true);
     try {
-      const [res, attRes] = await Promise.all([
+      const [studentRes, attRes, classRes, profileRes] = await Promise.all([
         getStudents(),
-        getAttendance({ date })
+        getAttendance({ date }),
+        getClasses().catch(() => ({ data: [] })),
+        getMyTeacherProfile().catch(() => ({ data: null })),
       ]);
-      const studentList = Array.isArray(res.data) ? res.data : [];
-      const filtered = studentList.filter(s => s.class_name === selectedClass || !s.class_name);
-      setStudents(filtered);
-      
-      const initial = {};
-      filtered.forEach(s => initial[s.id] = "Present");
-      
-      if (attRes.data && Array.isArray(attRes.data)) {
-        attRes.data.forEach(record => {
-          if (initial.hasOwnProperty(record.student)) {
-            initial[record.student] = record.status;
-          }
-        });
-      }
-      setAttendance(initial);
+      const scope = profileRes?.data?.classroom_scope || {};
+      const incharge = Array.isArray(scope.incharge_classes) ? scope.incharge_classes.filter(Boolean) : [];
+      setInchargeClasses(incharge);
+
+      const allStudents = (Array.isArray(studentRes.data) ? studentRes.data : [])
+        .filter((s) => (s.status || "Active") === "Active")
+        .filter((s) => classAllowed(s.class_name, incharge));
+      setStudents(allStudents);
+      setSchoolClasses(Array.isArray(classRes.data) ? classRes.data : []);
+
+      const nextMarks = {};
+      const nextRemarks = {};
+      (Array.isArray(attRes.data) ? attRes.data : []).forEach((row) => {
+        nextMarks[row.student] = row.status;
+        nextRemarks[row.student] = row.remarks || "";
+      });
+      setMarks(nextMarks);
+      setRemarks(nextRemarks);
+      setDirty(false);
     } catch (err) {
-      console.warn("Using fallback students for attendance");
-      const fallback = [
-        { id: 1, name: "Ayesha Noor", class_name: "Grade 11-A" },
-        { id: 2, name: "Bilal Ahmed", class_name: "Grade 10-B" },
-      ];
-      setStudents(fallback);
-      setAttendance({ 1: "Present", 2: "Absent" });
+      console.error("Failed to load attendance:", err);
+      setStudents([]);
+      setInchargeClasses([]);
     } finally {
-      if (isFirst) setLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStudents(true);
-    // Real-time polling
-    const interval = setInterval(() => fetchStudents(false), 10000);
-    return () => clearInterval(interval);
-  }, [selectedClass, date]);
+    fetchRegister();
+  }, [date]);
 
-  const toggle = (id) => {
-    const cycle = { Present: "Absent", Absent: "Leave", Leave: "Present" };
-    setAttendance((prev) => ({ ...prev, [id]: cycle[prev[id]] }));
+  useEffect(() => {
+    if (!inchargeClasses.length) return;
+    setSelectedClass((prev) => {
+      if (prev === "All" || classAllowed(prev, inchargeClasses)) return prev;
+      return inchargeClasses[0];
+    });
+  }, [inchargeClasses]);
+
+  const visible = students.filter((s) => {
+    const q = search.toLowerCase().trim();
+    const blob = [s.name, s.roll_no, s.class_name].join(" ").toLowerCase();
+    const matchSearch = !q || blob.includes(q);
+    const matchClass = selectedClass === "All" || classAllowed(s.class_name, [selectedClass]);
+    const status = marks[s.id] || "Unmarked";
+    const matchStatus = filterStatus === "All" || status === filterStatus;
+    return matchSearch && matchClass && matchStatus;
+  });
+
+  const counts = visible.reduce(
+    (acc, s) => {
+      const status = marks[s.id];
+      if (status && acc[status] !== undefined) acc[status] += 1;
+      else acc.Unmarked += 1;
+      return acc;
+    },
+    { Present: 0, Absent: 0, Late: 0, Leave: 0, Unmarked: 0 }
+  );
+
+  const markedCount = counts.Present + counts.Absent + counts.Late + counts.Leave;
+  const presentLike = counts.Present + counts.Late;
+  const pct = markedCount ? Math.round((presentLike / markedCount) * 100) : 0;
+
+  const setStatus = (id, status) => {
+    setMarks((prev) => ({ ...prev, [id]: status }));
     setSaved(false);
+    setDirty(true);
+  };
+
+  const markAll = (status) => {
+    const next = { ...marks };
+    visible.forEach((s) => {
+      next[s.id] = status;
+    });
+    setMarks(next);
+    setSaved(false);
+    setDirty(true);
   };
 
   const handleSave = async () => {
-    try {
-      const records = Object.entries(attendance).map(([student_id, status]) => ({
-        student_id,
-        status,
-        date
+    const records = students
+      .filter((s) => (selectedClass === "All" || s.class_name === selectedClass) && marks[s.id])
+      .map((s) => ({
+        student_id: s.id,
+        status: marks[s.id],
+        remarks: remarks[s.id] || "",
+        date,
       }));
+    if (!records.length) return alert("Mark at least one student before saving.");
+    setSaving(true);
+    try {
       await bulkMarkAttendance(records);
       setSaved(true);
+      setDirty(false);
       setTimeout(() => setSaved(false), 2500);
-    } catch (err) {
+    } catch {
       alert("Failed to save attendance");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const counts = (Array.isArray(students) ? students : []).reduce(
-    (acc, s) => {
-      const status = attendance[s.id] || "Present";
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    },
-    { Present: 0, Absent: 0, Leave: 0 }
-  );
-
-  const getStatusClass = (status) => {
-    if (status === "Present") return "badge-active";
-    if (status === "Absent") return "badge-inactive";
-    if (status === "Leave") return "badge-warning";
-    return "";
-  };
-
-  const icons = {
-    Present: <CheckCircle2 size={16} />,
-    Absent: <XCircle size={16} />,
-    Leave: <MinusCircle size={16} />,
-  };
-
   return (
-    <div className="page">
-      <div className="page-header">
+    <div className="page dash-page st-page">
+      <header className="dash-hero">
         <div>
-          <h1 className="page-title">Attendance</h1>
-          <p className="page-subtitle">Mark and track daily student attendance</p>
+          <p className="dash-kicker">Class incharge</p>
+          <h1>Student attendance</h1>
+          <p>
+            Mark present, absent, late, or leave for your class at {tenant.schoolName || "your school"} · {formatDay(date)}
+          </p>
         </div>
-        <div className="att-header-actions">
-          <input
-            id="att-date"
-            type="date"
-            className="date-input"
-            value={date}
-            onChange={(e) => { setDate(e.target.value); setSaved(false); }}
-          />
-          <button
-            id="save-attendance-btn"
-            className={`primary-btn ${saved ? "btn-success" : ""}`}
-            onClick={handleSave}
-            disabled={loading}
-          >
-            {saved ? "✓ Saved!" : "Save Attendance"}
+        <div className="dash-hero-meta att-date-nav">
+          <button type="button" className="dash-refresh" onClick={() => setDate(shiftDate(date, -1))}>
+            <ChevronLeft size={16} />
+          </button>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
+          <button type="button" className="dash-refresh" onClick={() => setDate(shiftDate(date, 1))}>
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" className="st-add-btn" onClick={handleSave} disabled={loading || saving || !visible.length || !inchargeClasses.length}>
+            {saving ? <Loader2 size={16} className="spin" /> : saved ? "Saved" : dirty ? "Save register" : "Save register"}
           </button>
         </div>
+      </header>
+
+      <div className="dash-stats">
+        <button type="button" className="dash-stat dash-stat-orange" onClick={() => setFilterStatus("All")}>
+          <span>Marked</span>
+          <strong>{loading ? "—" : markedCount}</strong>
+          <small>{visible.length} in view</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-green" onClick={() => setFilterStatus("Present")}>
+          <span>Present</span>
+          <strong>{loading ? "—" : counts.Present}</strong>
+          <small>{pct}% in school</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-navy" onClick={() => setFilterStatus("Absent")}>
+          <span>Absent</span>
+          <strong>{loading ? "—" : counts.Absent}</strong>
+          <small>not in class</small>
+        </button>
+        <button type="button" className="dash-stat dash-stat-gold" onClick={() => setFilterStatus(filterStatus === "Late" ? "Leave" : "Late")}>
+          <span>Late / leave</span>
+          <strong>{loading ? "—" : counts.Late + counts.Leave}</strong>
+          <small>{counts.Unmarked} unmarked</small>
+        </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="att-summary">
-        <PremiumCard className="att-stat" auroraColor="#10b981">
-          <CheckCircle2 size={22} className="text-green-500" />
-          <div>
-            <p className="att-stat-val">{counts.Present}</p>
-            <p className="att-stat-label">Present</p>
-          </div>
-        </PremiumCard>
-        
-        <PremiumCard className="att-stat" auroraColor="#ef4444">
-          <XCircle size={22} className="text-red-500" />
-          <div>
-            <p className="att-stat-val">{counts.Absent}</p>
-            <p className="att-stat-label">Absent</p>
-          </div>
-        </PremiumCard>
-        
-        <PremiumCard className="att-stat" auroraColor="#f59e0b">
-          <MinusCircle size={22} className="text-amber-500" />
-          <div>
-            <p className="att-stat-val">{counts.Leave}</p>
-            <p className="att-stat-label">On Leave</p>
-          </div>
-        </PremiumCard>
-        
-        <PremiumCard className="att-stat total-stat" auroraColor="#C4A6F7">
-          <div style={{ flex: 1 }}>
-            <p className="att-stat-val">{students.length}</p>
-            <p className="att-stat-label">Total</p>
-          </div>
-          <div style={{ flex: 1, marginLeft: 12 }}>
-            <div className="att-pie-bar">
-              <div className="att-pie-fill" style={{ width: `${students.length ? (counts.Present / students.length) * 100 : 0}%` }} />
-            </div>
-            <span className="att-pct" style={{ display: 'block', textAlign: 'right', marginTop: 4 }}>
-              {students.length ? Math.round((counts.Present / students.length) * 100) : 0}%
-            </span>
-          </div>
-        </PremiumCard>
+      {inchargeClasses.length > 0 && (
+        <>
+      <div className="st-toolbar">
+        <div className="st-search">
+          <Search size={16} />
+          <input
+            placeholder="Search student, roll no, class…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} aria-label="Clear search">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <div className="st-filters">
+          <button type="button" onClick={() => markAll("Present")}>All present</button>
+          <button type="button" onClick={() => markAll("Absent")}>All absent</button>
+        </div>
       </div>
 
-      {/* Class Selector */}
-      <div className="class-tabs">
-        {classes.map((c) => (
-          <button
-            key={c}
-            id={`class-${c.replace(/\s/g, "-").toLowerCase()}`}
-            className={`class-tab ${selectedClass === c ? "class-tab-active" : ""}`}
-            onClick={() => setSelectedClass(c)}
-          >
+      <div className="st-classes">
+        {inchargeClasses.length > 1 && (
+          <button type="button" className={selectedClass === "All" ? "is-on" : ""} onClick={() => setSelectedClass("All")}>
+            All classes
+          </button>
+        )}
+        {classOptions.map((c) => (
+          <button key={c} type="button" className={selectedClass === c ? "is-on" : ""} onClick={() => setSelectedClass(c)}>
             {c}
           </button>
         ))}
       </div>
+        </>
+      )}
 
-      {/* Student List */}
-      <PremiumCard className="card" auroraColor="#C4A6F7">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-           <p className="att-hint" style={{ margin: 0 }}>Click a status badge to cycle: Present → Absent → Leave</p>
-           <div className="table-count">{students.length} Students found</div>
-        </div>
-        <div className="att-list">
-          {loading ? (
-            <div style={{ padding: 60, textAlign: "center", color: "var(--text-muted)" }}>
-              <Loader2 className="spin" size={36} />
-              <p style={{ marginTop: 12 }}>Loading class list...</p>
-            </div>
-          ) : (
-            students.map((s, i) => (
-              <div key={s.id} className="att-row">
-                <div className="att-student">
-                  <div className="att-avatar" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
-                    {s.name[0]}
-                  </div>
-                  <div>
-                    <p className="att-name">{s.name}</p>
-                    <p className="att-roll">Roll #{s.roll_no || i + 1} · {selectedClass}</p>
-                  </div>
-                </div>
-                <button
-                  id={`att-toggle-${s.id}`}
-                  className={`badge-status ${getStatusClass(attendance[s.id] || "Present")}`}
-                  style={{ gap: 6, padding: '6px 14px', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.2s' }}
-                  onClick={() => toggle(s.id)}
-                >
-                  {icons[attendance[s.id] || "Present"]}
-                  <span style={{ fontWeight: 700 }}>{attendance[s.id] || "Present"}</span>
-                </button>
-              </div>
-            ))
-          )}
-          {!loading && students.length === 0 && (
-            <div className="empty-state">No students found in this class.</div>
-          )}
-        </div>
-      </PremiumCard>
+      <section className="dash-panel st-panel">
+        {loading ? (
+          <div className="st-empty">
+            <Loader2 className="spin" size={32} />
+            <p>Loading register…</p>
+          </div>
+        ) : inchargeClasses.length === 0 ? (
+          <div className="st-empty">
+            <CheckCircle2 size={36} />
+            <p>Student attendance is marked by the class incharge. Ask school admin to set you as class teacher.</p>
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="st-empty">
+            <CheckCircle2 size={36} />
+            <p>
+              {students.length === 0
+                ? "No students in your class yet."
+                : "No students match these filters."}
+            </p>
+          </div>
+        ) : (
+          <div className="st-table-wrap">
+            <table className="st-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Roll</th>
+                  <th>Class</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((s) => {
+                  const status = marks[s.id] || "";
+                  return (
+                    <tr key={s.id}>
+                      <td>
+                        <div className="st-person" style={{ cursor: "default" }}>
+                          <span>{s.name ? s.name[0].toUpperCase() : "S"}</span>
+                          <div>
+                            <b>{s.name}</b>
+                            <small>{s.gender || s.phone || "Student"}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="st-mono">{s.roll_no || "—"}</td>
+                      <td>{s.class_name || "—"}</td>
+                      <td>
+                        <div className="att-pills">
+                          {STATUSES.map((st) => (
+                            <button
+                              key={st}
+                              type="button"
+                              className={`att-pill is-${st.toLowerCase()} ${status === st ? "is-on" : ""}`}
+                              onClick={() => setStatus(s.id, st)}
+                            >
+                              {st === "Present" && <CheckCircle2 size={13} />}
+                              {st === "Absent" && <XCircle size={13} />}
+                              {st === "Late" && <Clock size={13} />}
+                              {st === "Leave" && <MinusCircle size={13} />}
+                              {st}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <input
+                          className="att-note"
+                          placeholder="Optional"
+                          value={remarks[s.id] || ""}
+                          onChange={(e) => {
+                            setRemarks((prev) => ({ ...prev, [s.id]: e.target.value }));
+                            setDirty(true);
+                            setSaved(false);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <p className="st-count">
+        {counts.Unmarked ? `${counts.Unmarked} unmarked · ` : ""}
+        Showing {visible.length} of {students.length} students in your class
+      </p>
     </div>
   );
 }

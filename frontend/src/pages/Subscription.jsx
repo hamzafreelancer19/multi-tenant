@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { getUser, getRole } from "../store/authStore";
+import { getUser } from "../store/authStore";
+import { useTenant } from "../context/TenantContext";
 import api from "../api/axios";
 import {
   CheckCircle2, Clock, XCircle, Zap, Building2, Rocket,
   CreditCard, ArrowRight, RefreshCw, AlertTriangle, Star, Shield
 } from "lucide-react";
 
-const API = "http://127.0.0.1:8000/api";
+const PLAN_AMOUNTS = { Basic: 1500, Business: 3500, Pro: 6000 };
 
 const plans = [
   {
     id: "Basic",
     name: "Basic Plan",
     icon: <Zap size={28} />,
-    price: 1500,
+    price: PLAN_AMOUNTS.Basic,
     color: "#F15A24",
     colorSoft: "rgba(241, 90, 36, 0.1)",
     features: ["Student Management", "Teacher Profiles", "Attendance Tracking", "Admission Requests", "School Profile"],
@@ -24,7 +24,7 @@ const plans = [
     id: "Business",
     name: "Business Plan",
     icon: <Building2 size={28} />,
-    price: 3500,
+    price: PLAN_AMOUNTS.Business,
     color: "#FF8C42",
     colorSoft: "rgba(255, 140, 66, 0.1)",
     popular: true,
@@ -35,7 +35,7 @@ const plans = [
     id: "Pro",
     name: "Ultimate Pro",
     icon: <Rocket size={28} />,
-    price: 6000,
+    price: PLAN_AMOUNTS.Pro,
     color: "#0F172A",
     colorSoft: "rgba(15, 23, 42, 0.1)",
     features: ["Everything Included", "Classora AI Assistant", "Library Management", "Transport & Fleet", "Timetables & Homework", "AI Performance Predictor", "24/7 Priority Support"],
@@ -43,10 +43,31 @@ const plans = [
   },
 ];
 
+function formatDate(value) {
+  if (!value) return "—";
+  const d = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function billingProgress(school) {
+  const start = school?.plan_start_date ? new Date(`${school.plan_start_date}T00:00:00`) : null;
+  const end = school?.plan_expiry_date ? new Date(`${school.plan_expiry_date}T00:00:00`) : null;
+  const now = new Date();
+  if (!start || !end || end <= start) {
+    return { daysUsed: 0, daysLeft: 0, daysTotal: 30, progress: 0 };
+  }
+  const msDay = 1000 * 60 * 60 * 24;
+  const daysTotal = Math.max(1, Math.round((end - start) / msDay));
+  const daysUsed = Math.min(daysTotal, Math.max(0, Math.floor((now - start) / msDay)));
+  const daysLeft = Math.max(0, Math.ceil((end - now) / msDay));
+  const progress = Math.max(0, Math.min(100, Math.round(((now - start) / (end - start)) * 100)));
+  return { daysUsed, daysLeft, daysTotal, progress };
+}
+
 export default function Subscription() {
-  const navigate = useNavigate();
+  const tenant = useTenant();
   const user = getUser();
-  const role = getRole();
 
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,28 +77,30 @@ export default function Subscription() {
   const [message, setMessage] = useState(null);
   const [showRenewForm, setShowRenewForm] = useState(false);
 
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
     fetchSchool();
-  }, []);
+  }, [tenant.schoolId]);
 
   const fetchSchool = async () => {
     try {
       setLoading(true);
-      const res = await api.get("schools/");
-      const schools = res.data;
-      if (schools.length === 0) {
-        setSchool(null);
-        return;
+      const schoolId = tenant.schoolId || user?.school_id || user?.school;
+      if (schoolId) {
+        try {
+          const res = await api.get(`schools/${schoolId}/`);
+          setSchool(res.data);
+          return;
+        } catch (err) {
+          // Fall through to the school list if the id lookup fails.
+        }
       }
-      // Robust matching: Try ID first, then fallback to users school name match if ID fails, 
-      // or just take the first school if the current user is an admin for only one school.
-      const userSchool = user?.school;
-      const mySchool = schools.find(s => s.id === Number(userSchool)) ||
-        schools.find(s => s.name === userSchool) ||
+      const res = await api.get("schools/");
+      const schools = Array.isArray(res.data) ? res.data : [];
+      const mySchool =
+        schools.find((s) => s.id === Number(user?.school) || s.id === Number(user?.school_id)) ||
+        schools.find((s) => s.name === user?.school_name) ||
         schools[0];
-      setSchool(mySchool);
+      setSchool(mySchool || null);
     } catch (err) {
       console.error("Failed to fetch school info");
       setSchool(null);
@@ -93,29 +116,24 @@ export default function Subscription() {
     }
     try {
       setSubmitting(true);
-      await api.post(
-        `schools/${school.id}/buy_plan/`,
-        { plan_type: selectedPlan, transaction_id: transactionId }
-      );
+      setMessage(null);
+      await api.post(`schools/${school.id}/buy_plan/`, {
+        plan_type: selectedPlan,
+        transaction_id: transactionId.trim(),
+      });
       setMessage({ type: "success", text: "Your plan request has been submitted! Waiting for Super Admin approval." });
       setTransactionId("");
       setSelectedPlan(null);
       setShowRenewForm(false);
       fetchSchool();
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.error || "Submission failed. Please try again." });
+      setMessage({ type: "error", text: err.response?.data?.error || err.response?.data?.detail || "Submission failed. Please try again." });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const daysUsed = school?.plan_start_date
-    ? Math.floor((new Date() - new Date(school.plan_start_date)) / (1000 * 60 * 60 * 24))
-    : 0;
-  const daysLeft = school?.plan_expiry_date
-    ? Math.max(0, Math.floor((new Date(school.plan_expiry_date) - new Date()) / (1000 * 60 * 60 * 24)))
-    : 0;
-  const progress = school?.plan_start_date ? Math.min(100, Math.round((daysUsed / 30) * 100)) : 0;
+  const { daysUsed, daysLeft, daysTotal, progress } = billingProgress(school);
 
   const getPlanStatusBadge = () => {
     const s = school?.plan_status;
@@ -125,6 +143,7 @@ export default function Subscription() {
   };
 
   const badge = getPlanStatusBadge();
+  const showPlans = school && (school.plan_status !== "Active" || showRenewForm);
 
   if (loading) {
     return (
@@ -144,15 +163,15 @@ export default function Subscription() {
       </div>
 
       {!school ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-          <div style={{ width: 60, height: 60, background: 'var(--accent-soft)', color: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+        <div className="card" style={{ textAlign: "center", padding: 60 }}>
+          <div style={{ width: 60, height: 60, background: "var(--accent-soft)", color: "var(--accent)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
             <Building2 size={30} />
           </div>
           <h2 style={{ marginBottom: 12 }}>School Profile Not Found</h2>
-          <p style={{ color: 'var(--text-muted)', maxWidth: 400, margin: '0 auto 24px' }}>
+          <p style={{ color: "var(--text-muted)", maxWidth: 400, margin: "0 auto 24px" }}>
             We couldn't link your account to a registered school. This happens if your registration is still pending or if your account is not correctly linked to a school tenant.
           </p>
-          <button className="primary-btn" style={{ margin: '0 auto' }} onClick={fetchSchool}>
+          <button className="primary-btn" style={{ margin: "0 auto" }} onClick={fetchSchool}>
             <RefreshCw size={16} /> Retry Fetching Data
           </button>
         </div>
@@ -167,33 +186,37 @@ export default function Subscription() {
               </div>
             </div>
           )}
-          {/* Current Plan Status Card */}
+
           <div className="card" style={{ background: "linear-gradient(135deg, #0F172A, #1e293b)", color: "white", border: "none", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 20 }}>
               <div>
-                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Current Plan</div>
+                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>{school.name || tenant.schoolName || "Current Plan"}</div>
                 <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>
-                  {school.plan_type === "None" ? "No Plan" : school.plan_type}
+                  {school.plan_type === "None" || !school.plan_type ? "No Plan" : school.plan_type}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "6px 14px", borderRadius: 20, background: badge.bg, color: badge.color, width: "fit-content" }}>
                   {badge.icon} {badge.label}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                {school.plan_amount > 0 && (
-                  <div style={{ fontSize: 28, fontWeight: 800 }}>Rs. {school.plan_amount}</div>
+                {Number(school.plan_amount) > 0 && (
+                  <div style={{ fontSize: 28, fontWeight: 800 }}>Rs. {Number(school.plan_amount).toLocaleString()}</div>
                 )}
-                {school.plan_expiry_date && (
-                  <div style={{ fontSize: 13, opacity: 0.6, marginTop: 4 }}>Expires: {school.plan_expiry_date}</div>
-                )}
+                <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>/ month</div>
               </div>
             </div>
 
-            {/* Progress Bar - only if active */}
+            {(school.plan_start_date || school.plan_expiry_date) && (
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 20, fontSize: 13, opacity: 0.85 }}>
+                {school.plan_start_date && <span>Started: {formatDate(school.plan_start_date)}</span>}
+                {school.plan_expiry_date && <span>Expires: {formatDate(school.plan_expiry_date)}</span>}
+              </div>
+            )}
+
             {school.plan_status === "Active" && (
               <div style={{ marginTop: 28 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 10, opacity: 0.8 }}>
-                  <span>📅 {daysUsed} days used</span>
+                  <span>📅 {daysUsed} of {daysTotal} days used</span>
                   <span>⏳ {daysLeft} days remaining</span>
                 </div>
                 <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 10 }}>
@@ -210,7 +233,6 @@ export default function Subscription() {
               </div>
             )}
 
-            {/* Pending message */}
             {school.plan_status === "Pending" && (
               <div style={{ marginTop: 20, padding: 14, background: "rgba(241, 90, 36, 0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
                 <AlertTriangle size={16} style={{ color: "#F15A24", flexShrink: 0 }} />
@@ -221,10 +243,8 @@ export default function Subscription() {
         </>
       )}
 
-      {/* Show plan selection if inactive, pending, none, or showing renew */}
-      {(school && (school.plan_status === "Inactive" || school.plan_status === "Pending" || school.plan_status === "None" || !school.plan_status || showRenewForm)) && (
+      {showPlans && (
         <>
-          {/* Payment Instructions */}
           <div className="card" style={{ border: "1px solid rgba(241, 90, 36, 0.3)", background: "rgba(241, 90, 36, 0.03)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <div style={{ width: 40, height: 40, background: "rgba(241, 90, 36, 0.1)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>
@@ -251,58 +271,63 @@ export default function Subscription() {
             </div>
           </div>
 
-          {/* Plans Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                onClick={() => setSelectedPlan(plan.id)}
-                style={{
-                  position: "relative",
-                  background: selectedPlan === plan.id ? plan.colorSoft : "var(--bg-card)",
-                  border: `2px solid ${selectedPlan === plan.id ? plan.color : "var(--border)"}`,
-                  borderRadius: 20,
-                  padding: 28,
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  transform: plan.popular ? "scale(1.02)" : "none",
-                }}
-              >
-                {plan.popular && (
-                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.color, color: "white", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                    <Star size={11} /> Most Popular
-                  </div>
-                )}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                  <div style={{ width: 50, height: 50, background: plan.colorSoft, color: plan.color, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {plan.icon}
-                  </div>
-                  {selectedPlan === plan.id && (
-                    <CheckCircle2 size={22} style={{ color: plan.color }} />
+            {plans.map((plan) => {
+              const isCurrent = school.plan_type === plan.id && school.plan_status === "Active";
+              const isSelected = selectedPlan === plan.id;
+              return (
+                <div
+                  key={plan.id}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  style={{
+                    position: "relative",
+                    background: isSelected ? plan.colorSoft : "var(--bg-card)",
+                    border: `2px solid ${isSelected ? plan.color : isCurrent ? plan.color : "var(--border)"}`,
+                    borderRadius: 20,
+                    padding: 28,
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    transform: plan.popular ? "scale(1.02)" : "none",
+                  }}
+                >
+                  {plan.popular && (
+                    <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.color, color: "white", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                      <Star size={11} /> Most Popular
+                    </div>
                   )}
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{plan.name}</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: plan.color, marginBottom: 20 }}>
-                  Rs. {plan.price?.toLocaleString() || "0"}
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>/mo</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {plan.features.map((f) => (
-                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                      <CheckCircle2 size={15} style={{ color: plan.color, flexShrink: 0 }} /> {f}
+                  {isCurrent && (
+                    <div style={{ position: "absolute", top: 16, right: 16, fontSize: 11, fontWeight: 800, color: plan.color }}>
+                      Current
                     </div>
-                  ))}
-                  {plan.locked.map((f) => (
-                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, opacity: 0.35 }}>
-                      <XCircle size={15} style={{ flexShrink: 0 }} /> {f}
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                    <div style={{ width: 50, height: 50, background: plan.colorSoft, color: plan.color, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {plan.icon}
                     </div>
-                  ))}
+                    {isSelected && <CheckCircle2 size={22} style={{ color: plan.color }} />}
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{plan.name}</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: plan.color, marginBottom: 20 }}>
+                    Rs. {plan.price.toLocaleString()}
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>/mo</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {plan.features.map((f) => (
+                      <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                        <CheckCircle2 size={15} style={{ color: plan.color, flexShrink: 0 }} /> {f}
+                      </div>
+                    ))}
+                    {plan.locked.map((f) => (
+                      <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, opacity: 0.35 }}>
+                        <XCircle size={15} style={{ flexShrink: 0 }} /> {f}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Transaction ID + Submit */}
           <div className="card">
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
               <Shield size={18} style={{ color: "var(--accent)" }} /> Submit Payment Details
@@ -329,14 +354,14 @@ export default function Subscription() {
               <button
                 onClick={handleBuyPlan}
                 disabled={submitting || !selectedPlan || !transactionId}
-                style={{ height: 46, padding: "0 28px", background: selectedPlan ? plans.find(p => p.id === selectedPlan)?.color || "var(--accent)" : "var(--bg-hover)", color: selectedPlan ? "white" : "var(--text-muted)", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: submitting || !selectedPlan ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", transition: "all 0.3s" }}
+                style={{ height: 46, padding: "0 28px", background: selectedPlan ? plans.find((p) => p.id === selectedPlan)?.color || "var(--accent)" : "var(--bg-hover)", color: selectedPlan ? "white" : "var(--text-muted)", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: submitting || !selectedPlan ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}
               >
                 {submitting ? "Submitting..." : <><ArrowRight size={18} /> Submit Plan</>}
               </button>
             </div>
             {selectedPlan && (
               <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)" }}>
-                Selected: <strong>{plans.find(p => p.id === selectedPlan)?.name}</strong> — Rs. {plans.find(p => p.id === selectedPlan)?.price?.toLocaleString() || "0"} / month
+                Selected: <strong>{plans.find((p) => p.id === selectedPlan)?.name}</strong> — Rs. {plans.find((p) => p.id === selectedPlan)?.price?.toLocaleString() || "0"} / month. Send this amount, then paste the transaction ID.
               </div>
             )}
           </div>

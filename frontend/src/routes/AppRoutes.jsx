@@ -5,8 +5,22 @@ import Signup from "../pages/Signup";
 import Dashboard from "../pages/Dashboard";
 import Students from "../pages/Students";
 import Schools from "../pages/Schools";
+import SchoolProfile from "../pages/SchoolProfile";
 import Users from "../pages/Users";
 import Teachers from "../pages/Teachers";
+import TeacherPortal from "../pages/TeacherPortal";
+import TeacherAdmissions from "../pages/TeacherAdmissions";
+import ParentPortal from "../pages/ParentPortal";
+import ParentProfile from "../pages/parent/ParentProfile";
+import ParentAttendance from "../pages/parent/ParentAttendance";
+import ParentFees from "../pages/parent/ParentFees";
+import ParentExams from "../pages/parent/ParentExams";
+import ParentHomework from "../pages/parent/ParentHomework";
+import ParentTimetable from "../pages/parent/ParentTimetable";
+import ParentNotices from "../pages/parent/ParentNotices";
+import ParentLibrary from "../pages/parent/ParentLibrary";
+import ParentTransport from "../pages/parent/ParentTransport";
+import Chat from "../pages/Chat";
 import Attendance from "../pages/Attendance";
 import Fees from "../pages/Fees";
 import SystemExplorer from "../pages/SystemExplorer";
@@ -24,6 +38,9 @@ import Transport from "../pages/Transport";
 import StaffManagement from "../pages/StaffManagement";
 import Inventory from "../pages/Inventory";
 import CertificateGenerator from "../pages/CertificateGenerator";
+import Classes from "../pages/Classes";
+import PlatformSettings from "../pages/PlatformSettings";
+import Security from "../pages/Security";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -31,6 +48,7 @@ import RoleRoute from "./RoleRoute";
 import TokenHandler from "../components/auth/TokenHandler";
 
 import SchoolLandingPage from "../pages/SchoolLandingPage";
+import SchoolAdmissionPage from "../pages/SchoolAdmissionPage";
 import { useTenant } from "../context/TenantContext";
 
 export default function AppRoutes() {
@@ -43,9 +61,17 @@ export default function AppRoutes() {
         {/* Public Routes */}
         <Route 
           path="/" 
-          element={tenant.schoolName ? <SchoolLandingPage /> : <LandingPage />} 
+          element={
+            tenant.loading ? (
+              <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div className="slp-spinner" />
+              </div>
+            ) : tenant.schoolName ? <SchoolLandingPage /> : <LandingPage />
+          } 
         />
         <Route path="/s/:school_slug" element={<SchoolLandingPage />} />
+        <Route path="/s/:school_slug/apply" element={<SchoolAdmissionPage />} />
+        <Route path="/apply" element={<SchoolAdmissionPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
@@ -59,10 +85,122 @@ export default function AppRoutes() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route
+            path="/teacher"
+            element={
+              <RoleRoute allowedRoles={["teacher"]}>
+                <TeacherPortal />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/teacher/admissions"
+            element={
+              <RoleRoute allowedRoles={["teacher"]}>
+                <TeacherAdmissions />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentPortal />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/profile"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentProfile />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/attendance"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentAttendance />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/fees"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentFees />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/exams"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentExams />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/homework"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentHomework />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/timetable"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentTimetable />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/notices"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentNotices />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/library"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentLibrary />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/parent/transport"
+            element={
+              <RoleRoute allowedRoles={["parent"]}>
+                <ParentTransport />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <RoleRoute allowedRoles={["admin", "teacher", "parent", "accountant", "student"]}>
+                <Chat />
+              </RoleRoute>
+            }
+          />
+          <Route
             path="/schools"
             element={
               <RoleRoute allowedRoles={["superadmin"]}>
                 <Schools />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/schools/:id"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <SchoolProfile />
               </RoleRoute>
             }
           />
@@ -87,6 +225,14 @@ export default function AppRoutes() {
             element={
               <RoleRoute allowedRoles={["admin"]}>
                 <Teachers />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/classes"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Classes />
               </RoleRoute>
             }
           />
@@ -141,7 +287,7 @@ export default function AppRoutes() {
           <Route
             path="/library"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
+              <RoleRoute allowedRoles={["admin", "student"]}>
                 <Library />
               </RoleRoute>
             }
@@ -149,7 +295,7 @@ export default function AppRoutes() {
           <Route
             path="/transport"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher", "student"]}>
+              <RoleRoute allowedRoles={["admin", "student"]}>
                 <Transport />
               </RoleRoute>
             }
@@ -174,8 +320,16 @@ export default function AppRoutes() {
           <Route
             path="/certificates"
             element={
-              <RoleRoute allowedRoles={["admin", "teacher"]}>
+              <RoleRoute allowedRoles={["admin"]}>
                 <CertificateGenerator />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/security"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <Security />
               </RoleRoute>
             }
           />
@@ -184,6 +338,14 @@ export default function AppRoutes() {
             element={
               <RoleRoute allowedRoles={["superadmin"]}>
                 <SystemExplorer />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/platform-settings"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <PlatformSettings />
               </RoleRoute>
             }
           />
@@ -204,8 +366,22 @@ export default function AppRoutes() {
             } 
           />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/subscription"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Subscription />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <Settings />
+              </RoleRoute>
+            }
+          />
         </Route>
 
         {/* Fallback to Login */}

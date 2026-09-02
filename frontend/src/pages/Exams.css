@@ -1,0 +1,61 @@
+.exam-result-list,
+.exam-notify-list {
+  display: grid;
+  gap: 8px;
+}
+
+.exam-result-row,
+.exam-notify-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.exam-notify-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.exam-result-row b,
+.exam-notify-list b {
+  display: block;
+  font-size: 14px;
+}
+
+.exam-result-row small,
+.exam-notify-list small {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.exam-result-row input {
+  width: 96px;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.fee-wa {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.fee-wa:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}

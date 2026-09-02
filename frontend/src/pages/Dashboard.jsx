@@ -1,40 +1,36 @@
 import { useEffect, useState } from "react";
 import {
-  Users,
-  GraduationCap,
-  ClipboardCheck,
-  TrendingUp,
-  DollarSign,
-  BookOpen,
-  Loader2,
-  RefreshCw,
+  ArrowRight,
   Bell,
-  School,
-  Zap,
+  CheckCircle2,
+  ClipboardCheck,
+  DollarSign,
+  Layout,
+  Plus,
+  RefreshCw,
+  Users,
   X,
-  TrendingDown,
+  Zap,
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
+import {
+  Area,
+  AreaChart,
   Bar,
-  Cell,
-  Legend
-} from 'recharts';
+  BarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { getDashboardStats, getActivities } from "../api/dashboardApi";
 import { getStudents } from "../api/studentsApi";
+import { approveSchool, rejectSchool, approvePlan, rejectPlan } from "../api/adminApi";
 import { getUser, getRole } from "../store/authStore";
+import { useTenant } from "../context/TenantContext";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import PremiumCard from "../components/ui/PremiumCard";
+import "./Dashboard.css";
 
-// Relative time helper
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
   if (diff < 60) return `${Math.floor(diff)}s ago`;
@@ -43,34 +39,40 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const revenueData = [
-  { name: 'Jan', revenue: 4000, expenses: 2400 },
-  { name: 'Feb', revenue: 3000, expenses: 1398 },
-  { name: 'Mar', revenue: 2000, expenses: 9800 },
-  { name: 'Apr', revenue: 2780, expenses: 3908 },
-  { name: 'May', revenue: 1890, expenses: 4800 },
-  { name: 'Jun', revenue: 2390, expenses: 3800 },
-  { name: 'Jul', revenue: 3490, expenses: 4300 },
-];
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
-const attendanceData = [
-  { name: 'Mon', present: 85, absent: 15 },
-  { name: 'Tue', present: 88, absent: 12 },
-  { name: 'Wed', present: 92, absent: 8 },
-  { name: 'Thu', present: 90, absent: 10 },
-  { name: 'Fri', present: 78, absent: 22 },
-];
-
+function Ring({ value }) {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
+  const r = 36;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  return (
+    <div className="dash-ring">
+      <svg viewBox="0 0 88 88" aria-hidden="true">
+        <circle cx="44" cy="44" r={r} className="dash-ring-track" />
+        <circle cx="44" cy="44" r={r} className="dash-ring-value" strokeDasharray={c} strokeDashoffset={offset} />
+      </svg>
+      <strong>{pct}%</strong>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const user = getUser();
   const role = getRole();
+  const tenant = useTenant();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activities, setActivities] = useState([]);
   const [recentStudents, setRecentStudents] = useState([]);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
+  const [busyId, setBusyId] = useState(null);
   const [statsData, setStatsData] = useState({
     students: 0,
     teachers: 0,
@@ -83,509 +85,454 @@ export default function Dashboard() {
   const fetchAll = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const [statsRes, actRes, studentsRes, enrollRes] = await Promise.all([
-        getDashboardStats(),
-        getActivities(),
-        getStudents(),
-        api.get('/enrollments/')
-      ]);
+      const [statsRes, actRes] = await Promise.all([getDashboardStats(), getActivities()]);
       setStatsData(statsRes.data);
       setActivities(Array.isArray(actRes.data) ? actRes.data : []);
-      // API already returns newest first (ordered by -id), take first 5
-      const all = Array.isArray(studentsRes.data) ? studentsRes.data : [];
-      setRecentStudents(all.slice(0, 5));
 
-      const allEnroll = Array.isArray(enrollRes.data) ? enrollRes.data : [];
-      setPendingEnrollments(allEnroll.filter(e => e.status === 'Pending').slice(0, 5));
-
+      if (role !== "superadmin") {
+        try {
+          const studentsRes = await getStudents();
+          const all = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+          setRecentStudents(all.slice(0, 6));
+        } catch {
+          setRecentStudents([]);
+        }
+        try {
+          const enrollRes = await api.get("/enrollments/");
+          const allEnroll = Array.isArray(enrollRes.data) ? enrollRes.data : [];
+          setPendingEnrollments(allEnroll.filter((e) => e.status === "PendingAdmin").slice(0, 6));
+        } catch {
+          setPendingEnrollments([]);
+        }
+      } else {
+        setRecentStudents([]);
+        setPendingEnrollments([]);
+      }
       setLastUpdated(new Date());
     } catch (err) {
       console.warn("Dashboard fetch failed:", err);
-      setStatsData({ students: 0, teachers: 0, attendance: 0, fees_collected: 0 });
-      setActivities([]);
-      setRecentStudents([]);
-      setPendingEnrollments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const fetchSchoolPlan = async () => {
-    if (role !== "admin") return;
-    try {
-      const res = await api.get("schools/");
-      const schools = res.data;
-      const mySchool = schools.find(s => s.id === Number(user?.school)) || schools[0];
-      setSchoolData(mySchool);
-    } catch (err) {
-      console.error("Failed to fetch plan info");
-    }
-  };
-
   useEffect(() => {
+    if (role === "teacher") {
+      navigate("/teacher", { replace: true });
+      return;
+    }
+    if (role === "parent") {
+      navigate("/parent", { replace: true });
+      return;
+    }
     fetchAll();
-    fetchSchoolPlan();
-    // Realtime polling every 10 seconds
-    const interval = setInterval(fetchAll, 10000);
+    if (role === "admin") {
+      api.get("schools/").then((res) => {
+        const schools = res.data || [];
+        const mine =
+          schools.find((s) => s.id === Number(user?.school) || s.id === Number(user?.school_id) || s.id === Number(tenant.schoolId)) ||
+          schools[0];
+        setSchoolData(mine || null);
+      }).catch(() => {});
+    }
+    const interval = setInterval(() => fetchAll(), 30000);
     return () => clearInterval(interval);
   }, []);
 
   const isSuperadmin = statsData.is_superadmin;
-
-  const stats = isSuperadmin ? [
-    {
-      label: "Platform Schools",
-      value: statsData.total_schools || 0,
-      icon: <School size={22} />,
-      color: "orange",
-      desc: "active tenants",
-    },
-    {
-      label: "Total Users",
-      value: statsData.total_users || 0,
-      icon: <Users size={22} />,
-      color: "navy",
-      desc: "platform accounts",
-    },
-    {
-      label: "Active Nodes",
-      value: "99.9%",
-      icon: <RefreshCw size={22} />,
-      color: "green",
-      desc: "system uptime",
-    },
-    {
-      label: "Cloud Storage",
-      value: "1.2 TB",
-      icon: <BookOpen size={22} />,
-      color: "red",
-      desc: "data used",
-    },
-  ] : role === 'teacher' ? [
-    {
-      label: "My Students",
-      value: statsData.students,
-      icon: <Users size={22} />,
-      color: "orange",
-      desc: "enrolled in school",
-    },
-    {
-      label: "Active Homework",
-      value: statsData.assignments,
-      icon: <BookOpen size={22} />,
-      color: "navy",
-      desc: "pending review",
-    },
-    {
-      label: "Notice Board",
-      value: statsData.notices,
-      icon: <Bell size={22} />,
-      color: "green",
-      desc: "published updates",
-    },
-    {
-      label: "System Status",
-      value: "Active",
-      icon: <RefreshCw size={22} />,
-      color: "red",
-      desc: "all systems nominal",
-    },
-  ] : role === 'student' ? [
-    {
-      label: "My Attendance",
-      value: `${statsData.attendance}%`,
-      icon: <ClipboardCheck size={22} />,
-      color: "orange",
-      desc: "overall presence",
-    },
-    {
-      label: "Pending Fees",
-      value: statsData.pending_fees,
-      icon: <DollarSign size={22} />,
-      color: "navy",
-      desc: "unpaid months",
-    },
-    {
-      label: "Assignments",
-      value: statsData.homework,
-      icon: <BookOpen size={22} />,
-      color: "green",
-      desc: "assigned to your class",
-    },
-    {
-      label: "Class",
-      value: statsData.class_name || "N/A",
-      icon: <GraduationCap size={22} />,
-      color: "red",
-      desc: "current enrollment",
-    },
-  ] : [
-    {
-      label: "Total Students",
-      value: statsData.students,
-      icon: <Users size={22} />,
-      color: "orange",
-      desc: "enrolled students",
-    },
-    {
-      label: "Total Teachers",
-      value: statsData.teachers,
-      icon: <GraduationCap size={22} />,
-      color: "navy",
-      desc: "faculty members",
-    },
-    {
-      label: "Attendance Today",
-      value: statsData.attendance > 0 ? `${statsData.attendance}%` : "N/A",
-      icon: <ClipboardCheck size={22} />,
-      color: "green",
-      desc: statsData.attendance > 0 ? "present today" : "no records yet",
-    },
-    {
-      label: "Fees Collected (Records)",
-      value: statsData.fees_collected,
-      icon: <DollarSign size={22} />,
-      color: "red",
-      desc: "paid records",
-    },
-  ];
-
-
+  const schoolName = schoolData?.name || tenant.schoolName || user?.school_name || "your school";
+  const logoUrl = (() => {
+    const raw = tenant.branding?.logo || schoolData?.logo_url || "";
+    if (!raw) return "";
+    if (raw.startsWith("http") || raw.startsWith("data:")) return raw;
+    return `${api.defaults.baseURL.replace("/api", "")}${raw.startsWith("/") ? raw : `/${raw}`}`;
+  })();
   const today = new Date().toLocaleDateString("en-PK", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric"
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
-  return (
-    <div className="page">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard Overview</h1>
-          <p className="page-subtitle">{today}</p>
-        </div>
+  const stats = isSuperadmin
+    ? [
+        { label: "Schools", value: statsData.total_schools || 0, desc: `${statsData.approved_schools || 0} approved`, to: "/schools", tone: "orange" },
+        { label: "Users", value: statsData.total_users || 0, desc: "platform accounts", to: "/users", tone: "navy" },
+        { label: "Pending", value: (statsData.pending_schools || 0) + (statsData.pending_plans || 0), desc: "schools & plans", to: "/schools", tone: "gold" },
+        { label: "Revenue", value: `RS ${Number(statsData.plan_revenue || 0).toLocaleString()}`, desc: `${statsData.active_plans || 0} active plans`, to: "/schools", tone: "green" },
+      ]
+    : role === "teacher"
+    ? [
+        { label: "Students", value: statsData.students || 0, desc: "in your school", to: "/students", tone: "orange" },
+        { label: "Homework", value: statsData.assignments || 0, desc: "assignments", to: "/assignments", tone: "navy" },
+        { label: "Notices", value: statsData.notices || 0, desc: "published", to: "/notices", tone: "gold" },
+        { label: "Attendance", value: "Mark", desc: "today’s register", to: "/attendance", tone: "green" },
+      ]
+    : role === "student"
+    ? [
+        { label: "Attendance", value: `${statsData.attendance || 0}%`, desc: "overall", to: "/attendance", tone: "orange" },
+        { label: "Pending fees", value: statsData.pending_fees || 0, desc: "unpaid months", to: "/fees", tone: "navy" },
+        { label: "Homework", value: statsData.homework || 0, desc: "for your class", to: "/assignments", tone: "gold" },
+        { label: "Class", value: statsData.class_name || "—", desc: "current class", to: "/timetable", tone: "green" },
+      ]
+    : [
+        { label: "Students", value: statsData.students || 0, desc: "enrolled", to: "/students", tone: "orange" },
+        { label: "Teachers", value: statsData.teachers || 0, desc: "faculty", to: "/teachers", tone: "navy" },
+        { label: "Attendance", value: statsData.attendance > 0 ? `${statsData.attendance}%` : "—", desc: statsData.attendance > 0 ? "teachers present" : "not marked yet", to: "/attendance", tone: "gold" },
+        { label: "Paid fees", value: statsData.fees_collected || 0, desc: "paid records", to: "/fees", tone: "green" },
+      ];
 
-        {/* Subscription Alert for Admins */}
-        {role === "admin" && schoolData && schoolData.plan_status !== "Active" && (
-          <div className="card sub-alert-mobile" style={{
-            flex: 1,
-            margin: "0 24px",
-            background: "var(--accent-soft)",
-            border: `1px dashed ${schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"}`,
-            padding: "12px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 36, height: 36,
-                borderRadius: "50%",
-                background: schoolData.plan_status === "Pending" ? "var(--accent-soft)" : "var(--red-soft)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: schoolData.plan_status === "Pending" ? "var(--accent)" : "var(--red)"
-              }}>
-                <Zap size={20} />
-              </div>
-              <div>
-                <p style={{ fontWeight: 700, margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>
-                  {schoolData.plan_status === "Pending" ? "Plan Approval Pending" : "Subscription Required"}
-                </p>
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  {schoolData.plan_status === "Pending"
-                    ? `Your ${schoolData.plan_type} plan request is being reviewed by the Super Admin.`
-                    : "Your school currently has no active plan. Many features are locked."}
-                </p>
-              </div>
-            </div>
-            <button
-              className="primary-btn"
-              style={{ padding: "8px 16px", fontSize: "0.8rem", background: schoolData.plan_status === "Pending" ? "var(--secondary)" : "var(--accent)" }}
-              onClick={() => navigate("/subscription")}
-            >
-              {schoolData.plan_status === "Pending" ? "View Status" : "Upgrade Now"}
-            </button>
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {lastUpdated && (
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              Updated {timeAgo(lastUpdated)}
-            </span>
-          )}
-          <button
-            className="secondary-btn"
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px" }}
-            onClick={() => fetchAll(true)}
-            disabled={refreshing}
-          >
+  const adminActions = [
+    { label: "Add student", to: "/students", icon: Plus },
+    { label: "Admissions", to: "/enrollments", icon: ClipboardCheck, badge: pendingEnrollments.length },
+    { label: "Teacher attendance", to: "/attendance", icon: CheckCircle2 },
+    { label: "Fees", to: "/fees", icon: DollarSign },
+    { label: "Website", to: "/landing-settings", icon: Layout },
+    { label: "Notices", to: "/notices", icon: Bell },
+  ];
+
+  const handleEnroll = async (id, action, name) => {
+    const ok = window.confirm(`${action === "accept" ? "Accept" : "Reject"} admission for ${name}?`);
+    if (!ok) return;
+    setBusyId(id);
+    try {
+      await api.post(`/enrollments/${id}/${action}/`);
+      await fetchAll();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const attendancePct = Number(statsData.attendance) || 0;
+
+  return (
+    <div className="page dash-page">
+      <header className="dash-hero">
+        <div>
+          <p className="dash-kicker">{today}</p>
+          <h1>
+            {greeting()}
+            {user?.username ? `, ${user.username}` : ""}
+          </h1>
+          <p>
+            {isSuperadmin
+              ? "Platform overview — schools, plans, and new signups."
+              : `Here’s what’s happening at ${schoolName} today.`}
+          </p>
+        </div>
+        <div className="dash-hero-meta">
+          {lastUpdated && <span>Updated {timeAgo(lastUpdated)}</span>}
+          <button type="button" className="dash-refresh" onClick={() => fetchAll(true)} disabled={refreshing}>
             <RefreshCw size={15} className={refreshing ? "spin" : ""} />
             Refresh
           </button>
-          {loading && <Loader2 className="spin" size={20} style={{ color: "var(--accent)" }} />}
         </div>
-      </div>
+      </header>
 
-      {/* Stats Grid */}
-      <div className="stats-grid">
-        {stats.map((s) => (
-          <PremiumCard
-            key={s.label}
-            className={`stat-card stat-${s.color}`}
-            auroraColor={
-              s.color === "orange" ? "#F15A24" :
-                s.color === "navy" ? "#0F172A" :
-                  s.color === "green" ? "#22C55E" :
-                    s.color === "red" ? "#EF4444" : "#F15A24"
-            }
-          >
-            <div className="stat-icon">{s.icon}</div>
-            <div className="stat-info">
-              <div className="stat-value">
-                {loading ? <Loader2 size={18} className="spin" /> : s.value}
-              </div>
-              <div className="stat-label">{s.label}</div>
-              <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 2 }}>
-                {s.desc}
-              </div>
-            </div>
-          </PremiumCard>
-        ))}
-      </div>
-
-      {/* Bottom Grid */}
-      <div className="dashboard-grid">
-
-        {/* Pending Admissions (Landing Page) - For School Admin */}
-        {role === "admin" && (
-          <PremiumCard className="card" auroraColor="#f59e0b">
-            <div className="card-header">
-              <h3 className="card-title">
-                <ClipboardCheck size={18} /> Pending Admissions
-              </h3>
-              {pendingEnrollments.length > 0 && (
-                <span style={{
-                  fontSize: "0.7rem", background: "var(--accent)", color: "#fff",
-                  borderRadius: 99, padding: "2px 8px"
-                }}>{pendingEnrollments.length} NEW</span>
-              )}
-            </div>
-            <div className="activity-list">
-              {pendingEnrollments.length > 0 ? (
-                pendingEnrollments.map((e) => (
-                  <div key={e.id} className="activity-item" style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 12 }}>
-                    <div className="activity-info">
-                      <p className="activity-name">{e.student_name} ({e.student_age}y)</p>
-                      <p className="activity-action">Father: {e.father_name} · {e.father_phone}</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        className="icon-btn-sm"
-                      >
-                        <Zap size={14} fill="currentColor" />
-                      </button>
-                    <button
-                      className="icon-btn-danger"
-                      onClick={async () => {
-                        if (window.confirm(`Reject enrollment for ${e.student_name}?`)) {
-                          await api.post(`/enrollments/${e.id}/reject/`);
-                          fetchAll();
-                        }
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  </div>
-            ))
-            ) : (
-            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-              <ClipboardCheck size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-              <p style={{ fontSize: "0.85rem" }}>No pending admissions.</p>
-              <p style={{ fontSize: "0.75rem" }}>New requests from the landing page will appear here.</p>
-            </div>
-              )}
-            {pendingEnrollments.length > 0 && (
-              <button
-                className="text-btn"
-                style={{ width: "100%", padding: "12px", borderTop: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--accent)" }}
-                onClick={() => navigate("/enrollments")}
-              >
-                View All Requests
-              </button>
-            )}
+      {role === "admin" && schoolData && schoolData.plan_status !== "Active" && (
+        <div className={`dash-alert ${schoolData.plan_status === "Pending" ? "is-wait" : "is-lock"}`}>
+          <Zap size={18} />
+          <div>
+            <strong>{schoolData.plan_status === "Pending" ? "Plan waiting for approval" : "No active subscription"}</strong>
+            <span>
+              {schoolData.plan_status === "Pending"
+                ? `Your ${schoolData.plan_type} request is with the platform admin.`
+                : "Some modules stay locked until a plan is active."}
+            </span>
           </div>
-          </PremiumCard>
+          <button type="button" onClick={() => navigate("/subscription")}>
+            {schoolData.plan_status === "Pending" ? "View status" : "Choose a plan"}
+          </button>
+        </div>
+      )}
+
+      <section className="dash-stats">
+        {stats.map((s) => (
+          <button key={s.label} type="button" className={`dash-stat dash-stat-${s.tone}`} onClick={() => s.to && navigate(s.to)}>
+            <span>{s.label}</span>
+            <strong>{loading ? "…" : s.value}</strong>
+            <small>{s.desc}</small>
+          </button>
+        ))}
+      </section>
+
+      {role === "admin" && (
+        <section className="dash-actions">
+          {adminActions.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button key={item.label} type="button" onClick={() => navigate(item.to)}>
+                <Icon size={18} />
+                {item.label}
+                {item.badge > 0 && <em>{item.badge}</em>}
+              </button>
+            );
+          })}
+        </section>
+      )}
+
+      <div className="dash-grid">
+        {isSuperadmin && (
+          <section className="dash-panel">
+            <header>
+              <h2>Pending approvals</h2>
+            </header>
+            <Queue
+              empty="No school or plan approvals waiting."
+              items={[
+                ...(statsData.pending_school_list || []).map((s) => ({
+                  id: `s-${s.id}`,
+                  title: s.name,
+                  meta: `School · ${s.code}`,
+                  onOpen: () => navigate(`/schools/${s.id}`),
+                  onYes: async () => { await approveSchool(s.id); fetchAll(); },
+                  onNo: async () => { await rejectSchool(s.id); fetchAll(); },
+                })),
+                ...(statsData.pending_plan_list || []).map((s) => ({
+                  id: `p-${s.id}`,
+                  title: s.name,
+                  meta: `${s.plan_type} plan · TX ${s.transaction_id || "N/A"}`,
+                  onOpen: () => navigate(`/schools/${s.id}`),
+                  onYes: async () => { await approvePlan(s.id); fetchAll(); },
+                  onNo: async () => { await rejectPlan(s.id); fetchAll(); },
+                })),
+              ]}
+            />
+          </section>
         )}
 
-      {/* Recent Activity - REALTIME */}
-      <PremiumCard className="card" auroraColor="var(--secondary)">
-        <div className="card-header">
-          <h3 className="card-title">
-            <TrendingUp size={18} /> Recent Activity
-          </h3>
-          <span style={{
-            fontSize: "0.7rem", background: "var(--accent)", color: "#fff",
-            borderRadius: 99, padding: "2px 8px"
-          }}>LIVE</span>
-        </div>
-        <div className="activity-list">
-          {activities.length > 0 ? (
-            activities.map((a) => (
-              <div key={a.id} className="activity-item">
-                <div className="activity-avatar">{a.avatar || a.name?.[0] || "?"}</div>
-                <div className="activity-info">
-                  <p className="activity-name">{a.name}</p>
-                  <p className="activity-action">{a.action}</p>
-                </div>
-                <span className="activity-time">{timeAgo(a.created_at)}</span>
+        {role === "admin" && (
+          <section className="dash-panel">
+            <header>
+              <h2>Admission requests</h2>
+              {pendingEnrollments.length > 0 && <span className="dash-pill">{pendingEnrollments.length} new</span>}
+              <button type="button" className="dash-link" onClick={() => navigate("/enrollments")}>
+                View all <ArrowRight size={14} />
+              </button>
+            </header>
+            {pendingEnrollments.length === 0 ? (
+              <div className="dash-empty">
+                <ClipboardCheck size={26} />
+                <p>No pending applications.</p>
+                <button type="button" onClick={() => navigate("/landing-settings")}>Open public website settings</button>
               </div>
-            ))
-          ) : (
-            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-              <Bell size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-              <p style={{ fontSize: "0.85rem" }}>No activity yet.</p>
-              <p style={{ fontSize: "0.75rem" }}>Add a student, teacher or mark attendance to see logs here.</p>
-            </div>
-          )}
-        </div>
-      </PremiumCard>
-
-      {/* Conditional Card: Recent Students (School Admin) OR Active Schools (Super Admin) */}
-      <PremiumCard className="card" auroraColor="var(--accent)">
-        <div className="card-header">
-          <h3 className="card-title">
-            {isSuperadmin ? <School size={18} /> : <Users size={18} />}
-            {isSuperadmin ? " Active Schools" : " Recent Students"}
-          </h3>
-        </div>
-        <div className={isSuperadmin ? "activity-list" : "top-students-list"}>
-          {loading ? (
-            <div style={{ padding: 40, textAlign: "center" }}>
-              <Loader2 className="spin" size={24} />
-            </div>
-          ) : isSuperadmin ? (
-            statsData.recent_schools?.length > 0 ? (
-              statsData.recent_schools.map((s) => (
-                <div key={s.id} className="activity-item">
-                  <div className="activity-avatar" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-                    {s.name?.[0].toUpperCase()}
-                  </div>
-                  <div className="activity-info">
-                    <p className="activity-name">{s.name}</p>
-                    <p className="activity-action">School Code: {s.code}</p>
-                  </div>
-                  <span className="activity-time">{timeAgo(s.created_at)}</span>
-                </div>
-              ))
             ) : (
-              <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-                <School size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <p style={{ fontSize: "0.85rem" }}>No schools registered yet.</p>
-              </div>
-            )
-          ) : recentStudents.length > 0 ? (
-            recentStudents.map((s, i) => (
-              <div key={s.id} className="top-student-item">
-                <div
-                  className={`rank-badge rank-${i + 1}`}
-                  style={{ background: "var(--accent-soft)", color: "var(--accent)", fontWeight: 700, borderRadius: 8, padding: "4px 8px" }}
-                >
-                  {s.name?.[0]?.toUpperCase() || "S"}
+              <ul className="dash-queue">
+                {pendingEnrollments.map((e) => (
+                  <li key={e.id}>
+                    <div>
+                      <strong>{e.student_name}</strong>
+                      <span>{e.class_applying || "Class not set"} · {e.father_name} · {e.father_phone}</span>
+                    </div>
+                    <div className="dash-queue-actions">
+                      <button type="button" disabled={busyId === e.id} onClick={() => handleEnroll(e.id, "accept", e.student_name)}>Accept</button>
+                      <button type="button" className="is-ghost" disabled={busyId === e.id} onClick={() => handleEnroll(e.id, "reject", e.student_name)}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {role === "admin" && (
+          <section className="dash-panel dash-panel-meter">
+            <header>
+              <h2>Today’s teacher attendance</h2>
+              <button type="button" className="dash-link" onClick={() => navigate("/attendance")}>
+                Mark register <ArrowRight size={14} />
+              </button>
+            </header>
+            <div className="dash-meter-row">
+              <Ring value={attendancePct} />
+              <div>
+                <p>{attendancePct > 0 ? `${attendancePct}% of marked teachers are present.` : "Teacher attendance has not been marked yet today."}</p>
+                <div className="dash-mini-stats">
+                  <div><b>{statsData.students || 0}</b><span>Students</span></div>
+                  <div><b>{statsData.teachers || 0}</b><span>Teachers</span></div>
+                  <div><b>{pendingEnrollments.length}</b><span>Applications</span></div>
                 </div>
-                <div className="student-info">
-                  <p className="student-name">{s.name}</p>
-                  <p className="student-grade">{s.class_name} &nbsp;·&nbsp; {s.roll_no || "No Roll"}</p>
-                </div>
-                <span className={`badge-status ${(s.status || "Active") === "Inactive" ? "badge-inactive" : "badge-active"}`}>
-                  {s.status || "Active"}
-                </span>
               </div>
-            ))
+            </div>
+          </section>
+        )}
+
+        <section className="dash-panel">
+          <header>
+            <h2>{isSuperadmin ? "Recent schools" : role === "student" ? "Latest activity" : "Recent students"}</h2>
+            {!isSuperadmin && role !== "student" && (
+              <button type="button" className="dash-link" onClick={() => navigate("/students")}>
+                All students <ArrowRight size={14} />
+              </button>
+            )}
+          </header>
+          {isSuperadmin ? (
+            <PeopleList
+              logoUrl={logoUrl}
+              empty="No schools yet."
+              items={(statsData.recent_schools || []).map((s) => ({
+                id: s.id,
+                title: s.name,
+                meta: s.code,
+                time: timeAgo(s.created_at),
+                onClick: () => navigate(`/schools/${s.id}`),
+              }))}
+            />
+          ) : role === "student" ? (
+            <ActivityList items={activities} logoUrl={logoUrl} />
           ) : (
-            <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--text-muted)" }}>
-              <Users size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-              <p style={{ fontSize: "0.85rem" }}>No students enrolled yet.</p>
-              <p style={{ fontSize: "0.75rem" }}>Go to Students page to add the first student.</p>
-            </div>
+            <PeopleList
+              logoUrl={logoUrl}
+              empty="No students yet. Add the first from Students."
+              items={recentStudents.map((s) => ({
+                id: s.id,
+                title: s.name,
+                meta: `${s.class_name || "Class"} · ${s.roll_no || "No roll"}`,
+                badge: s.status || "Active",
+              }))}
+            />
           )}
-        </div>
-      </PremiumCard>
+        </section>
 
-      {/* Analytics Section - NEW */}
-      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 450px), 1fr))", gap: "24px", marginTop: "24px" }}>
-        
-        {/* Revenue Chart */}
-        <PremiumCard className="card" auroraColor="#3b82f6" style={{ height: "400px" }}>
-          <div className="card-header">
-            <h3 className="card-title">
-              <TrendingUp size={18} /> Revenue vs Expenses
-            </h3>
-            <div style={{ display: "flex", gap: 12, fontSize: "0.75rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#F15A24" }}></div>
-                <span>Revenue</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0F172A" }}></div>
-                <span>Expenses</span>
-              </div>
+        {role !== "student" && (
+          <section className="dash-panel">
+            <header>
+              <h2>Activity</h2>
+            </header>
+            <ActivityList items={activities} logoUrl={logoUrl} />
+          </section>
+        )}
+
+        {isSuperadmin && (
+          <section className="dash-panel dash-chart">
+            <header><h2>School registrations</h2></header>
+            <div className="dash-chart-box">
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={statsData.monthly_signups?.length ? statsData.monthly_signups : [{ name: "—", schools: 0 }]}>
+                  <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="schools" stroke="#F15A24" fill="rgba(241,90,36,0.15)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-          <div style={{ width: '100%', height: '300px', marginTop: "20px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F15A24" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#F15A24" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0F172A" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#0F172A" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ background: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                  itemStyle={{ fontWeight: 600 }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#F15A24" fillOpacity={1} fill="url(#colorRev)" strokeWidth={3} />
-                <Area type="monotone" dataKey="expenses" stroke="#0F172A" fillOpacity={1} fill="url(#colorExp)" strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </PremiumCard>
+          </section>
+        )}
 
-        {/* Attendance Bar Chart */}
-        <PremiumCard className="card" auroraColor="#22c55e" style={{ height: "400px" }}>
-          <div className="card-header">
-            <h3 className="card-title">
-              <ClipboardCheck size={18} /> Weekly Attendance
-            </h3>
-          </div>
-          <div style={{ width: '100%', height: '300px', marginTop: "20px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={attendanceData}>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  cursor={{fill: 'var(--accent-soft)', opacity: 0.4}}
-                  contentStyle={{ background: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                />
-                <Bar dataKey="present" fill="#F15A24" radius={[6, 6, 0, 0]} barSize={30} />
-                <Bar dataKey="absent" fill="#0F172A" radius={[6, 6, 0, 0]} barSize={30} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </PremiumCard>
-
+        {isSuperadmin && (
+          <section className="dash-panel dash-chart">
+            <header><h2>Plan mix</h2></header>
+            <div className="dash-chart-box">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={statsData.plan_breakdown?.length ? statsData.plan_breakdown : [{ name: "None", count: 0 }]}>
+                  <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#F15A24" radius={[8, 8, 0, 0]} barSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
       </div>
-
-
     </div>
-    </div >
+  );
+}
+
+function Queue({ items, empty }) {
+  if (!items.length) {
+    return (
+      <div className="dash-empty">
+        <ClipboardCheck size={26} />
+        <p>{empty}</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="dash-queue">
+      {items.map((item) => (
+        <li key={item.id}>
+          <div
+            role={item.onOpen ? "button" : undefined}
+            style={item.onOpen ? { cursor: "pointer" } : undefined}
+            onClick={item.onOpen}
+          >
+            <strong>{item.title}</strong>
+            <span>{item.meta}</span>
+          </div>
+          <div className="dash-queue-actions">
+            <button type="button" onClick={item.onYes}>Approve</button>
+            <button type="button" className="is-ghost" onClick={item.onNo}><X size={14} /></button>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DashAvatar({ icon: Icon = ClipboardCheck }) {
+  return (
+    <span className="dash-avatar" aria-hidden="true">
+      <Icon size={18} strokeWidth={2.2} />
+    </span>
+  );
+}
+
+function PeopleList({ items, empty, logoUrl }) {
+  if (!items.length) {
+    return (
+      <div className="dash-empty">
+        <Users size={26} />
+        <p>{empty}</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="dash-people">
+      {items.map((item) => (
+        <li
+          key={item.id}
+          role={item.onClick ? "button" : undefined}
+          onClick={item.onClick}
+          style={item.onClick ? { cursor: "pointer" } : undefined}
+        >
+          <DashAvatar icon={Users} />
+          <div>
+            <strong>{item.title}</strong>
+            <span>{item.meta}</span>
+          </div>
+          {item.badge && <em>{item.badge}</em>}
+          {item.time && <small>{item.time}</small>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ActivityList({ items, logoUrl }) {
+  if (!items?.length) {
+    return (
+      <div className="dash-empty">
+        <Bell size={26} />
+        <p>No recent activity.</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="dash-people">
+      {items.map((a) => (
+        <li key={a.id}>
+          <DashAvatar icon={ClipboardCheck} />
+          <div>
+            <strong>{a.name}</strong>
+            <span>{a.action}</span>
+          </div>
+          <small>{timeAgo(a.created_at)}</small>
+        </li>
+      ))}
+    </ul>
   );
 }
