@@ -114,7 +114,6 @@ const navItems = [
   { to: "/certificates", icon: <FileBadge size={20} />, label: "ID Cards & Certificates", roles: ["admin"], plan: "Pro" },
   
   { to: "/subscription", icon: <Zap size={20} />, label: "Subscription", roles: ["admin"], plan: "None" },
-  { to: "/settings", icon: <School size={20} />, label: "School Settings", roles: ["admin"], plan: "None" },
 ];
 
 export default function DashboardLayout() {
@@ -501,10 +500,16 @@ export default function DashboardLayout() {
                     <span>Profile</span>
                   </Link>
                   {role === "admin" && (
-                    <Link to="/landing-settings" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
-                      <LayoutDashboard size={16} />
-                      <span>Public Landing Page</span>
-                    </Link>
+                    <>
+                      <Link to="/landing-settings" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                        <LayoutDashboard size={16} />
+                        <span>Public Landing Page</span>
+                      </Link>
+                      <Link to="/settings" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                        <Settings size={16} />
+                        <span>School Settings</span>
+                      </Link>
+                    </>
                   )}
                   {isDemoMode() && (
                     <button type="button" className="profile-menu-item danger" onClick={handleLogout}>
