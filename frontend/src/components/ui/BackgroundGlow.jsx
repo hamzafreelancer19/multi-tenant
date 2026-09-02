@@ -11,42 +11,43 @@ export default function BackgroundGlow({
   variant = "both" // "yellow", "purple", "both"
 }) {
   return (
-    <div className={cn("relative w-full overflow-hidden min-h-[500px] flex items-center justify-center py-20 px-5 sm:px-10", className)}>
+    <div
+      className={cn("relative w-full overflow-hidden min-h-[500px] flex items-center justify-center py-20 px-5 sm:px-10", className)}
+      style={{
+        background: "linear-gradient(145deg, #fffaf7 0%, #ffffff 48%, #fff5ef 100%)",
+      }}
+    >
 
-      {/* Container for Glows - ensuring they fill the parent */}
+      {/* Soft, brand-colored glows without washing out the form */}
       <div className="absolute inset-0 z-0">
-
-        {/* Soft Yellow Glow (Original Prompt Specs) */}
         {(variant === "yellow" || variant === "both") && (
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: `radial-gradient(circle at center, rgba(255, 140, 66, 0.15) 0%, transparent 70%)`,
-              opacity: 0.6,
-              mixBlendMode: "multiply",
+              backgroundImage: "radial-gradient(circle at 12% 18%, rgba(255, 140, 66, 0.18) 0%, rgba(255, 140, 66, 0.06) 28%, transparent 55%)",
             }}
           />
         )}
 
-        {/* Purple Glow Right (Original Prompt Specs) */}
         {(variant === "purple" || variant === "both") && (
           <div
-            className="absolute inset-x-0 inset-y-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              background: "#ffffff",
-              backgroundImage: `radial-gradient(circle at top right, rgba(241, 90, 36, 0.08), transparent 70%)`,
-              filter: "blur(120px)", // Increased blur for premium feel
-              backgroundRepeat: "no-repeat",
-              opacity: 0.8,
+              backgroundImage: "radial-gradient(circle at 88% 82%, rgba(241, 90, 36, 0.14) 0%, rgba(241, 90, 36, 0.04) 30%, transparent 58%)",
             }}
           />
         )}
 
-        {/* Subtle glass layer to unify the effects */}
-        <div className="absolute inset-0 pointer-events-none bg-white/20 backdrop-blur-[2px]"></div>
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "linear-gradient(rgba(241, 90, 36, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(241, 90, 36, 0.025) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 75%)",
+          }}
+        />
       </div>
 
-      {/* Content Container - Ensure it stays on top */}
       <div className="relative z-10 w-full max-w-[1280px] mx-auto">
         {children}
       </div>
