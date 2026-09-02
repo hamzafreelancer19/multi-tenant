@@ -146,11 +146,6 @@ input,
 select,
 textarea {
   font-family: inherit;
-  color: var(--text-primary);
-}
-
-button {
-  color: inherit;
 }
 
 /* ─────────────────────────────────────────
