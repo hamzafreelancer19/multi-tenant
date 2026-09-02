@@ -28,7 +28,6 @@ import {
   Menu,
   ClipboardList,
   Book as BookIcon,
-  Bus,
   FileBadge,
   Package,
   Layers,
@@ -82,7 +81,8 @@ const navItems = [
   { to: "/parent/timetable", icon: <Clock size={20} />, label: "Timetable", roles: ["parent"], plan: "None" },
   { to: "/parent/notices", icon: <Bell size={20} />, label: "Notices", roles: ["parent"], plan: "None" },
   { to: "/parent/library", icon: <BookIcon size={20} />, label: "Library", roles: ["parent"], plan: "None" },
-  { to: "/parent/transport", icon: <Bus size={20} />, label: "Transport", roles: ["parent"], plan: "None" },
+  // Transport hidden for now
+  // { to: "/parent/transport", icon: <Bus size={20} />, label: "Transport", roles: ["parent"], plan: "None" },
   { to: "/chat", icon: <MessageCircle size={20} />, label: "Chat", roles: ["admin", "teacher", "parent", "accountant", "student"], plan: "None" },
   { to: "/schools", icon: <School size={20} />, label: "Schools", roles: ["superadmin"], plan: "None" },
   { to: "/users", icon: <Users size={20} />, label: "School Admins", roles: ["superadmin"], plan: "None" },
@@ -107,13 +107,13 @@ const navItems = [
   { to: "/timetable", icon: <Clock size={20} />, label: "Class Schedules", roles: ["admin", "teacher", "student"], plan: "Pro" },
   { to: "/assignments", icon: <ClipboardList size={20} />, label: "Homework", roles: ["admin", "teacher", "student"], plan: "Pro" },
   { to: "/library", icon: <BookIcon size={20} />, label: "Library", roles: ["admin", "student"], plan: "Pro" },
-  { to: "/transport", icon: <Bus size={20} />, label: "Transport", roles: ["admin", "student"], plan: "Pro" },
+  // Transport hidden for now
+  // { to: "/transport", icon: <Bus size={20} />, label: "Transport", roles: ["admin", "student"], plan: "Pro" },
   { to: "/staff", icon: <Users size={20} />, label: "Staff & Payroll", roles: ["admin"], plan: "Pro" },
   { to: "/inventory", icon: <Package size={20} />, label: "Inventory & Stock", roles: ["admin"], plan: "Pro" },
   { to: "/certificates", icon: <FileBadge size={20} />, label: "ID Cards & Certificates", roles: ["admin"], plan: "Pro" },
   
   { to: "/subscription", icon: <Zap size={20} />, label: "Subscription", roles: ["admin"], plan: "None" },
-  { to: "/landing-settings", icon: <LayoutDashboard size={20} />, label: "Public Landing Page", roles: ["admin"], plan: "None" },
   { to: "/settings", icon: <School size={20} />, label: "School Settings", roles: ["admin"], plan: "None" },
 ];
 
@@ -500,6 +500,12 @@ export default function DashboardLayout() {
                     <UserIcon size={16} />
                     <span>Profile</span>
                   </Link>
+                  {role === "admin" && (
+                    <Link to="/landing-settings" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                      <LayoutDashboard size={16} />
+                      <span>Public Landing Page</span>
+                    </Link>
+                  )}
                   {isDemoMode() && (
                     <button type="button" className="profile-menu-item danger" onClick={handleLogout}>
                       <div className="pulse-dot"></div>

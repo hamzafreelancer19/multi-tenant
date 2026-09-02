@@ -19,7 +19,6 @@ import ParentHomework from "../pages/parent/ParentHomework";
 import ParentTimetable from "../pages/parent/ParentTimetable";
 import ParentNotices from "../pages/parent/ParentNotices";
 import ParentLibrary from "../pages/parent/ParentLibrary";
-import ParentTransport from "../pages/parent/ParentTransport";
 import Chat from "../pages/Chat";
 import Attendance from "../pages/Attendance";
 import Fees from "../pages/Fees";
@@ -34,7 +33,6 @@ import Notices from "../pages/Notices";
 import Timetable from "../pages/Timetable";
 import Assignments from "../pages/Assignments";
 import Library from "../pages/Library";
-import Transport from "../pages/Transport";
 import StaffManagement from "../pages/StaffManagement";
 import Inventory from "../pages/Inventory";
 import CertificateGenerator from "../pages/CertificateGenerator";
@@ -174,11 +172,7 @@ export default function AppRoutes() {
           />
           <Route
             path="/parent/transport"
-            element={
-              <RoleRoute allowedRoles={["parent"]}>
-                <ParentTransport />
-              </RoleRoute>
-            }
+            element={<Navigate to="/parent" replace />}
           />
           <Route
             path="/chat"
@@ -294,11 +288,7 @@ export default function AppRoutes() {
           />
           <Route
             path="/transport"
-            element={
-              <RoleRoute allowedRoles={["admin", "student"]}>
-                <Transport />
-              </RoleRoute>
-            }
+            element={<Navigate to="/dashboard" replace />}
           />
 
           <Route

@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Bell,
   BookOpen,
-  Bus,
   CalendarCheck,
   ClipboardList,
   Clock,
@@ -22,7 +21,6 @@ const LINKS = [
   { to: "/parent/timetable", icon: Clock, title: "Timetable", desc: "Today and the full week timetable." },
   { to: "/parent/notices", icon: Bell, title: "Notices", desc: "School and class notices for parents." },
   { to: "/parent/library", icon: BookOpen, title: "Library", desc: "Books issued to your child." },
-  { to: "/parent/transport", icon: Bus, title: "Transport", desc: "Van/bus route, stop, and driver." },
   { to: "/chat", icon: MessageCircle, title: "Chat", desc: "Message class teachers and school admin." },
 ];
 

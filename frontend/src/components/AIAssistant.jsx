@@ -3,7 +3,7 @@ import { Bot, X, Send, User, Sparkles, Loader2, BarChart3, Bell, Package, Wallet
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
-const SCHOOL_PATHS = ["/dashboard", "/students", "/teachers", "/fees", "/attendance", "/notices", "/exams", "/inventory", "/staff", "/transport", "/classes", "/enrollments", "/settings", "/assignments", "/library"];
+const SCHOOL_PATHS = ["/dashboard", "/students", "/teachers", "/fees", "/attendance", "/notices", "/exams", "/inventory", "/staff", "/classes", "/enrollments", "/settings", "/assignments", "/library"];
 const PLATFORM_PATHS = ["/schools", "/users", "/security", "/database", "/platform-settings", "/dashboard"];
 
 function canNavigate(path, isPlatform) {
