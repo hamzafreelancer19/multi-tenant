@@ -112,8 +112,6 @@ const navItems = [
   { to: "/staff", icon: <Users size={20} />, label: "Staff & Payroll", roles: ["admin"], plan: "Pro" },
   { to: "/inventory", icon: <Package size={20} />, label: "Inventory & Stock", roles: ["admin"], plan: "Pro" },
   { to: "/certificates", icon: <FileBadge size={20} />, label: "ID Cards & Certificates", roles: ["admin"], plan: "Pro" },
-  
-  { to: "/subscription", icon: <Zap size={20} />, label: "Subscription", roles: ["admin"], plan: "None" },
 ];
 
 export default function DashboardLayout() {
@@ -508,6 +506,10 @@ export default function DashboardLayout() {
                       <Link to="/settings" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
                         <Settings size={16} />
                         <span>School Settings</span>
+                      </Link>
+                      <Link to="/subscription" className="profile-menu-item" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                        <Zap size={16} />
+                        <span>Subscription</span>
                       </Link>
                     </>
                   )}
