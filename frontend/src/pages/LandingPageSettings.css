@@ -439,6 +439,22 @@
   transform: translateX(20px);
 }
 
+.dark .lps-btn-ghost,
+.dark .lps-tabs button,
+.dark .lps-card,
+.dark .lps-preview-card,
+.dark .lps-preset {
+  background: var(--bg-card);
+}
+
+.dark .lps-input:focus {
+  background: var(--bg-surface);
+}
+
+.dark .lps-switch span::before {
+  background: var(--text-primary);
+}
+
 .lps-preview {
   position: sticky;
   top: 16px;

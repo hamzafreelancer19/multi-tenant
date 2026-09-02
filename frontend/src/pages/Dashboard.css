@@ -437,6 +437,33 @@
   padding-bottom: 10px;
 }
 
+.dark .dash-refresh,
+.dark .dash-stat,
+.dark .dash-actions button,
+.dark .dash-panel {
+  background: var(--bg-card);
+}
+
+.dark .dash-stat-orange,
+.dark .dash-stat-gold,
+.dark .dash-alert.is-lock {
+  background: rgba(241, 90, 36, 0.12);
+}
+
+.dark .dash-stat-navy,
+.dark .dash-stat-green {
+  background: var(--bg-surface);
+}
+
+.dark .dash-queue li,
+.dark .dash-people li {
+  border-bottom-color: var(--border);
+}
+
+.dark .dash-ring-track {
+  stroke: var(--border);
+}
+
 @media (max-width: 1024px) {
   .dash-stats {
     grid-template-columns: 1fr 1fr;

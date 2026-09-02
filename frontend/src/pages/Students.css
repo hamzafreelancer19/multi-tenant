@@ -483,6 +483,30 @@
   overflow-wrap: anywhere;
 }
 
+.dark .st-search,
+.dark .st-filters button,
+.dark .st-classes button,
+.dark .st-modal,
+.dark .st-ghost,
+.dark .st-row-btn.is-ghost {
+  background: var(--bg-card);
+}
+
+.dark .st-grid input,
+.dark .st-grid select,
+.dark .st-grid textarea,
+.dark .st-modal header button,
+.dark .st-actions button {
+  background: var(--bg-surface);
+}
+
+.dark .st-table th,
+.dark .st-table td,
+.dark .st-modal header,
+.dark .st-modal footer {
+  border-color: var(--border);
+}
+
 @media (max-width: 720px) {
   .dash-stats {
     grid-template-columns: 1fr 1fr;

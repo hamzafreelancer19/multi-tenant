@@ -116,3 +116,22 @@
   border-color: #e2e8f0;
   color: #cbd5e1;
 }
+
+.dark .tt-select {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.dark .tt-cell,
+.dark .tt-cell.is-lab,
+.dark .tt-cell.is-break,
+.dark .tt-cell.is-assembly,
+.dark .tt-cell.is-sports {
+  background: var(--bg-surface);
+}
+
+.dark .tt-empty,
+.dark .tt-empty.is-static:hover {
+  border-color: var(--border);
+  color: var(--text-muted);
+}

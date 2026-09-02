@@ -336,6 +336,30 @@
   max-width: 480px;
 }
 
+.dark .tc-chips em,
+.dark .tc-picker button,
+.dark .tp-card,
+.dark .tp-class,
+.dark .tp-class-actions button,
+.dark .tp-period-actions button,
+.dark .tp-free-list button {
+  background: var(--bg-card);
+}
+
+.dark .tp-badge,
+.dark .tp-periods li {
+  background: var(--bg-surface);
+}
+
+.dark .tp-periods li.is-cover {
+  background: rgba(241, 90, 36, 0.12);
+}
+
+.dark .tp-date input {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
 @media (max-width: 720px) {
   .tp-stats {
     grid-template-columns: 1fr;

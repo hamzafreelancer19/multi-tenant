@@ -572,6 +572,44 @@
   margin: 24px 8px;
 }
 
+.dark .chat-page,
+.dark .chat-side,
+.dark .chat-compose,
+.dark .chat-main-head,
+.dark .chat-emoji-panel,
+.dark .chat-bubble {
+  background: var(--bg-card);
+}
+
+.dark .chat-main,
+.dark .chat-messages {
+  background:
+    radial-gradient(ellipse at top left, rgba(241, 90, 36, 0.09), transparent 42%),
+    radial-gradient(ellipse at bottom right, rgba(148, 163, 184, 0.04), transparent 46%),
+    var(--bg-base);
+}
+
+.dark .chat-search,
+.dark .chat-icon-btn,
+.dark .chat-attach-preview,
+.dark .chat-back,
+.dark .chat-compose input {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.dark .chat-compose input:focus {
+  background: var(--bg-card);
+}
+
+.dark .chat-bubble time {
+  color: var(--text-secondary);
+}
+
+.dark .chat-bubble.is-mine time {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 @media (max-width: 860px) {
   .chat-page {
     grid-template-columns: 1fr;

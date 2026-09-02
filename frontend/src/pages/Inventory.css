@@ -195,6 +195,16 @@
   cursor: pointer;
 }
 
+.dark .inv-card,
+.dark .inv-tab.is-off,
+.dark .inv-chip {
+  background: var(--bg-card);
+}
+
+.dark .inv-card:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+}
+
 @media (max-width: 720px) {
   .inv-actions {
     width: 100%;

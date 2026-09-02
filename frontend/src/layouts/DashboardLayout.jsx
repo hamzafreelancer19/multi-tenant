@@ -129,7 +129,9 @@ export default function DashboardLayout() {
     ? (platformName && platformName !== "System Configuration" ? platformName : "Classora")
     : (tenant?.schoolName || "Classora");
   const [showNotifs, setShowNotifs] = useState(false);
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [theme, setTheme] = useState(() =>
+    document.documentElement.classList.contains("dark") ? "dark" : "light"
+  );
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [planStatus, setPlanStatus] = useState(null);
@@ -138,15 +140,12 @@ export default function DashboardLayout() {
   const profileMenuRef = useRef(null);
 
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
 
   const fetchNotifs = async () => {
     if (isDemoMode()) return;

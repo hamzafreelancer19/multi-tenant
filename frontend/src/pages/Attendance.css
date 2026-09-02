@@ -67,6 +67,16 @@
   font-size: 12px;
 }
 
+.dark .att-date-nav input[type="date"],
+.dark .att-pill {
+  background: var(--bg-card);
+}
+
+.dark .att-note {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
 @media (max-width: 720px) {
   .att-note {
     width: 120px;
