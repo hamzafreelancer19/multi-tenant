@@ -264,15 +264,8 @@ class SchoolViewSet(viewsets.ModelViewSet):
         if request.user.role != 'superadmin':
             return Response({"error": "Unauthorized"}, status=403)
         school = self.get_object()
-        plan = school.subscribed_plan
-        days = (plan.duration_days if plan else 30) or 30
-        school.plan_status = 'Active'
-        school.plan_start_date = date.today()
-        school.plan_expiry_date = date.today() + timedelta(days=days)
-        if plan:
-            school.plan_type = plan.feature_tier
-            school.plan_amount = plan.price
-        school.save()
+        from .plan_services import activate_school_plan
+        activate_school_plan(school)
 
         from core.models import ActivityLog
         ActivityLog.objects.create(
@@ -288,13 +281,8 @@ class SchoolViewSet(viewsets.ModelViewSet):
         if request.user.role != 'superadmin':
             return Response({"error": "Unauthorized"}, status=403)
         school = self.get_object()
-        school.plan_status = 'Inactive'
-        school.plan_type = 'None'
-        school.transaction_id = ''
-        school.subscribed_plan = None
-        school.plan_start_date = None
-        school.plan_expiry_date = None
-        school.save()
+        from .plan_services import clear_school_plan
+        clear_school_plan(school)
 
         from core.models import ActivityLog
         ActivityLog.objects.create(
