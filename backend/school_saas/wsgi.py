@@ -9,17 +9,9 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 
 import os
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'school_saas.settings')
-
-# Run migrations automatically for Vercel SQLite
-from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
-import django
 
-django.setup()
-try:
-    call_command('migrate', interactive=False)
-except Exception as e:
-    print(f"Migration failed: {e}")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "school_saas.settings")
 
+# Migrations run from Procfile on deploy/start — keep WSGI lean.
 application = get_wsgi_application()
