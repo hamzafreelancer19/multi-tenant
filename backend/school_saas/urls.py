@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from users.views import MeView, MePasswordView, PresenceView, SignupView, GoogleLoginView, TenantInfoView, SchoolLandingUpdateView
 from users.image_views import ImageUploadView
@@ -33,7 +34,21 @@ admin.site.index_title = "Platform Administration"
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
+
+def api_root(_request):
+    return JsonResponse(
+        {
+            "status": "ok",
+            "service": "Classora API",
+            "admin": "/admin/",
+            "api": "/api/",
+            "health": "/api/platform/status/",
+        }
+    )
+
+
 urlpatterns = [
+    path("", api_root, name="api-root"),
     path('admin/', admin.site.urls),
     
     # Platform Admin Routes
