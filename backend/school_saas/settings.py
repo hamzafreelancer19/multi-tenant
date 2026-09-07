@@ -309,8 +309,42 @@ SIMPLE_JWT = {
 
 # CORS & CSRF
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,https://multi-tenant-production-6364.up.railway.app').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,https://multi-tenant-production-6364.up.railway.app').split(',')
+
+_default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "https://multi-tenant-production-6364.up.railway.app",
+    "https://multi-tenant-production-a3db.up.railway.app",
+]
+
+# Railway injects the current public hostname — keep CSRF in sync automatically.
+_railway_domain = (
+    os.getenv("RAILWAY_PUBLIC_DOMAIN")
+    or os.getenv("RAILWAY_STATIC_URL")
+    or ""
+).strip().removeprefix("https://").removeprefix("http://").strip("/")
+if _railway_domain:
+    _default_origins.append(f"https://{_railway_domain}")
+
+_env_cors = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+_env_csrf = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys(_default_origins + _env_cors))
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_default_origins + _env_csrf + _env_cors))
+
+# Railway terminates TLS at the proxy — required for CSRF/admin cookies over HTTPS.
+if _ON_RAILWAY:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
+
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-tenant-domain',
