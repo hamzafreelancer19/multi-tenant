@@ -1,18 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FileBadge,
-  Search,
-  Printer,
-  User,
-  School as SchoolIcon,
-  CreditCard,
   Award,
   CheckCircle2,
-  X,
-  Settings,
-  LayoutGrid,
+  CreditCard,
+  FileBadge,
   FileText,
+  LayoutGrid,
+  Printer,
+  RefreshCw,
+  Search,
+  Settings,
+  School as SchoolIcon,
   Shield,
+  User,
+  X,
+  AlertTriangle,
+  Upload,
+  RotateCcw,
 } from "lucide-react";
 import { getStudents } from "../api/studentsApi";
 import { getClasses } from "../api/classesApi";
@@ -57,6 +61,21 @@ function contactPhone(s) {
   return s?.father_phone || s?.phone || s?.mother_phone || "";
 }
 
+function missingFields(s) {
+  const miss = [];
+  if (!s?.name) miss.push("name");
+  if (!s?.class_name) miss.push("class");
+  if (!s?.roll_no) miss.push("roll");
+  if (!s?.father_name) miss.push("father");
+  return miss;
+}
+
+function refCode(student, certType, issueDate) {
+  const roll = String(student?.roll_no || student?.id || "X").replace(/\s+/g, "");
+  const day = (issueDate || "").replace(/-/g, "") || "00000000";
+  return `${String(certType).slice(0, 3).toUpperCase()}-${roll}-${day.slice(-6)}`;
+}
+
 const DOC_TYPES = [
   { id: "id-card", label: "ID Card", icon: CreditCard },
   { id: "leaving", label: "Transfer", icon: FileText },
@@ -65,43 +84,185 @@ const DOC_TYPES = [
   { id: "award", label: "Award", icon: Award },
 ];
 
+const STYLE_PRESETS = [
+  { id: "classora", label: "Classora", color: "#F15A24" },
+  { id: "navy", label: "Navy", color: "#0F172A" },
+  { id: "emerald", label: "Emerald", color: "#059669" },
+  { id: "royal", label: "Royal", color: "#2563EB" },
+  { id: "maroon", label: "Maroon", color: "#9F1239" },
+];
+
+const DEFAULT_SETTINGS = {
+  schoolName: "",
+  primaryColor: "#F15A24",
+  academicYear: academicYear(),
+  principalName: "",
+  signatureUrl: null,
+  logoUrl: "",
+  issueDate: todayISO(),
+  awardTitle: "Certificate of Excellence",
+  awardReason: "For achieving outstanding marks and demonstrating consistent growth in character and academics.",
+  idValidityNote: "Valid for the current academic session only.",
+  idRules: "This card remains school property. Report loss immediately. Carry while on campus.",
+};
+
+function storageKey(schoolId) {
+  return `classora-cert-studio:${schoolId || "default"}`;
+}
+
+function loadStoredSettings(schoolId) {
+  try {
+    const raw = localStorage.getItem(storageKey(schoolId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 const CertificateGenerator = () => {
   const tenant = useTenant();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState("all");
-  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [certType, setCertType] = useState("id-card");
-  const [customSettings, setCustomSettings] = useState({
-    schoolName: "",
-    primaryColor: "#F15A24",
-    academicYear: academicYear(),
-    principalName: "",
-    signatureUrl: null,
-    logoUrl: "",
-    issueDate: todayISO(),
-    awardTitle: "Certificate of Excellence",
-    awardReason: "For achieving outstanding marks and demonstrating consistent growth in character and academics.",
-  });
+  const [customSettings, setCustomSettings] = useState(DEFAULT_SETTINGS);
   const [showSignPad, setShowSignPad] = useState(false);
+  const [settingsReady, setSettingsReady] = useState(false);
   const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const drawing = useRef(false);
   const brandedOnce = useRef(false);
 
+  const patchSettings = useCallback((patch) => {
+    setCustomSettings((prev) => ({ ...prev, ...patch }));
+  }, []);
+
   useEffect(() => {
-    if (tenant.loading || brandedOnce.current) return;
-    if (!tenant.schoolName && !tenant.branding) return;
-    const color = tenant.branding?.dashboard?.primary_color || tenant.branding?.landing?.primary_color || "#F15A24";
+    if (tenant.loading) return;
+    const stored = loadStoredSettings(tenant.schoolId);
+    const brandColor =
+      tenant.branding?.dashboard?.primary_color ||
+      tenant.branding?.landing?.primary_color ||
+      "#F15A24";
     setCustomSettings((prev) => ({
+      ...DEFAULT_SETTINGS,
       ...prev,
-      schoolName: tenant.schoolName || prev.schoolName || "School",
-      primaryColor: isHex(color) ? color : "#F15A24",
-      logoUrl: tenant.branding?.logo || "",
+      ...(stored || {}),
+      schoolName: stored?.schoolName || tenant.schoolName || prev.schoolName || "School",
+      primaryColor: isHex(stored?.primaryColor)
+        ? stored.primaryColor
+        : isHex(brandColor)
+          ? brandColor
+          : "#F15A24",
+      logoUrl: stored?.logoUrl || tenant.branding?.logo || "",
+      academicYear: stored?.academicYear || academicYear(),
+      issueDate: stored?.issueDate || todayISO(),
     }));
     brandedOnce.current = true;
-  }, [tenant.loading, tenant.schoolName, tenant.branding]);
+    setSettingsReady(true);
+  }, [tenant.loading, tenant.schoolId, tenant.schoolName, tenant.branding]);
+
+  useEffect(() => {
+    if (!settingsReady) return;
+    try {
+      localStorage.setItem(
+        storageKey(tenant.schoolId),
+        JSON.stringify({
+          schoolName: customSettings.schoolName,
+          primaryColor: customSettings.primaryColor,
+          academicYear: customSettings.academicYear,
+          principalName: customSettings.principalName,
+          signatureUrl: customSettings.signatureUrl,
+          logoUrl: customSettings.logoUrl,
+          issueDate: customSettings.issueDate,
+          awardTitle: customSettings.awardTitle,
+          awardReason: customSettings.awardReason,
+          idValidityNote: customSettings.idValidityNote,
+          idRules: customSettings.idRules,
+        })
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }, [customSettings, settingsReady, tenant.schoolId]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const [sRes, cRes] = await Promise.all([getStudents(), getClasses()]);
+      setStudents(Array.isArray(sRes.data) ? sRes.data : []);
+      setClasses(Array.isArray(cRes.data) ? cRes.data : []);
+    } catch (err) {
+      console.error(err);
+      setStudents([]);
+      setClasses([]);
+      setLoadError("Could not load students. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const classOptions = useMemo(() => classes.map(classLabel), [classes]);
+
+  const filteredStudents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return students.filter((s) => {
+      const matchesSearch =
+        !q ||
+        (s.name || "").toLowerCase().includes(q) ||
+        String(s.roll_no || "").toLowerCase().includes(q);
+      const matchesClass = selectedClass === "all" || s.class_name === selectedClass;
+      return matchesSearch && matchesClass;
+    });
+  }, [students, search, selectedClass]);
+
+  const selectedStudents = useMemo(
+    () => selectedIds.map((id) => students.find((s) => s.id === id)).filter(Boolean),
+    [selectedIds, students]
+  );
+
+  const toggleStudent = (student) => {
+    setSelectedIds((prev) =>
+      prev.includes(student.id) ? prev.filter((id) => id !== student.id) : [...prev, student.id]
+    );
+  };
+
+  const selectFiltered = () => {
+    setSelectedIds((prev) => {
+      const set = new Set(prev);
+      filteredStudents.forEach((s) => set.add(s.id));
+      return [...set];
+    });
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const removeSelected = (id) => setSelectedIds((prev) => prev.filter((x) => x !== id));
+
+  const resetSettings = () => {
+    const brandColor =
+      tenant.branding?.dashboard?.primary_color ||
+      tenant.branding?.landing?.primary_color ||
+      "#F15A24";
+    setCustomSettings({
+      ...DEFAULT_SETTINGS,
+      schoolName: tenant.schoolName || "School",
+      primaryColor: isHex(brandColor) ? brandColor : "#F15A24",
+      logoUrl: tenant.branding?.logo || "",
+      academicYear: academicYear(),
+      issueDate: todayISO(),
+    });
+  };
 
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
@@ -109,208 +270,264 @@ const CertificateGenerator = () => {
     const ctx = canvas.getContext("2d");
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#000";
+    ctx.strokeStyle = "#0f172a";
     const rect = canvas.getBoundingClientRect();
     const point = e.touches ? e.touches[0] : e;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     ctx.beginPath();
-    ctx.moveTo(point.clientX - rect.left, point.clientY - rect.top);
-    setIsDrawing(true);
+    ctx.moveTo((point.clientX - rect.left) * scaleX, (point.clientY - rect.top) * scaleY);
+    drawing.current = true;
   };
 
   const draw = (e) => {
-    if (!isDrawing) return;
+    if (!drawing.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
     const point = e.touches ? e.touches[0] : e;
-    ctx.lineTo(point.clientX - rect.left, point.clientY - rect.top);
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    ctx.lineTo((point.clientX - rect.left) * scaleX, (point.clientY - rect.top) * scaleY);
     ctx.stroke();
   };
 
-  const stopDrawing = () => setIsDrawing(false);
+  const stopDrawing = () => {
+    drawing.current = false;
+  };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const saveCanvas = () => {
-    setCustomSettings({ ...customSettings, signatureUrl: canvasRef.current.toDataURL() });
+    if (!canvasRef.current) return;
+    patchSettings({ signatureUrl: canvasRef.current.toDataURL("image/png") });
     setShowSignPad(false);
   };
 
-  const handleSignatureUpload = (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e, key) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setCustomSettings({ ...customSettings, signatureUrl: reader.result });
+    reader.onloadend = () => patchSettings({ [key]: reader.result });
     reader.readAsDataURL(file);
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [sRes, cRes] = await Promise.all([getStudents(), getClasses()]);
-        setStudents(Array.isArray(sRes.data) ? sRes.data : []);
-        setClasses(Array.isArray(cRes.data) ? cRes.data : []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  const classOptions = classes.map(classLabel);
-  const filteredStudents = students.filter((s) => {
-    const q = search.toLowerCase();
-    const matchesSearch = (s.name || "").toLowerCase().includes(q) || String(s.roll_no || "").toLowerCase().includes(q);
-    const matchesClass = selectedClass === "all" || s.class_name === selectedClass;
-    return matchesSearch && matchesClass;
-  });
-
-  const toggleStudentSelection = (student) => {
-    if (selectedStudents.find((s) => s.id === student.id)) {
-      setSelectedStudents(selectedStudents.filter((s) => s.id !== student.id));
-    } else {
-      setSelectedStudents([...selectedStudents, student]);
-    }
-  };
-
-  const selectAllFiltered = () => {
-    const ids = new Set(selectedStudents.map((s) => s.id));
-    const extra = filteredStudents.filter((s) => !ids.has(s.id));
-    setSelectedStudents([...selectedStudents, ...extra]);
   };
 
   const color = isHex(customSettings.primaryColor) ? customSettings.primaryColor : "#F15A24";
   const schoolName = customSettings.schoolName || tenant.schoolName || "School";
   const logo = customSettings.logoUrl || tenant.branding?.logo;
+  const activePreset = STYLE_PRESETS.find((p) => p.color.toLowerCase() === color.toLowerCase())?.id;
 
   const renderLogo = (size = 24, light = false) =>
     logo ? (
-      <img src={logo} alt="" style={{ height: size, maxWidth: size * 2.2, objectFit: "contain", filter: light ? "brightness(0) invert(1)" : "none" }} />
+      <span className="cg-logo">
+        <img
+          src={logo}
+          alt=""
+          style={{
+            height: size,
+            maxWidth: size * 2.4,
+            filter: light ? "brightness(0) invert(1)" : "none",
+          }}
+        />
+      </span>
     ) : (
-      <SchoolIcon size={size} color={light ? "white" : color} />
+      <span className="cg-logo">
+        <SchoolIcon size={size} color={light ? "#fff" : color} />
+      </span>
     );
 
   const signatureBlock = (label = "Principal") => (
-    <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      {customSettings.signatureUrl && (
-        <img src={customSettings.signatureUrl} alt="" style={{ height: 40, maxWidth: 140, objectFit: "contain", marginBottom: -8 }} />
-      )}
-      <div style={{ width: 140, borderTop: "1px solid var(--text-primary)", marginTop: 36, paddingTop: 6, fontSize: 12, fontWeight: 800 }}>
-        {customSettings.principalName || label}
-      </div>
-      <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>{label}</div>
+    <div className="cg-sign">
+      {customSettings.signatureUrl ? (
+        <img src={customSettings.signatureUrl} alt="" />
+      ) : null}
+      <div className="cg-line">{customSettings.principalName || label}</div>
+      <small>{label}</small>
     </div>
   );
 
-  const renderDocument = (student) => {
-    const rel = relation(student.gender);
-    const issued = formatLongDate(customSettings.issueDate);
-    if (certType === "id-card") {
-      return (
-        <div className="id-card-preview">
-          <div style={{ background: color, height: 110, padding: 20, textAlign: "center", color: "white" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>{renderLogo(28, true)}</div>
-            <div style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.2 }}>{schoolName}</div>
-            <div style={{ fontSize: 9, opacity: 0.8, marginTop: 4 }}>ID Card · {customSettings.academicYear}</div>
+  const renderIdCard = (student) => {
+    const phone = contactPhone(student);
+    return (
+      <div className="cg-id-pair">
+        <div className="cg-id-card">
+          <div className="cg-id-banner" style={{ background: color }}>
+            {renderLogo(28, true)}
+            <strong>{schoolName}</strong>
+            <span>Student ID · {customSettings.academicYear}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: -35 }}>
-            <div style={{ width: 90, height: 90, background: "var(--bg-card)", borderRadius: "50%", border: "4px solid white", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}>
-              {student.photo ? <img src={student.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={50} />}
-            </div>
+          <div className="cg-id-photo">
+            {student.photo ? <img src={student.photo} alt="" /> : <User size={42} />}
           </div>
-          <div style={{ textAlign: "center", padding: "15px 20px" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)", marginBottom: 4 }}>{student.name}</h2>
-            <p style={{ fontSize: 12, fontWeight: 800, color, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 15 }}>STUDENT</p>
-            <div style={{ textAlign: "left", background: "var(--bg-base)", padding: "12px 16px", borderRadius: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase" }}>Roll No</span>
-                <span style={{ fontSize: 11, fontWeight: 800 }}>{student.roll_no || "—"}</span>
+          <div className="cg-id-body">
+            <h2>{student.name || "Student"}</h2>
+            <p className="cg-role" style={{ color }}>
+              Student
+            </p>
+            <div className="cg-id-rows">
+              <div>
+                <span>Roll No</span>
+                <strong>{student.roll_no || "—"}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase" }}>Class</span>
-                <span style={{ fontSize: 11, fontWeight: 800 }}>{student.class_name || "—"}</span>
+              <div>
+                <span>Class</span>
+                <strong>{student.class_name || "—"}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase" }}>Father</span>
-                <span style={{ fontSize: 11, fontWeight: 800 }}>{student.father_name || "N/A"}</span>
+              <div>
+                <span>Father</span>
+                <strong>{student.father_name || "N/A"}</strong>
               </div>
-              {contactPhone(student) && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase" }}>Phone</span>
-                  <span style={{ fontSize: 11, fontWeight: 800 }}>{contactPhone(student)}</span>
+              {phone ? (
+                <div>
+                  <span>Phone</span>
+                  <strong>{phone}</strong>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
-          <div style={{ position: "absolute", bottom: 15, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {customSettings.signatureUrl ? <img src={customSettings.signatureUrl} alt="" style={{ height: 35, maxWidth: "80%", objectFit: "contain", marginBottom: -2 }} /> : <div style={{ width: 100, height: 1, background: "#e2e8f0", marginBottom: 8 }} />}
-            <div style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)" }}>{customSettings.principalName || "Authorized Signature"}</div>
+          <div className="cg-id-foot">
+            {customSettings.signatureUrl ? (
+              <img src={customSettings.signatureUrl} alt="" />
+            ) : (
+              <div className="cg-sig-line" />
+            )}
+            <span>{customSettings.principalName || "Authorized Signature"}</span>
           </div>
         </div>
+
+        <div className="cg-id-card is-back">
+          <div className="cg-id-banner" style={{ background: color }}>
+            {renderLogo(28, true)}
+            <strong>{schoolName}</strong>
+            <span>Card reverse · Keep safely</span>
+          </div>
+          <div className="cg-id-back-body">
+            <h3>Validity</h3>
+            <p>{customSettings.idValidityNote}</p>
+            <h3>Instructions</h3>
+            <ul className="cg-id-rules">
+              {(customSettings.idRules || "")
+                .split(".")
+                .map((part) => part.trim())
+                .filter(Boolean)
+                .map((rule) => (
+                  <li key={rule}>{rule}.</li>
+                ))}
+            </ul>
+            <div className="cg-id-contact">
+              <div className="cg-id-rows">
+                <div>
+                  <span>Emergency</span>
+                  <strong>{phone || student.emergency_phone || "School office"}</strong>
+                </div>
+                <div>
+                  <span>Session</span>
+                  <strong>{customSettings.academicYear}</strong>
+                </div>
+                <div>
+                  <span>Ref</span>
+                  <strong>{refCode(student, "id", customSettings.issueDate)}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="cg-id-foot" style={{ position: "static", marginTop: 4 }}>
+              {customSettings.signatureUrl ? (
+                <img src={customSettings.signatureUrl} alt="" />
+              ) : (
+                <div className="cg-sig-line" />
+              )}
+              <span>{customSettings.principalName || "Principal"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCertificate = (student) => {
+    const rel = relation(student.gender);
+    const issued = formatLongDate(customSettings.issueDate);
+    const code = refCode(student, certType, customSettings.issueDate);
+
+    let title = "";
+    let body = null;
+    let award = false;
+
+    if (certType === "leaving") {
+      title = "School Leaving Certificate";
+      body = (
+        <p className="cg-body">
+          This is to certify that <strong>{student.name || "—"}</strong>, {rel.child} of{" "}
+          <strong>{student.father_name || "N/A"}</strong>, was a bona fide student of{" "}
+          <strong>{schoolName}</strong> in <strong>{student.class_name || "their class"}</strong>
+          {student.roll_no ? <> (Roll No. <strong>{student.roll_no}</strong>)</> : null}.{" "}
+          {rel.his.charAt(0).toUpperCase() + rel.his.slice(1)} conduct during the stay was satisfactory.
+          We wish {rel.him} success in future studies.
+        </p>
+      );
+    } else if (certType === "bonafide") {
+      title = "Bonafide Certificate";
+      body = (
+        <p className="cg-body">
+          This is to certify that <strong>{student.name || "—"}</strong>, {rel.child} of{" "}
+          <strong>{student.father_name || "N/A"}</strong>, is a bona fide student of{" "}
+          <strong>{schoolName}</strong>, currently studying in{" "}
+          <strong>{student.class_name || "their class"}</strong>
+          {student.roll_no ? <> (Roll No. <strong>{student.roll_no}</strong>)</> : null} during the
+          academic year <strong>{customSettings.academicYear}</strong>. This certificate is issued on
+          request for official purposes.
+        </p>
+      );
+    } else if (certType === "character") {
+      title = "Character Certificate";
+      body = (
+        <p className="cg-body">
+          This is to certify that <strong>{student.name || "—"}</strong>, {rel.child} of{" "}
+          <strong>{student.father_name || "N/A"}</strong>, is/was a student of{" "}
+          <strong>{schoolName}</strong> in <strong>{student.class_name || "their class"}</strong>. To
+          the best of our knowledge {rel.his} character and conduct have been good.
+        </p>
+      );
+    } else {
+      award = true;
+      title = customSettings.awardTitle || "Certificate of Excellence";
+      body = (
+        <>
+          <div className="cg-award-icon">
+            <Award size={52} />
+          </div>
+          <p className="cg-award-school">{schoolName}</p>
+          <p className="cg-award-to">Proudly presented to</p>
+          <h2 className="cg-award-name">{student.name || "—"}</h2>
+          <p className="cg-body">
+            {customSettings.awardReason} Session <strong>{customSettings.academicYear}</strong>
+            {student.class_name ? <>, {student.class_name}</> : null}
+            {student.roll_no ? <> · Roll {student.roll_no}</> : null}.
+          </p>
+        </>
       );
     }
 
-    const body =
-      certType === "leaving" ? (
-        <>
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 24, textTransform: "uppercase", letterSpacing: 2 }}>School Leaving Certificate</h1>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 2 }}>
-            This is to certify that <strong>{student.name}</strong>, {rel.child} of <strong>{student.father_name || "N/A"}</strong>,
-            was a bona fide student of <strong>{schoolName}</strong> in <strong>{student.class_name || "their class"}</strong>.
-            {student.roll_no ? ` Roll No. ${student.roll_no}.` : ""} {rel.his.charAt(0).toUpperCase() + rel.his.slice(1)} conduct during the stay was satisfactory.
-            We wish {rel.him} success in future studies.
-          </p>
-        </>
-      ) : certType === "bonafide" ? (
-        <>
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 24, textTransform: "uppercase", letterSpacing: 2 }}>Bonafide Certificate</h1>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 2 }}>
-            This is to certify that <strong>{student.name}</strong>, {rel.child} of <strong>{student.father_name || "N/A"}</strong>,
-            is a bona fide student of <strong>{schoolName}</strong>, currently studying in <strong>{student.class_name || "their class"}</strong>
-            {student.roll_no ? ` (Roll No. ${student.roll_no})` : ""} during the academic year <strong>{customSettings.academicYear}</strong>.
-            This certificate is issued on request for official purposes.
-          </p>
-        </>
-      ) : certType === "character" ? (
-        <>
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 24, textTransform: "uppercase", letterSpacing: 2 }}>Character Certificate</h1>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 2 }}>
-            This is to certify that <strong>{student.name}</strong>, {rel.child} of <strong>{student.father_name || "N/A"}</strong>,
-            is/was a student of <strong>{schoolName}</strong> in <strong>{student.class_name || "their class"}</strong>.
-            To the best of our knowledge {rel.his} character and conduct have been good.
-          </p>
-        </>
-      ) : (
-        <>
-          <div style={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)" }}>
-            <Award size={56} color="#f59e0b" />
-          </div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, color: "#f59e0b", marginTop: 48, marginBottom: 10 }}>{customSettings.awardTitle || "Certificate of Excellence"}</h1>
-          <p style={{ fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: 4, marginBottom: 24 }}>{schoolName}</p>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)" }}>PROUDLY PRESENTED TO</p>
-          <h2 style={{ fontSize: 36, fontWeight: 900, margin: "22px 0", fontFamily: "serif" }}>{student.name}</h2>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)", maxWidth: 480, margin: "0 auto", lineHeight: 1.6 }}>
-            {customSettings.awardReason} Session <strong>{customSettings.academicYear}</strong>
-            {student.class_name ? `, ${student.class_name}` : ""}.
-          </p>
-        </>
-      );
-
     return (
-      <div className="cert-preview" style={{ border: certType === "award" ? "15px double #f59e0b" : `15px double ${color}` }}>
-        {certType !== "award" && <div style={{ position: "absolute", top: 20, right: 30 }}>{renderLogo(40)}</div>}
+      <div
+        className={`cg-cert ${award ? "is-award" : ""}`}
+        style={{ border: award ? "14px double #f59e0b" : `14px double ${color}` }}
+      >
+        {!award ? <div className="cg-cert-logo">{renderLogo(40)}</div> : null}
+        {!award ? <h1>{title}</h1> : <h1>{title}</h1>}
         {body}
-        <p style={{ marginTop: 28, fontSize: 13, color: "var(--text-muted)", fontWeight: 700 }}>Issued on {issued || "—"}</p>
-        <div style={{ marginTop: 40, display: "flex", justifyContent: "space-between", padding: "0 32px" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ width: 140, borderTop: "1px solid var(--text-primary)", marginTop: 40, paddingTop: 6, fontSize: 12, fontWeight: 800 }}>Admin Office</div>
+        <p className="cg-issued">Issued on {issued || "—"}</p>
+        <p className="cg-ref">Ref: {code}</p>
+        <div className="cg-sign-row">
+          <div className="cg-sign">
+            <div className="cg-line">Admin Office</div>
+            <small>Verified</small>
           </div>
           {signatureBlock("Principal")}
         </div>
@@ -318,219 +535,412 @@ const CertificateGenerator = () => {
     );
   };
 
+  const renderDocument = (student) =>
+    certType === "id-card" ? renderIdCard(student) : renderCertificate(student);
+
+  const handlePrint = () => {
+    if (!selectedStudents.length) return;
+    window.print();
+  };
+
   return (
-    <div className="page">
-      <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40, flexWrap: "wrap", gap: 20 }}>
+    <div className="page cg-page">
+      <div className="no-print cg-hero">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{ background: "var(--accent)", padding: 6, borderRadius: 8, color: "white" }}>
-              <FileBadge size={18} />
-            </div>
-            <span style={{ fontSize: 10, fontWeight: 900, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "2px" }}>Smart Printing</span>
-          </div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, color: "var(--text-primary)" }}>Certificate Engine</h1>
-          <p style={{ fontSize: 16, color: "var(--text-secondary)", fontWeight: 600 }}>Design once, generate for students instantly.</p>
+          <p className="cg-kicker">
+            <span>
+              <FileBadge size={14} />
+            </span>
+            Document Studio
+          </p>
+          <h1>ID Cards & Certificates</h1>
+          <p>Pick a template, brand it once, select students, and print or save as PDF.</p>
         </div>
-        <button onClick={() => window.print()} className="primary-btn" disabled={selectedStudents.length === 0} style={{ padding: "12px 24px", borderRadius: 16 }}>
-          <Printer size={20} /> Bulk Print ({selectedStudents.length})
-        </button>
+        <div className="cg-hero-actions">
+          <button type="button" className="cg-btn is-ghost" onClick={resetSettings} title="Reset branding">
+            <RotateCcw size={16} />
+            Reset
+          </button>
+          <button
+            type="button"
+            className="cg-btn is-primary"
+            onClick={handlePrint}
+            disabled={!selectedStudents.length}
+          >
+            <Printer size={16} />
+            Print / PDF ({selectedStudents.length})
+          </button>
+        </div>
       </div>
 
-      <div className="no-print cert-layout">
-        <aside>
-          <div className="sidebar-section">
-            <h3 style={{ fontSize: 12, fontWeight: 900, color: "var(--text-secondary)", marginBottom: 16, textTransform: "uppercase" }}>1. Document Style</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {DOC_TYPES.map((doc) => {
-                const Icon = doc.icon;
-                const on = certType === doc.id;
-                return (
-                  <div key={doc.id} onClick={() => setCertType(doc.id)} className={`cert-card ${on ? "cert-active" : ""}`} style={{ textAlign: "center" }}>
-                    <Icon size={20} color={on ? "var(--accent)" : "var(--text-muted)"} style={{ margin: "0 auto 8px" }} />
-                    <div style={{ fontWeight: 800, fontSize: 10 }}>{doc.label}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      <div className="no-print cg-tabs">
+        {DOC_TYPES.map((doc) => {
+          const Icon = doc.icon;
+          return (
+            <button
+              key={doc.id}
+              type="button"
+              className={`cg-tab ${certType === doc.id ? "is-on" : ""}`}
+              onClick={() => setCertType(doc.id)}
+            >
+              <Icon size={15} />
+              {doc.label}
+            </button>
+          );
+        })}
+      </div>
 
-          <div className="sidebar-section">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <Settings size={16} color="var(--text-secondary)" />
-              <h3 style={{ fontSize: 12, fontWeight: 900, color: "var(--text-secondary)", textTransform: "uppercase", margin: 0 }}>2. Branding</h3>
+      <div className="no-print cg-layout">
+        <aside className="cg-side">
+          <section className="cg-panel">
+            <div className="cg-panel-head">
+              <h3>
+                <Settings size={14} /> Branding
+              </h3>
+              <button type="button" className="cg-link" onClick={resetSettings}>
+                Defaults
+              </button>
             </div>
-            <div style={{ display: "grid", gap: 12 }}>
-              <div>
-                <label className="cert-label">SCHOOL NAME</label>
-                <input className="cert-field" value={customSettings.schoolName} onChange={(e) => setCustomSettings({ ...customSettings, schoolName: e.target.value })} />
+            <div className="cg-grid">
+              <div className="cg-field">
+                <label>School name</label>
+                <input
+                  value={customSettings.schoolName}
+                  onChange={(e) => patchSettings({ schoolName: e.target.value })}
+                />
               </div>
-              <div>
-                <label className="cert-label">PRINCIPAL NAME</label>
-                <input className="cert-field" value={customSettings.principalName} onChange={(e) => setCustomSettings({ ...customSettings, principalName: e.target.value })} placeholder="Shown on certificates" />
+              <div className="cg-field">
+                <label>Principal name</label>
+                <input
+                  value={customSettings.principalName}
+                  placeholder="Shown on documents"
+                  onChange={(e) => patchSettings({ principalName: e.target.value })}
+                />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div>
-                  <label className="cert-label">PRIMARY COLOR</label>
-                  <input type="color" className="cert-field" style={{ height: 36, padding: 2 }} value={color} onChange={(e) => setCustomSettings({ ...customSettings, primaryColor: e.target.value })} />
+              <div className="cg-grid is-2">
+                <div className="cg-field">
+                  <label>Primary color</label>
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => patchSettings({ primaryColor: e.target.value })}
+                  />
                 </div>
-                <div>
-                  <label className="cert-label">YEAR</label>
-                  <input className="cert-field" value={customSettings.academicYear} onChange={(e) => setCustomSettings({ ...customSettings, academicYear: e.target.value })} />
+                <div className="cg-field">
+                  <label>Academic year</label>
+                  <input
+                    value={customSettings.academicYear}
+                    onChange={(e) => patchSettings({ academicYear: e.target.value })}
+                  />
                 </div>
               </div>
-              <div>
-                <label className="cert-label">ISSUE DATE</label>
-                <input className="cert-field" type="date" value={customSettings.issueDate} onChange={(e) => setCustomSettings({ ...customSettings, issueDate: e.target.value })} />
+              <div className="cg-field">
+                <label>Style presets</label>
+                <div className="cg-presets">
+                  {STYLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className={`cg-preset ${activePreset === preset.id ? "is-on" : ""}`}
+                      onClick={() => patchSettings({ primaryColor: preset.color })}
+                    >
+                      <i style={{ background: preset.color }} />
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {certType === "award" && (
+              <div className="cg-field">
+                <label>Issue date</label>
+                <input
+                  type="date"
+                  value={customSettings.issueDate}
+                  onChange={(e) => patchSettings({ issueDate: e.target.value })}
+                />
+              </div>
+              {certType === "award" ? (
                 <>
-                  <div>
-                    <label className="cert-label">AWARD TITLE</label>
-                    <input className="cert-field" value={customSettings.awardTitle} onChange={(e) => setCustomSettings({ ...customSettings, awardTitle: e.target.value })} />
+                  <div className="cg-field">
+                    <label>Award title</label>
+                    <input
+                      value={customSettings.awardTitle}
+                      onChange={(e) => patchSettings({ awardTitle: e.target.value })}
+                    />
                   </div>
-                  <div>
-                    <label className="cert-label">AWARD TEXT</label>
-                    <textarea className="cert-field" rows={3} value={customSettings.awardReason} onChange={(e) => setCustomSettings({ ...customSettings, awardReason: e.target.value })} />
+                  <div className="cg-field">
+                    <label>Award text</label>
+                    <textarea
+                      rows={3}
+                      value={customSettings.awardReason}
+                      onChange={(e) => patchSettings({ awardReason: e.target.value })}
+                    />
                   </div>
                 </>
-              )}
-              <div>
-                <label className="cert-label">DIGITAL SIGNATURE</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <input type="file" accept="image/*" id="sig-upload" hidden onChange={handleSignatureUpload} />
-                  <label htmlFor="sig-upload" style={{ flex: 1, padding: 10, background: "#fff7f3", border: "1px dashed var(--accent)", borderRadius: 10, color: "var(--accent)", fontSize: 11, fontWeight: 800, textAlign: "center", cursor: "pointer" }}>
+              ) : null}
+              {certType === "id-card" ? (
+                <>
+                  <div className="cg-field">
+                    <label>ID validity note</label>
+                    <input
+                      value={customSettings.idValidityNote}
+                      onChange={(e) => patchSettings({ idValidityNote: e.target.value })}
+                    />
+                  </div>
+                  <div className="cg-field">
+                    <label>ID reverse rules</label>
+                    <textarea
+                      rows={2}
+                      value={customSettings.idRules}
+                      onChange={(e) => patchSettings({ idRules: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : null}
+              <div className="cg-field">
+                <label>School logo</label>
+                <div className="cg-file-row">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="cg-logo-upload"
+                    hidden
+                    onChange={(e) => handleImageUpload(e, "logoUrl")}
+                  />
+                  <label htmlFor="cg-logo-upload" className="cg-file-btn">
+                    <Upload size={14} style={{ display: "inline", marginRight: 6 }} />
+                    Upload logo
+                  </label>
+                </div>
+                {logo ? (
+                  <div className="cg-asset">
+                    <img src={logo} alt="" />
+                    <span>Logo active</span>
+                    <button type="button" onClick={() => patchSettings({ logoUrl: "" })} title="Remove">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              <div className="cg-field">
+                <label>Digital signature</label>
+                <div className="cg-file-row">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="cg-sig-upload"
+                    hidden
+                    onChange={(e) => handleImageUpload(e, "signatureUrl")}
+                  />
+                  <label htmlFor="cg-sig-upload" className="cg-file-btn">
                     Upload
                   </label>
-                  <button type="button" onClick={() => setShowSignPad(true)} style={{ flex: 1, padding: 10, background: "var(--text-primary)", border: "none", borderRadius: 10, color: "white", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
-                    Draw Live
+                  <button type="button" className="cg-file-btn is-dark" onClick={() => setShowSignPad(true)}>
+                    Draw live
                   </button>
                 </div>
-                {customSettings.signatureUrl && (
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, padding: 8, background: "var(--bg-base)", borderRadius: 12, border: "1px solid var(--border)" }}>
-                    <img src={customSettings.signatureUrl} alt="" style={{ height: 30, maxWidth: 100, objectFit: "contain" }} />
-                    <div style={{ fontSize: 9, fontWeight: 700 }}>Active Signature</div>
-                    <X size={14} style={{ marginLeft: "auto", cursor: "pointer" }} onClick={() => setCustomSettings({ ...customSettings, signatureUrl: null })} />
+                {customSettings.signatureUrl ? (
+                  <div className="cg-asset">
+                    <img src={customSettings.signatureUrl} alt="" />
+                    <span>Signature active</span>
+                    <button
+                      type="button"
+                      onClick={() => patchSettings({ signatureUrl: null })}
+                      title="Remove"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="sidebar-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 900, color: "var(--text-secondary)", textTransform: "uppercase", margin: 0 }}>3. Select Students</h3>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--accent)", cursor: "pointer" }} onClick={selectedStudents.length > 0 ? () => setSelectedStudents([]) : selectAllFiltered}>
-                {selectedStudents.length > 0 ? "Clear All" : "Select All"}
+          <section className="cg-panel">
+            <div className="cg-panel-head">
+              <h3>
+                <User size={14} /> Students
+              </h3>
+              <button
+                type="button"
+                className="cg-link"
+                onClick={selectedIds.length ? clearSelection : selectFiltered}
+              >
+                {selectedIds.length ? "Clear selection" : "Select filtered"}
+              </button>
+            </div>
+            <div className="cg-filters">
+              <div className="cg-field">
+                <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+                  <option value="all">All classes</option>
+                  {classOptions.map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="cg-field cg-search">
+                <Search size={14} />
+                <input
+                  placeholder="Search name / roll"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-              <select className="cert-select" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
-                <option value="all">All Classes</option>
-                {classOptions.map((label) => (
-                  <option key={label} value={label}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <div style={{ position: "relative" }}>
-                <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} size={14} />
-                <input className="cert-field" placeholder="Search..." style={{ paddingLeft: 30 }} value={search} onChange={(e) => setSearch(e.target.value)} />
-              </div>
-            </div>
-            <div style={{ maxHeight: 300, overflowY: "auto", paddingRight: 8 }}>
+            <div className="cg-roster">
               {loading ? (
-                <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>Loading students...</p>
+                <div className="cg-loading">Loading students…</div>
+              ) : loadError ? (
+                <div className="cg-error">
+                  <p>{loadError}</p>
+                  <button type="button" className="cg-btn is-ghost" style={{ marginTop: 12 }} onClick={loadData}>
+                    <RefreshCw size={14} /> Retry
+                  </button>
+                </div>
               ) : filteredStudents.length === 0 ? (
-                <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>No students found.</p>
+                <div className="cg-empty">No students match this filter.</div>
               ) : (
                 filteredStudents.map((s) => {
-                  const isSelected = selectedStudents.find((x) => x.id === s.id);
+                  const on = selectedIds.includes(s.id);
+                  const miss = missingFields(s);
                   return (
-                    <div key={s.id} onClick={() => toggleStudentSelection(s)} className={`student-item ${isSelected ? "student-selected" : ""}`}>
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: isSelected ? "rgba(255,255,255,0.2)" : "var(--bg-hover)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isSelected ? <CheckCircle2 size={14} /> : <User size={14} color="var(--text-muted)" />}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800 }}>{s.name}</div>
-                        <div style={{ fontSize: 10, opacity: 0.7 }}>
-                          Roll: {s.roll_no || "—"} · {s.class_name || "—"}
-                        </div>
-                      </div>
-                    </div>
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`cg-student ${on ? "is-on" : ""}`}
+                      onClick={() => toggleStudent(s)}
+                    >
+                      <span className="cg-student-check">
+                        {on ? <CheckCircle2 size={14} /> : <User size={14} />}
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <b>{s.name}</b>
+                        <small>
+                          {s.roll_no || "No roll"} · {s.class_name || "No class"}
+                        </small>
+                        {miss.length ? (
+                          <span className="cg-warn">
+                            <AlertTriangle size={10} /> Missing {miss.join(", ")}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
                   );
                 })
               )}
             </div>
-          </div>
+          </section>
         </aside>
 
-        <main>
-          <div style={{ background: "var(--bg-base)", border: "2px dashed #e2e8f0", borderRadius: 32, padding: 40, minHeight: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 40 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, color: "var(--text-muted)", fontWeight: 800, fontSize: 14 }}>
-                <LayoutGrid size={20} /> Live Preview Mode
-              </div>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Documents appear here as they will look when printed.</p>
+        <main className="cg-preview-wrap">
+          <div className="cg-preview-top">
+            <div>
+              <h2>
+                <LayoutGrid size={18} /> Live preview
+              </h2>
+              <p>
+                {certType === "id-card"
+                  ? "Front and back ID cards — print shows both sides."
+                  : "Documents appear as they will look when printed."}
+              </p>
             </div>
-            {selectedStudents.length === 0 ? (
-              <div style={{ textAlign: "center", opacity: 0.5, marginTop: 80 }}>
-                <div style={{ width: 100, height: 100, background: "var(--bg-hover)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
-                  <FileBadge size={48} color="var(--text-muted)" />
-                </div>
-                <h2 style={{ fontSize: 20, fontWeight: 900 }}>Nothing to show</h2>
-                <p style={{ fontSize: 14, fontWeight: 600, maxWidth: 300 }}>Select students from the sidebar to generate their documents.</p>
-              </div>
-            ) : (
-              <div className="bulk-print-container" style={{ display: "flex", flexWrap: "wrap", gap: 30, justifyContent: "center" }}>
-                {selectedStudents.map((student) => (
-                  <div key={student.id}>{renderDocument(student)}</div>
+            {selectedStudents.length > 0 ? (
+              <div className="cg-chips">
+                {selectedStudents.slice(0, 6).map((s) => (
+                  <span key={s.id} className="cg-chip">
+                    {s.name}
+                    <button type="button" onClick={() => removeSelected(s.id)} title="Remove">
+                      <X size={12} />
+                    </button>
+                  </span>
                 ))}
+                {selectedStudents.length > 6 ? (
+                  <span className="cg-chip">+{selectedStudents.length - 6} more</span>
+                ) : null}
               </div>
-            )}
+            ) : null}
           </div>
+
+          {selectedStudents.length === 0 ? (
+            <div className="cg-empty" style={{ margin: "auto" }}>
+              <div
+                style={{
+                  width: 88,
+                  height: 88,
+                  borderRadius: "50%",
+                  background: "var(--bg-hover)",
+                  display: "grid",
+                  placeItems: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <FileBadge size={36} color="var(--text-muted)" />
+              </div>
+              <h2 style={{ margin: 0, fontSize: 18, color: "var(--text-primary)" }}>Nothing selected</h2>
+              <p style={{ marginTop: 8 }}>Select students from the left panel to generate documents.</p>
+            </div>
+          ) : (
+            <div className="cg-preview-stage">
+              {selectedStudents.map((student) => (
+                <div key={student.id} className="cg-preview-item">
+                  <div className="cg-preview-meta no-print">
+                    <span>{student.name}</span>
+                    <button type="button" onClick={() => removeSelected(student.id)}>
+                      Remove
+                    </button>
+                  </div>
+                  <div className="cg-scale">{renderDocument(student)}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
 
-      {selectedStudents.length > 0 && (
-        <div className="print-only print-area bulk-print-container">
+      {selectedStudents.length > 0 ? (
+        <div className={`print-only print-area cg-print-sheet ${certType === "id-card" ? "is-ids" : "is-certs"}`}>
           {selectedStudents.map((student) => (
             <div key={`print-${student.id}`}>{renderDocument(student)}</div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      {showSignPad && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(10px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 32, padding: 32, width: 500, maxWidth: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 900 }}>Draw Your Signature</h2>
-              <X size={24} style={{ cursor: "pointer" }} onClick={() => setShowSignPad(false)} />
-            </div>
+      {showSignPad ? (
+        <div className="no-print cg-modal">
+          <div className="cg-modal-card">
+            <header>
+              <h2>Draw signature</h2>
+              <button type="button" className="cg-link" onClick={() => setShowSignPad(false)}>
+                <X size={20} />
+              </button>
+            </header>
             <canvas
               ref={canvasRef}
-              width={436}
+              width={460}
               height={200}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
-              onMouseOut={stopDrawing}
+              onMouseLeave={stopDrawing}
               onTouchStart={startDrawing}
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
-              style={{ background: "var(--bg-base)", border: "2px dashed #e2e8f0", borderRadius: 16, cursor: "crosshair", touchAction: "none", width: "100%" }}
             />
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12, fontWeight: 600 }}>Use your mouse or touch screen to sign above.</p>
-            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <button type="button" onClick={clearCanvas} style={{ flex: 1, padding: 14, borderRadius: 14, border: "1px solid #e2e8f0", background: "none", fontWeight: 800, cursor: "pointer" }}>
+            <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
+              Use mouse or touch to sign. Tip: save as PNG for crisp print.
+            </p>
+            <div className="cg-modal-actions">
+              <button type="button" className="cg-btn is-ghost" onClick={clearCanvas} style={{ flex: 1 }}>
                 Clear
               </button>
-              <button type="button" onClick={saveCanvas} className="primary-btn" style={{ flex: 1.5, justifyContent: "center" }}>
-                Save & Apply
+              <button type="button" className="cg-btn is-primary" onClick={saveCanvas} style={{ flex: 1.4 }}>
+                Save & apply
               </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

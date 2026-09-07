@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCheck, FileText, ImagePlus, MessageCircle, Paperclip, Search, Send, Smile, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, CheckCheck, FileText, GraduationCap, Hash, ImagePlus, MessageCircle, Paperclip, Phone, Search, Send, Smile, X } from "lucide-react";
 import { getUser } from "../store/authStore";
 import {
   getChatContacts,
@@ -51,13 +51,16 @@ function listTime(value) {
   return d.toLocaleDateString([], { day: "numeric", month: "short" });
 }
 
-function Ticks({ seen }) {
+function Ticks({ seen, delivered }) {
+  const TickIcon = delivered || seen ? CheckCheck : Check;
+  const label = seen ? "Seen" : delivered ? "Delivered" : "Sent";
   return (
-    <CheckCheck
+    <TickIcon
       size={14}
       strokeWidth={seen ? 2.6 : 2}
       className={`chat-ticks${seen ? " is-seen" : ""}`}
-      title={seen ? "Seen" : "Sent"}
+      aria-label={label}
+      title={label}
     />
   );
 }
@@ -103,6 +106,8 @@ function toChatRow(thread) {
     username: thread.other?.username || "",
     avatar: thread.other?.avatar || "",
     online: Boolean(thread.other?.online),
+    student: thread.other?.student || null,
+    teacher: thread.other?.teacher || null,
     subtitle: thread.last_message || thread.other?.role || "",
     unread: thread.unread || 0,
     seen: thread.seen || 0,
@@ -126,6 +131,8 @@ function toPeopleRow(person, threadId) {
     phone: person.phone || "",
     username: person.username || "",
     child_name: person.child_name || "",
+    student: person.student || null,
+    teacher: person.teacher || null,
     avatar: person.avatar || "",
     online: Boolean(person.online),
     subtitle: [person.subtitle, person.phone].filter(Boolean).join(" · "),
@@ -135,9 +142,21 @@ function toPeopleRow(person, threadId) {
   };
 }
 
-function ChatAvatar({ name, src, online }) {
+function ChatAvatar({ name, src, online, onClick }) {
   return (
-    <span className={`chat-avatar ${online ? "is-online" : "is-offline"}`}>
+    <span
+      className={`chat-avatar ${online ? "is-online" : "is-offline"} ${onClick ? "is-clickable" : ""}`}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Open ${name} profile` : undefined}
+    >
       {src ? <img src={src} alt="" /> : initial(name)}
       <i title={online ? "Online" : "Offline"} />
     </span>
@@ -157,6 +176,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [opening, setOpening] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showContactProfile, setShowContactProfile] = useState(false);
   const [attach, setAttach] = useState(null);
   const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
@@ -282,9 +302,14 @@ export default function Chat() {
   const headerOnline = active ? Boolean(active.other?.online) : Boolean(pending?.online);
   const headerAvatar = active?.other?.avatar || pending?.avatar || "";
   const headerMeta = headerOnline ? "Online" : "Offline";
+  const profileRole = active?.other?.role_tag || pending?.roleTag || active?.other?.role || pending?.role || "";
+  const profilePhone = active?.other?.phone || pending?.phone || "";
+  const profileStudent = active?.other?.student || pending?.student || null;
+  const profileTeacher = active?.other?.teacher || pending?.teacher || null;
 
   const openChat = async (row) => {
     setPending(row);
+    setShowContactProfile(false);
     if (row.threadId) {
       setActiveId(row.threadId);
       return;
@@ -388,7 +413,7 @@ export default function Chat() {
                   <RoleTag label={row.roleTag} />
                 </span>
                 <small>
-                  {row.last_from_me ? <Ticks seen={row.last_seen} /> : null}
+                  {row.last_from_me ? <Ticks seen={row.last_seen} delivered={row.online} /> : null}
                   {row.last_message || (row.online ? "Online" : "Offline")}
                 </small>
               </span>
@@ -440,7 +465,12 @@ export default function Chat() {
               <button type="button" className="chat-back" onClick={() => { setActiveId(null); setPending(null); }}>
                 <ArrowLeft size={18} />
               </button>
-              <ChatAvatar name={headerName} src={headerAvatar} online={headerOnline} />
+              <ChatAvatar
+                name={headerName}
+                src={headerAvatar}
+                online={headerOnline}
+                onClick={() => setShowContactProfile(true)}
+              />
               <div>
                 <h2>
                   {headerName}
@@ -448,6 +478,72 @@ export default function Chat() {
                 </h2>
                 <small className={headerOnline ? "is-live" : ""}>{headerMeta}</small>
               </div>
+              {showContactProfile ? (
+                <aside className="chat-contact-profile">
+                  <header className="chat-profile-page-head">
+                    <button
+                      type="button"
+                      className="chat-profile-close"
+                      onClick={() => setShowContactProfile(false)}
+                      aria-label="Back to chat"
+                    >
+                      <ArrowLeft size={19} />
+                    </button>
+                    <strong>Contact info</strong>
+                  </header>
+                  <div className="chat-profile-page-body">
+                    <ChatAvatar name={headerName} src={headerAvatar} online={headerOnline} />
+                    <h3>{headerName}</h3>
+                    <p className={headerOnline ? "is-live" : ""}>{headerMeta} · {profileRole || "User"}</p>
+                    {profileStudent ? (
+                      <div className="chat-profile-details">
+                        <div>
+                          <GraduationCap size={17} />
+                          <span><small>Student</small><strong>{profileStudent.name || "—"}</strong></span>
+                        </div>
+                        <div>
+                          <GraduationCap size={17} />
+                          <span><small>Class</small><strong>{profileStudent.class_name || "—"}</strong></span>
+                        </div>
+                        <div>
+                          <Hash size={17} />
+                          <span><small>Roll number</small><strong>{profileStudent.roll_no || "—"}</strong></span>
+                        </div>
+                        <div>
+                          <Phone size={17} />
+                          <span><small>Parent phone</small><strong>{profileStudent.parent_phone || profilePhone || "—"}</strong></span>
+                        </div>
+                    </div>
+                    ) : profileTeacher ? (
+                      <div className="chat-profile-details">
+                        <div>
+                          <Phone size={17} />
+                          <span><small>Teacher phone</small><strong>{profileTeacher.phone || profilePhone || "—"}</strong></span>
+                        </div>
+                        <div>
+                          <BookOpen size={17} />
+                          <span><small>Subject</small><strong>{profileTeacher.subject || "—"}</strong></span>
+                        </div>
+                        <div>
+                          <GraduationCap size={17} />
+                          <span><small>Assigned classes</small><strong>{profileTeacher.classes?.join(", ") || "Not assigned"}</strong></span>
+                        </div>
+                        <div>
+                          <GraduationCap size={17} />
+                          <span><small>Class incharge</small><strong>{profileTeacher.incharge_classes?.join(", ") || "Not assigned"}</strong></span>
+                        </div>
+                      </div>
+                    ) : profilePhone ? (
+                      <div className="chat-profile-details">
+                        <div>
+                          <Phone size={17} />
+                          <span><small>Phone</small><strong>{profilePhone}</strong></span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </aside>
+              ) : null}
             </header>
             <div className="chat-messages">
               {messages.map((row, i) => {
@@ -470,7 +566,12 @@ export default function Chat() {
                       {row.body ? <p>{row.body}</p> : null}
                       <time>
                         {timeLabel(row.created_at)}
-                        {mine ? <Ticks seen={messageSeen(row, otherReadAt)} /> : null}
+                        {mine ? (
+                          <Ticks
+                            seen={messageSeen(row, otherReadAt)}
+                            delivered={headerOnline}
+                          />
+                        ) : null}
                       </time>
                     </article>
                   </div>

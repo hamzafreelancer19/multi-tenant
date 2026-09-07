@@ -5,7 +5,7 @@ from django.utils import timezone
 from core.utils import get_current_school
 from students.models import Student
 from teachers.models import Teacher
-from teachers.scoping import get_teacher_for_request, teacher_class_labels
+from teachers.scoping import get_teacher_for_request, teacher_class_labels, teacher_incharge_labels
 
 from users.presence import avatar_of, is_online
 from .models import ChatMessage, ChatParticipant, ChatThread
@@ -104,6 +104,34 @@ def child_label(user):
     return child.name if child else ""
 
 
+def parent_student_profile(user):
+    if getattr(user, "role", None) != "parent":
+        return None
+    child = Student.objects.filter(parent_user=user).first()
+    if not child:
+        return None
+    return {
+        "name": child.name or "",
+        "class_name": child.class_name or "",
+        "roll_no": child.roll_no or "",
+        "parent_phone": contact_phone(user),
+    }
+
+
+def teacher_chat_profile(user):
+    if getattr(user, "role", None) != "teacher":
+        return None
+    teacher = teacher_record(user)
+    if not teacher:
+        return None
+    return {
+        "phone": teacher.phone or (getattr(user, "phone", "") or ""),
+        "subject": teacher.subject or "",
+        "classes": sorted(teacher_class_labels(teacher), key=lambda item: item.lower()),
+        "incharge_classes": sorted(teacher_incharge_labels(teacher), key=lambda item: item.lower()),
+    }
+
+
 def role_tag(user):
     if not user:
         return ""
@@ -137,6 +165,8 @@ def _add_user(bucket, user, subtitle=""):
         "username": user.username or "",
         "phone": contact_phone(user),
         "child_name": child_label(user),
+        "student": parent_student_profile(user),
+        "teacher": teacher_chat_profile(user),
         "avatar": avatar_of(user),
         "online": bool(is_online(user)),
         "subtitle": subtitle or (user.role or "").title(),
@@ -296,6 +326,8 @@ def serialize_thread(thread, me):
             "username": other_user.username if other_user else "",
             "avatar": avatar_of(other_user) if other_user else "",
             "online": bool(is_online(other_user)) if other_user else False,
+            "student": parent_student_profile(other_user) if other_user else None,
+            "teacher": teacher_chat_profile(other_user) if other_user else None,
         },
         "last_message": last_preview(last),
         "last_at": last.created_at.isoformat() if last else thread.updated_at.isoformat(),

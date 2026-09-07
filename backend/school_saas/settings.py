@@ -29,7 +29,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--xujvej22!o+9(65*p_n9!o$uw1ofc*(=+)&9=mw_7i2-q*^^v'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+_IS_CLOUD = bool(
+    os.getenv("RAILWAY_ENVIRONMENT")
+    or os.getenv("RAILWAY_SERVICE_NAME")
+    or os.getenv("RENDER")
+    or os.getenv("FLY_APP_NAME")
+)
+DEBUG = os.getenv("DEBUG", "False" if _IS_CLOUD else "True") == "True"
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 BASE_DOMAIN = os.getenv('BASE_DOMAIN', 'localhost')
@@ -110,13 +116,42 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+#
+# Local default is only for development. On Railway/Render/etc set DATABASE_URL
+# to the managed Postgres service (never 127.0.0.1 in production).
+
+_LOCAL_DB_URL = "postgres://postgres:hamza123@127.0.0.1:5432/school_db"
+_DATABASE_URL = (
+    os.getenv("DATABASE_URL")
+    or os.getenv("POSTGRES_URL")
+    or os.getenv("DATABASE_PRIVATE_URL")
+)
+
+if not _DATABASE_URL:
+    if DEBUG:
+        _DATABASE_URL = _LOCAL_DB_URL
+    else:
+        raise RuntimeError(
+            "DATABASE_URL is not set. Add a PostgreSQL service on your host "
+            "(Railway: New → Database → PostgreSQL), then link it to this web "
+            "service so DATABASE_URL is injected."
+        )
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default="postgres://postgres:hamza123@127.0.0.1:5432/school_db",
-        conn_max_age=0
+    "default": dj_database_url.parse(
+        _DATABASE_URL,
+        conn_max_age=0,
+        ssl_require=os.getenv("DB_SSL_REQUIRE", "False") == "True"
+        or (not DEBUG and "127.0.0.1" not in _DATABASE_URL and "localhost" not in _DATABASE_URL),
     )
 }
+
+_db_host = (DATABASES["default"].get("HOST") or "").strip()
+if not DEBUG and _db_host in {"127.0.0.1", "localhost"}:
+    raise RuntimeError(
+        f"DATABASE_URL points to {_db_host}, which is unavailable in production. "
+        "Use your cloud Postgres URL instead (Railway Postgres plugin / Neon / etc)."
+    )
 
 # Future: Tenant databases will be injected dynamically at runtime
 # This placeholder allows the framework to be multi-db aware without changing current behavior.
