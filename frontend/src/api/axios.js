@@ -100,7 +100,8 @@ api.interceptors.response.use(
         if (refreshToken) {
           try {
             // Attempt to get a new access token
-            const res = await axios.post("/api/token/refresh/", { refresh: refreshToken });
+            const refreshUrl = `${(api.defaults.baseURL || "/api").replace(/\/$/, "")}/token/refresh/`;
+            const res = await axios.post(refreshUrl, { refresh: refreshToken });
             const { access } = res.data;
 
             if (access) {
