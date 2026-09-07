@@ -2,8 +2,26 @@ import axios from "axios";
 import { handleMockRequest } from "./mockData";
 import { isDemoMode } from "../store/authStore";
 
+const RAILWAY_API = "https://multi-tenant-production-a3db.up.railway.app/api";
+
+function resolveApiBase() {
+  const fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+  const isAbsolute = /^https?:\/\//i.test(fromEnv);
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname.toLowerCase();
+    // Vercel SPA cannot handle POST /api — never use same-origin /api there.
+    if (host.endsWith(".vercel.app") || host.endsWith(".up.railway.app")) {
+      return isAbsolute ? fromEnv : RAILWAY_API;
+    }
+  }
+
+  if (fromEnv) return fromEnv;
+  return "/api";
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: resolveApiBase(),
   headers: {
     "Content-Type": "application/json",
   },

@@ -54,9 +54,11 @@ urlpatterns = [
     # Platform Admin Routes
     path('api/', include(router.urls)),
     
-    # JWT Auth
+    # JWT Auth (slash + no-slash so POST is never redirected to GET → 405)
     path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token', MyTokenObtainPairView.as_view()),
     path('api/token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/refresh', MyTokenRefreshView.as_view()),
     
     # Real Auth Integration
     path('api/signup/', SignupView.as_view(), name='signup'),
