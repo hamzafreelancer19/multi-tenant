@@ -117,45 +117,51 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 #
-# Local default is only for development. On Railway use the linked Postgres
-# variables (PG* / DATABASE_URL) — never a hand-typed localhost password.
+# Prefer Railway's full DATABASE_URL reference. Only build from PG* when
+# DATABASE_URL is missing — a hand-typed PGPASSWORD (e.g. local hamza123)
+# must never override the linked Postgres URL.
 
 _LOCAL_DB_URL = "postgres://postgres:hamza123@127.0.0.1:5432/school_db"
 
 
 def _build_database_url():
-    # Prefer discrete Railway PG* vars so a stale/manual DATABASE_URL can't
-    # keep an old password after Postgres credentials were rotated.
+    from urllib.parse import quote_plus
+
+    explicit = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("DATABASE_PRIVATE_URL")
+        or os.getenv("POSTGRES_URL")
+    )
+    if explicit:
+        return explicit.strip().strip('"').strip("'")
+
     pg_host = os.getenv("PGHOST")
     pg_user = os.getenv("PGUSER")
     pg_password = os.getenv("PGPASSWORD")
     pg_db = os.getenv("PGDATABASE")
     pg_port = os.getenv("PGPORT") or "5432"
     if pg_host and pg_user and pg_password and pg_db:
-        from urllib.parse import quote_plus
-
         return (
             f"postgres://{quote_plus(pg_user)}:{quote_plus(pg_password)}"
             f"@{pg_host}:{pg_port}/{pg_db}"
         )
-
-    return (
-        os.getenv("DATABASE_URL")
-        or os.getenv("DATABASE_PRIVATE_URL")
-        or os.getenv("POSTGRES_URL")
-    )
+    return None
 
 
 _DATABASE_URL = _build_database_url()
+_DB_SOURCE = "DATABASE_URL" if (
+    os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL") or os.getenv("POSTGRES_URL")
+) else ("PG*" if _DATABASE_URL else "none")
 
 if not _DATABASE_URL:
     if DEBUG:
         _DATABASE_URL = _LOCAL_DB_URL
+        _DB_SOURCE = "local-default"
     else:
         raise RuntimeError(
-            "DATABASE_URL / PG* vars are not set. On Railway: add PostgreSQL, "
-            "open your web service → Variables → Variable Reference → select "
-            "Postgres.DATABASE_URL (and PGHOST/PGUSER/PGPASSWORD/PGDATABASE)."
+            "DATABASE_URL is not set. On Railway web service → Variables: "
+            "delete any hand-typed DATABASE_URL/PGPASSWORD, then Add Variable → "
+            "Add Reference → Postgres.DATABASE_URL"
         )
 
 _is_railway_internal = "railway.internal" in _DATABASE_URL
@@ -178,10 +184,35 @@ DATABASES = {
 }
 
 _db_host = (DATABASES["default"].get("HOST") or "").strip()
+_db_user = (DATABASES["default"].get("USER") or "").strip()
+_db_name = (DATABASES["default"].get("NAME") or "").strip()
+_db_password = DATABASES["default"].get("PASSWORD") or ""
+
+if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_NAME"):
+    print(
+        f"[db] source={_DB_SOURCE} host={_db_host!r} user={_db_user!r} "
+        f"name={_db_name!r} password_len={len(_db_password)} "
+        f"ssl_require={_ssl_require}",
+        flush=True,
+    )
+
 if not DEBUG and _db_host in {"127.0.0.1", "localhost"}:
     raise RuntimeError(
         f"DATABASE_URL points to {_db_host}, which is unavailable in production. "
         "Use your cloud Postgres URL instead (Railway Postgres plugin / Neon / etc)."
+    )
+
+# Catch the common local-password paste mistake early with a clear message.
+if (
+    (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_NAME"))
+    and _db_password in {"hamza123", "postgres", "password", "root", ""}
+):
+    raise RuntimeError(
+        "Railway is using an invalid/local Postgres password "
+        f"(source={_DB_SOURCE}, user={_db_user!r}). "
+        "In the web service Variables: delete DATABASE_URL, PGPASSWORD, PGUSER, "
+        "PGHOST, PGDATABASE if they were typed manually, then re-add them as "
+        "Variable References from your Postgres service (Postgres.DATABASE_URL)."
     )
 
 # Future: Tenant databases will be injected dynamically at runtime
