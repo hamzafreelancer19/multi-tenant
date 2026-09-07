@@ -39,6 +39,7 @@ import CertificateGenerator from "../pages/CertificateGenerator";
 import Classes from "../pages/Classes";
 import PlatformSettings from "../pages/PlatformSettings";
 import Security from "../pages/Security";
+import Plans from "../pages/Plans";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -195,6 +196,14 @@ export default function AppRoutes() {
             element={
               <RoleRoute allowedRoles={["superadmin"]}>
                 <SchoolProfile />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/plans"
+            element={
+              <RoleRoute allowedRoles={["superadmin"]}>
+                <Plans />
               </RoleRoute>
             }
           />

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const SCHOOL_PATHS = ["/dashboard", "/students", "/teachers", "/fees", "/attendance", "/notices", "/exams", "/inventory", "/staff", "/classes", "/enrollments", "/settings", "/assignments", "/library"];
-const PLATFORM_PATHS = ["/schools", "/users", "/security", "/database", "/platform-settings", "/dashboard"];
+const PLATFORM_PATHS = ["/schools", "/plans", "/users", "/security", "/database", "/platform-settings", "/dashboard"];
 
 function canNavigate(path, isPlatform) {
   if (!path || typeof path !== "string" || !path.startsWith("/") || path.includes("://") || path.includes("..")) {

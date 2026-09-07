@@ -1,5 +1,52 @@
 from django.db import models
 
+
+class Plan(models.Model):
+    """Platform subscription catalog managed by superadmin."""
+
+    FEATURE_TIERS = [
+        ("Basic", "Basic"),
+        ("Business", "Business"),
+        ("Pro", "Pro"),
+    ]
+
+    code = models.SlugField(max_length=40, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default="")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    duration_days = models.PositiveIntegerField(default=30)
+    student_limit = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Null = unlimited students",
+    )
+    teacher_limit = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Null = unlimited teachers",
+    )
+    feature_tier = models.CharField(
+        max_length=20,
+        choices=FEATURE_TIERS,
+        default="Basic",
+        help_text="Unlocks sidebar features up to this tier",
+    )
+    features = models.JSONField(default=list, blank=True)
+    locked_features = models.JSONField(default=list, blank=True)
+    color = models.CharField(max_length=20, default="#F15A24")
+    is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "price", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
 class School(models.Model):
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
@@ -33,6 +80,13 @@ class School(models.Model):
     transaction_id = models.CharField(max_length=255, blank=True, null=True)
     plan_start_date = models.DateField(blank=True, null=True)
     plan_expiry_date = models.DateField(blank=True, null=True)
+    subscribed_plan = models.ForeignKey(
+        Plan,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="schools",
+    )
 
     # Landing Page Customization
     landing_hero_title = models.CharField(max_length=255, blank=True, null=True)

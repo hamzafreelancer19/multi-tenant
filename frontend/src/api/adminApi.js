@@ -13,6 +13,15 @@ export const approvePlan = (id) => api.post(`schools/${id}/approve_plan/`);
 export const rejectPlan = (id) => api.post(`schools/${id}/reject_plan/`);
 export const suspendSchool = (id) => api.post(`schools/${id}/suspend/`);
 
+// Plans catalog + approvals
+export const getPlansOverview = () => api.get("plans/overview/");
+export const getPlans = (params = {}) => api.get("plans/", { params });
+export const getPlanCatalog = () => api.get("plans/catalog/");
+export const createPlan = (data) => api.post("plans/", data);
+export const updatePlan = (id, data) => api.patch(`plans/${id}/`, data);
+export const deletePlan = (id) => api.delete(`plans/${id}/`);
+export const assignPlanToSchool = (planId, data) => api.post(`plans/${planId}/assign/`, data);
+
 // Platform Users Management
 export const getPlatformUsers = (params = {}) => api.get("platform-users/", { params });
 export const createPlatformUser = (data) => api.post("platform-users/", data);

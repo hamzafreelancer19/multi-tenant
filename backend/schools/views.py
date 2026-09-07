@@ -29,6 +29,20 @@ PLAN_AMOUNTS = {
 }
 
 
+def _apply_plan_to_school(school, plan, *, status="Pending", transaction_id=None, activate=False):
+    school.subscribed_plan = plan
+    school.plan_type = plan.feature_tier
+    school.plan_amount = plan.price
+    school.plan_status = status
+    if transaction_id is not None:
+        school.transaction_id = transaction_id
+    if activate:
+        days = plan.duration_days or 30
+        school.plan_start_date = date.today()
+        school.plan_expiry_date = date.today() + timedelta(days=days)
+    school.save()
+
+
 class SchoolViewSet(viewsets.ModelViewSet):
     queryset = School.objects.all().order_by('-created_at')
     serializer_class = SchoolSerializer
@@ -199,28 +213,43 @@ class SchoolViewSet(viewsets.ModelViewSet):
     def buy_plan(self, request, pk=None):
         school = self.get_object()
         plan_type = request.data.get('plan_type')
+        plan_id = request.data.get('plan_id')
         transaction_id = request.data.get('transaction_id')
 
-        if plan_type not in PLAN_AMOUNTS:
-            return Response({"error": "Invalid plan type."}, status=400)
         if not transaction_id:
             return Response({"error": "Transaction ID is required."}, status=400)
 
-        school.plan_type = plan_type
-        school.plan_amount = PLAN_AMOUNTS[plan_type]
-        school.transaction_id = transaction_id
-        school.plan_status = 'Pending'
-        school.save()
+        from .plan_views import resolve_plan
+        plan = resolve_plan(plan_type=plan_type, plan_id=plan_id)
+
+        if plan:
+            _apply_plan_to_school(
+                school,
+                plan,
+                status="Pending",
+                transaction_id=transaction_id,
+            )
+            label = plan.name
+        elif plan_type in PLAN_AMOUNTS:
+            school.plan_type = plan_type
+            school.plan_amount = PLAN_AMOUNTS[plan_type]
+            school.transaction_id = transaction_id
+            school.plan_status = 'Pending'
+            school.subscribed_plan = None
+            school.save()
+            label = plan_type
+        else:
+            return Response({"error": "Invalid plan type."}, status=400)
 
         from core.models import ActivityLog
         ActivityLog.objects.create(
             school=school,
             name=request.user.username,
-            action=f"submitted plan '{plan_type}' with transaction ID '{transaction_id}'",
+            action=f"submitted plan '{label}' with transaction ID '{transaction_id}'",
             avatar=request.user.username[0].upper()
         )
 
-        return Response({"message": f"Plan '{plan_type}' submitted for approval."})
+        return Response({"message": f"Plan '{label}' submitted for approval."})
 
     @action(detail=True, methods=["get"])
     def profile(self, request, pk=None):
@@ -235,9 +264,14 @@ class SchoolViewSet(viewsets.ModelViewSet):
         if request.user.role != 'superadmin':
             return Response({"error": "Unauthorized"}, status=403)
         school = self.get_object()
+        plan = school.subscribed_plan
+        days = (plan.duration_days if plan else 30) or 30
         school.plan_status = 'Active'
         school.plan_start_date = date.today()
-        school.plan_expiry_date = date.today() + timedelta(days=30)
+        school.plan_expiry_date = date.today() + timedelta(days=days)
+        if plan:
+            school.plan_type = plan.feature_tier
+            school.plan_amount = plan.price
         school.save()
 
         from core.models import ActivityLog
@@ -257,6 +291,9 @@ class SchoolViewSet(viewsets.ModelViewSet):
         school.plan_status = 'Inactive'
         school.plan_type = 'None'
         school.transaction_id = ''
+        school.subscribed_plan = None
+        school.plan_start_date = None
+        school.plan_expiry_date = None
         school.save()
 
         from core.models import ActivityLog

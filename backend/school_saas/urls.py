@@ -17,10 +17,12 @@ from core.views import (
 
 from rest_framework.routers import DefaultRouter
 from schools.views import SchoolViewSet, EnrollmentViewSet
+from schools.plan_views import PlanViewSet
 from users.views import UserViewSet
 
 router = DefaultRouter()
 router.register('schools', SchoolViewSet, basename='school')
+router.register('plans', PlanViewSet, basename='plan')
 router.register('platform-users', UserViewSet, basename='platform-user')
 router.register('enrollments', EnrollmentViewSet, basename='enrollment')
 

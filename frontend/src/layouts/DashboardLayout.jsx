@@ -85,6 +85,7 @@ const navItems = [
   // { to: "/parent/transport", icon: <Bus size={20} />, label: "Transport", roles: ["parent"], plan: "None" },
   { to: "/chat", icon: <MessageCircle size={20} />, label: "Chat", roles: ["admin", "teacher", "parent", "accountant", "student"], plan: "None" },
   { to: "/schools", icon: <School size={20} />, label: "Schools", roles: ["superadmin"], plan: "None" },
+  { to: "/plans", icon: <CreditCard size={20} />, label: "Plans", roles: ["superadmin"], plan: "None" },
   { to: "/users", icon: <Users size={20} />, label: "School Admins", roles: ["superadmin"], plan: "None" },
   { to: "/security", icon: <Shield size={20} />, label: "Security", roles: ["superadmin"], plan: "None" },
   { to: "/database", icon: <Database size={20} />, label: "Database", roles: ["superadmin"], plan: "None" },

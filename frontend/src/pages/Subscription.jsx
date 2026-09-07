@@ -2,19 +2,19 @@ import { useState, useEffect } from "react";
 import { getUser } from "../store/authStore";
 import { useTenant } from "../context/TenantContext";
 import api from "../api/axios";
+import { getPlanCatalog } from "../api/adminApi";
 import {
   CheckCircle2, Clock, XCircle, Zap, Building2, Rocket,
   CreditCard, ArrowRight, RefreshCw, AlertTriangle, Star, Shield
 } from "lucide-react";
 
-const PLAN_AMOUNTS = { Basic: 1500, Business: 3500, Pro: 6000 };
-
-const plans = [
+const FALLBACK_PLANS = [
   {
     id: "Basic",
+    code: "basic",
     name: "Basic Plan",
     icon: <Zap size={28} />,
-    price: PLAN_AMOUNTS.Basic,
+    price: 1500,
     color: "#F15A24",
     colorSoft: "rgba(241, 90, 36, 0.1)",
     features: ["Student Management", "Teacher Profiles", "Attendance Tracking", "Admission Requests", "School Profile"],
@@ -22,9 +22,10 @@ const plans = [
   },
   {
     id: "Business",
+    code: "business",
     name: "Business Plan",
     icon: <Building2 size={28} />,
-    price: PLAN_AMOUNTS.Business,
+    price: 3500,
     color: "#FF8C42",
     colorSoft: "rgba(255, 140, 66, 0.1)",
     popular: true,
@@ -33,15 +34,22 @@ const plans = [
   },
   {
     id: "Pro",
+    code: "pro",
     name: "Ultimate Pro",
     icon: <Rocket size={28} />,
-    price: PLAN_AMOUNTS.Pro,
+    price: 6000,
     color: "#0F172A",
     colorSoft: "rgba(15, 23, 42, 0.1)",
     features: ["Everything Included", "Classora AI Assistant", "Library Management", "Transport & Fleet", "Timetables & Homework", "AI Performance Predictor", "24/7 Priority Support"],
     locked: [],
   },
 ];
+
+const tierIcon = {
+  Basic: <Zap size={28} />,
+  Business: <Building2 size={28} />,
+  Pro: <Rocket size={28} />,
+};
 
 function formatDate(value) {
   if (!value) return "—";
@@ -70,6 +78,7 @@ export default function Subscription() {
   const user = getUser();
 
   const [school, setSchool] = useState(null);
+  const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [transactionId, setTransactionId] = useState("");
@@ -79,7 +88,33 @@ export default function Subscription() {
 
   useEffect(() => {
     fetchSchool();
+    fetchPlans();
   }, [tenant.schoolId]);
+
+  const fetchPlans = async () => {
+    try {
+      const res = await getPlanCatalog();
+      const rows = Array.isArray(res.data) ? res.data : [];
+      if (!rows.length) return;
+      setPlans(
+        rows.map((p) => ({
+          id: p.feature_tier || p.code,
+          planId: p.id,
+          code: p.code,
+          name: p.name,
+          icon: tierIcon[p.feature_tier] || <Zap size={28} />,
+          price: Number(p.price || 0),
+          color: p.color || "#F15A24",
+          colorSoft: `${p.color || "#F15A24"}1A`,
+          popular: !!p.is_popular,
+          features: p.features || [],
+          locked: p.locked_features || [],
+        }))
+      );
+    } catch {
+      // keep fallback catalog
+    }
+  };
 
   const fetchSchool = async () => {
     try {
@@ -114,11 +149,13 @@ export default function Subscription() {
       setMessage({ type: "error", text: "Please select a plan and enter your Transaction ID." });
       return;
     }
+    const chosen = plans.find((p) => p.id === selectedPlan || p.planId === selectedPlan);
     try {
       setSubmitting(true);
       setMessage(null);
       await api.post(`schools/${school.id}/buy_plan/`, {
-        plan_type: selectedPlan,
+        plan_type: chosen?.id || selectedPlan,
+        plan_id: chosen?.planId,
         transaction_id: transactionId.trim(),
       });
       setMessage({ type: "success", text: "Your plan request has been submitted! Waiting for Super Admin approval." });

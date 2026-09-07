@@ -307,8 +307,21 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,
 }
 
-# CORS & CSRF
+# CORS & CSRF — frontend ↔ backend connection
+# Set these on Railway Variables:
+#   FRONTEND_URL=https://your-app.vercel.app
+#   CORS_ALLOWED_ORIGINS=https://your-app.vercel.app
+#   CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app
+#   CORS_ALLOW_ALL_ORIGINS=True   (ok while testing; tighten later)
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+CORS_ALLOW_CREDENTIALS = True
+
+FRONTEND_URL = (os.getenv("FRONTEND_URL") or "").strip().rstrip("/")
+FRONTEND_URLS = [
+    o.strip().rstrip("/")
+    for o in (os.getenv("FRONTEND_URLS") or "").split(",")
+    if o.strip()
+]
 
 _default_origins = [
     "http://localhost:5173",
@@ -321,6 +334,10 @@ _default_origins = [
     "https://multi-tenant-production-a3db.up.railway.app",
 ]
 
+if FRONTEND_URL:
+    _default_origins.append(FRONTEND_URL)
+_default_origins.extend(FRONTEND_URLS)
+
 # Railway injects the current public hostname — keep CSRF in sync automatically.
 _railway_domain = (
     os.getenv("RAILWAY_PUBLIC_DOMAIN")
@@ -330,11 +347,20 @@ _railway_domain = (
 if _railway_domain:
     _default_origins.append(f"https://{_railway_domain}")
 
-_env_cors = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
-_env_csrf = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+_env_cors = [o.strip().rstrip("/") for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+_env_csrf = [o.strip().rstrip("/") for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys(_default_origins + _env_cors))
 CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_default_origins + _env_csrf + _env_cors))
+
+# Allow any Vercel deploy (production + preview) without listing each URL.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://[\w-]+\.vercel\.app$",
+    r"^https://[\w-]+-[\w-]+-[\w-]+\.vercel\.app$",
+]
+_extra_regex = (os.getenv("CORS_ORIGIN_REGEX") or "").strip()
+if _extra_regex:
+    CORS_ALLOWED_ORIGIN_REGEXES.append(_extra_regex)
 
 # Railway terminates TLS at the proxy — required for CSRF/admin cookies over HTTPS.
 if _ON_RAILWAY:

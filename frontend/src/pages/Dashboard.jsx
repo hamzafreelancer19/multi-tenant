@@ -159,8 +159,8 @@ export default function Dashboard() {
     ? [
         { label: "Schools", value: statsData.total_schools || 0, desc: `${statsData.approved_schools || 0} approved`, to: "/schools", tone: "orange" },
         { label: "Users", value: statsData.total_users || 0, desc: "platform accounts", to: "/users", tone: "navy" },
-        { label: "Pending", value: (statsData.pending_schools || 0) + (statsData.pending_plans || 0), desc: "schools & plans", to: "/schools", tone: "gold" },
-        { label: "Revenue", value: `RS ${Number(statsData.plan_revenue || 0).toLocaleString()}`, desc: `${statsData.active_plans || 0} active plans`, to: "/schools", tone: "green" },
+        { label: "Pending", value: (statsData.pending_schools || 0) + (statsData.pending_plans || 0), desc: "schools & plans", to: "/plans", tone: "gold" },
+        { label: "Revenue", value: `RS ${Number(statsData.plan_revenue || 0).toLocaleString()}`, desc: `${statsData.active_plans || 0} active plans`, to: "/plans", tone: "green" },
       ]
     : role === "teacher"
     ? [
