@@ -117,82 +117,95 @@ WSGI_APPLICATION = 'school_saas.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 #
-# Prefer Railway's full DATABASE_URL reference. Only build from PG* when
-# DATABASE_URL is missing — a hand-typed PGPASSWORD (e.g. local hamza123)
-# must never override the linked Postgres URL.
+# On Railway, prefer raw PG* vars (no URL encoding issues). Fall back to
+# DATABASE_PUBLIC_URL then DATABASE_URL. Never use local hamza123 in cloud.
 
 _LOCAL_DB_URL = "postgres://postgres:hamza123@127.0.0.1:5432/school_db"
+_ON_RAILWAY = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_NAME"))
 
 
-def _build_database_url():
-    from urllib.parse import quote_plus
+def _pg_vars_complete():
+    return all(os.getenv(key) for key in ("PGHOST", "PGUSER", "PGPASSWORD", "PGDATABASE"))
 
-    explicit = (
-        os.getenv("DATABASE_URL")
+
+def _clean_url(value):
+    return (value or "").strip().strip('"').strip("'")
+
+
+_DB_SOURCE = "none"
+DATABASES = {}
+
+if _pg_vars_complete():
+    # Raw vars avoid percent-encoding bugs that cause "password authentication failed"
+    # even when DATABASE_URL looks present.
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["PGDATABASE"],
+        "USER": os.environ["PGUSER"],
+        "PASSWORD": os.environ["PGPASSWORD"],
+        "HOST": os.environ["PGHOST"],
+        "PORT": os.getenv("PGPORT") or "5432",
+        "CONN_MAX_AGE": 0,
+        "OPTIONS": {},
+    }
+    _DB_SOURCE = "PG*"
+    _DATABASE_URL = None
+else:
+    _DATABASE_URL = _clean_url(
+        os.getenv("DATABASE_PUBLIC_URL")
+        or os.getenv("DATABASE_URL")
         or os.getenv("DATABASE_PRIVATE_URL")
         or os.getenv("POSTGRES_URL")
     )
-    if explicit:
-        return explicit.strip().strip('"').strip("'")
+    if os.getenv("DATABASE_PUBLIC_URL"):
+        _DB_SOURCE = "DATABASE_PUBLIC_URL"
+    elif _DATABASE_URL:
+        _DB_SOURCE = "DATABASE_URL"
 
-    pg_host = os.getenv("PGHOST")
-    pg_user = os.getenv("PGUSER")
-    pg_password = os.getenv("PGPASSWORD")
-    pg_db = os.getenv("PGDATABASE")
-    pg_port = os.getenv("PGPORT") or "5432"
-    if pg_host and pg_user and pg_password and pg_db:
-        return (
-            f"postgres://{quote_plus(pg_user)}:{quote_plus(pg_password)}"
-            f"@{pg_host}:{pg_port}/{pg_db}"
+    if not _DATABASE_URL:
+        if DEBUG and not _ON_RAILWAY:
+            _DATABASE_URL = _LOCAL_DB_URL
+            _DB_SOURCE = "local-default"
+        else:
+            raise RuntimeError(
+                "No Postgres config found. On Railway web service → Variables:\n"
+                "1) Delete hand-typed DATABASE_URL / PGPASSWORD / PGUSER / PGHOST\n"
+                "2) Add Variable → Add Reference from your Postgres service:\n"
+                "   PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE\n"
+                "   (or DATABASE_PUBLIC_URL / DATABASE_URL)\n"
+                "3) Redeploy"
+            )
+
+    _is_railway_internal = "railway.internal" in (_DATABASE_URL or "")
+    _ssl_require = (
+        os.getenv("DB_SSL_REQUIRE", "").lower() in {"1", "true", "yes"}
+        or _DB_SOURCE == "DATABASE_PUBLIC_URL"
+        or (
+            not DEBUG
+            and not _is_railway_internal
+            and "127.0.0.1" not in _DATABASE_URL
+            and "localhost" not in _DATABASE_URL
         )
-    return None
-
-
-_DATABASE_URL = _build_database_url()
-_DB_SOURCE = "DATABASE_URL" if (
-    os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL") or os.getenv("POSTGRES_URL")
-) else ("PG*" if _DATABASE_URL else "none")
-
-if not _DATABASE_URL:
-    if DEBUG:
-        _DATABASE_URL = _LOCAL_DB_URL
-        _DB_SOURCE = "local-default"
-    else:
-        raise RuntimeError(
-            "DATABASE_URL is not set. On Railway web service → Variables: "
-            "delete any hand-typed DATABASE_URL/PGPASSWORD, then Add Variable → "
-            "Add Reference → Postgres.DATABASE_URL"
-        )
-
-_is_railway_internal = "railway.internal" in _DATABASE_URL
-_ssl_require = (
-    os.getenv("DB_SSL_REQUIRE", "").lower() in {"1", "true", "yes"}
-    or (
-        not DEBUG
-        and not _is_railway_internal
-        and "127.0.0.1" not in _DATABASE_URL
-        and "localhost" not in _DATABASE_URL
     )
-)
-
-DATABASES = {
-    "default": dj_database_url.parse(
+    DATABASES["default"] = dj_database_url.parse(
         _DATABASE_URL,
         conn_max_age=0,
         ssl_require=_ssl_require,
     )
-}
 
 _db_host = (DATABASES["default"].get("HOST") or "").strip()
 _db_user = (DATABASES["default"].get("USER") or "").strip()
 _db_name = (DATABASES["default"].get("NAME") or "").strip()
 _db_password = DATABASES["default"].get("PASSWORD") or ""
+_ssl_require = bool(DATABASES["default"].get("OPTIONS", {}).get("sslmode"))
 
-if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_NAME"):
+if _ON_RAILWAY:
+    # Private networking + SSL off; public URL uses SSL via dj_database_url.
+    if "railway.internal" in _db_host:
+        DATABASES["default"].setdefault("OPTIONS", {}).pop("sslmode", None)
     print(
         f"[db] source={_DB_SOURCE} host={_db_host!r} user={_db_user!r} "
-        f"name={_db_name!r} password_len={len(_db_password)} "
-        f"ssl_require={_ssl_require}",
+        f"name={_db_name!r} password_len={len(_db_password)}",
         flush=True,
     )
 
@@ -202,17 +215,11 @@ if not DEBUG and _db_host in {"127.0.0.1", "localhost"}:
         "Use your cloud Postgres URL instead (Railway Postgres plugin / Neon / etc)."
     )
 
-# Catch the common local-password paste mistake early with a clear message.
-if (
-    (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_NAME"))
-    and _db_password in {"hamza123", "postgres", "password", "root", ""}
-):
+if _ON_RAILWAY and _db_password in {"hamza123", "postgres", "password", "root", ""}:
     raise RuntimeError(
         "Railway is using an invalid/local Postgres password "
         f"(source={_DB_SOURCE}, user={_db_user!r}). "
-        "In the web service Variables: delete DATABASE_URL, PGPASSWORD, PGUSER, "
-        "PGHOST, PGDATABASE if they were typed manually, then re-add them as "
-        "Variable References from your Postgres service (Postgres.DATABASE_URL)."
+        "Delete manual DB vars and re-add Postgres Variable References."
     )
 
 # Future: Tenant databases will be injected dynamically at runtime
