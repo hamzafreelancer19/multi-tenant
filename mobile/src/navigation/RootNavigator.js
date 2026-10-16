@@ -3,6 +3,7 @@ import { Platform, StyleSheet, View } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { PlatformPressable } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthContext";
@@ -86,7 +87,12 @@ function useTabBarOptions() {
     headerShown: false,
     tabBarActiveTintColor: colors.primary,
     tabBarInactiveTintColor: colors.muted,
+    tabBarActiveBackgroundColor: "transparent",
+    tabBarInactiveBackgroundColor: "transparent",
     tabBarHideOnKeyboard: true,
+    tabBarButton: (props) => (
+      <PlatformPressable {...props} pressColor="transparent" pressOpacity={1} android_ripple={{ color: "transparent" }} />
+    ),
     tabBarStyle: {
       backgroundColor: colors.bg2,
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -94,11 +100,11 @@ function useTabBarOptions() {
       height: 58 + bottom,
       paddingTop: 6,
       paddingBottom: bottom,
-      elevation: 12,
-      shadowColor: "#000",
-      shadowOpacity: isDark ? 0.35 : 0.08,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: -4 },
+      elevation: 0,
+      shadowColor: "transparent",
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      shadowOffset: { width: 0, height: 0 },
     },
     tabBarItemStyle: {
       paddingVertical: 2,
