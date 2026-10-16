@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { MenuRow, MenuSection, Screen } from "../components/ui";
@@ -24,7 +24,6 @@ function initialsOf(name) {
 export default function MoreScreen() {
   const { user, role, logout, schoolLogo, schoolName } = useAuth();
   const { colors, isDark, setMode } = useTheme();
-  const [themeOpen, setThemeOpen] = useState(false);
   const navigation = { navigate: rootNavigate };
   const admin = isSchoolAdmin(role);
   const teacher = role === "teacher";
@@ -247,103 +246,111 @@ export default function MoreScreen() {
   const profileName = displayName(user) || "User";
   const logoUri = mediaUrl(schoolLogo);
   const schoolLabel = schoolName || user?.school_name || user?.school_domain || "Classora";
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
     <Screen>
-      <Text style={styles.kicker}>More</Text>
-      <Text style={styles.pageTitle}>Menu</Text>
-      <Text style={styles.pageSub}>Shortcuts, settings, and your account.</Text>
-
       <Pressable
         onPress={() => navigation.navigate(parent ? "ParentProfile" : "Profile")}
-        style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.94 }]}
+        style={({ pressed }) => [styles.heroCard, pressed && { opacity: 0.96 }]}
       >
-        <View style={styles.avatarWrap}>
-          {logoUri && !superadmin ? (
-            <Image source={{ uri: logoUri }} style={styles.avatarImg} />
-          ) : (
-            <Text style={styles.avatarText}>{initialsOf(profileName) || "?"}</Text>
-          )}
-        </View>
-        <View style={styles.profileMeta}>
-          <View style={styles.roleChip}>
-            <Text style={styles.roleChipText}>{roleLabel(role)}</Text>
+        <View style={styles.heroAccent} />
+        <View style={styles.heroBody}>
+          <View style={styles.heroTop}>
+            <View style={styles.avatarStack}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>{initialsOf(profileName) || "?"}</Text>
+              </View>
+              {logoUri && !superadmin ? (
+                <Image source={{ uri: logoUri }} style={styles.schoolBadge} />
+              ) : (
+                <View style={[styles.schoolBadge, styles.schoolBadgeFallback]}>
+                  <Ionicons name="school" size={12} color="#fff" />
+                </View>
+              )}
+            </View>
+            <View style={styles.heroMeta}>
+              <Text style={styles.hello}>{hello}</Text>
+              <Text style={styles.name} numberOfLines={1}>
+                {profileName}
+              </Text>
+              <View style={styles.metaRow}>
+                <View style={styles.roleChip}>
+                  <Text style={styles.roleChipText}>{roleLabel(role)}</Text>
+                </View>
+                <Text style={styles.school} numberOfLines={1}>
+                  {schoolLabel}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.heroCta}>
+              <Ionicons name="person" size={16} color={colors.primary} />
+              <Text style={styles.heroCtaText}>Profile</Text>
+            </View>
           </View>
-          <Text style={styles.name} numberOfLines={1}>
-            {profileName}
-          </Text>
-          <Text style={styles.school} numberOfLines={1}>
-            {schoolLabel}
-          </Text>
-        </View>
-        <View style={styles.profileArrow}>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </View>
       </Pressable>
 
       {quickActions.length > 0 ? (
-        <View style={styles.quickGrid}>
-          {quickActions.map((item) => (
-            <Pressable
-              key={item.title}
-              onPress={item.onPress}
-              style={({ pressed }) => [styles.quickItem, pressed && { opacity: 0.9 }]}
-            >
-              <View style={styles.quickIcon}>
-                <Ionicons name={item.icon} size={20} color={colors.primary} />
-              </View>
-              <Text style={styles.quickLabel} numberOfLines={1}>
-                {item.title}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <>
+          <Text style={styles.sectionLabel}>Quick access</Text>
+          <View style={styles.quickRow}>
+            {quickActions.map((item, index) => (
+              <Pressable
+                key={item.title}
+                onPress={item.onPress}
+                style={({ pressed }) => [
+                  styles.quickCard,
+                  index % 2 === 0 ? styles.quickCardA : styles.quickCardB,
+                  pressed && { transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                <View style={[styles.quickIcon, index % 2 === 0 ? styles.quickIconA : styles.quickIconB]}>
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={index % 2 === 0 ? colors.primary : colors.text}
+                  />
+                </View>
+                <Text style={styles.quickLabel}>{item.title}</Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.muted} />
+              </Pressable>
+            ))}
+          </View>
+        </>
       ) : null}
 
-      <View style={styles.themeCard}>
-        <View style={styles.themeLeft}>
+      <Text style={styles.sectionLabel}>Preferences</Text>
+      <View style={styles.prefCard}>
+        <View style={styles.prefHead}>
           <View style={styles.themeIcon}>
             <Ionicons name={isDark ? "moon" : "sunny"} size={18} color={colors.primary} />
           </View>
-          <View>
-            <Text style={styles.themeTitle}>Appearance</Text>
-            <Text style={styles.themeSub}>{isDark ? "Dark mode" : "Light mode"}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.themeTitle}>Theme</Text>
+            <Text style={styles.themeSub}>Choose how Classora looks</Text>
           </View>
         </View>
-        <Pressable onPress={() => setThemeOpen(true)} style={styles.themeBtn}>
-          <Text style={styles.themeBtnText}>Change</Text>
-          <Ionicons name="chevron-down" size={14} color={colors.primary} />
-        </Pressable>
+        <View style={styles.segment}>
+          {[
+            { key: "light", label: "Light", icon: "sunny-outline" },
+            { key: "dark", label: "Dark", icon: "moon-outline" },
+          ].map((opt) => {
+            const active = (opt.key === "dark") === isDark;
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => setMode(opt.key)}
+                style={[styles.segmentBtn, active && styles.segmentBtnOn]}
+              >
+                <Ionicons name={opt.icon} size={15} color={active ? "#fff" : colors.muted} />
+                <Text style={[styles.segmentText, active && styles.segmentTextOn]}>{opt.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
-
-      <Modal visible={themeOpen} transparent animationType="fade" onRequestClose={() => setThemeOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setThemeOpen(false)} />
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Appearance</Text>
-            {[
-              { key: "light", label: "Light", icon: "sunny-outline" },
-              { key: "dark", label: "Dark", icon: "moon-outline" },
-            ].map((opt) => {
-              const active = (opt.key === "dark") === isDark;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => {
-                    setMode(opt.key);
-                    setThemeOpen(false);
-                  }}
-                  style={[styles.modalOption, active && styles.modalOptionOn]}
-                >
-                  <Ionicons name={opt.icon} size={18} color={active ? colors.primary : colors.muted} />
-                  <Text style={[styles.modalOptionText, active && { color: colors.primary }]}>{opt.label}</Text>
-                  {active ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </Modal>
 
       {mainSections.map((section) => (
         <MenuSection key={section.title} title={section.title}>
@@ -390,194 +397,214 @@ export default function MoreScreen() {
 
 function makeStyles(colors, isDark) {
   return StyleSheet.create({
-    kicker: {
-      color: colors.primary,
-      fontWeight: "800",
-      fontSize: 12,
-      letterSpacing: 1.2,
-      textTransform: "uppercase",
-      marginBottom: 4,
-    },
-    pageTitle: {
-      color: colors.text,
-      fontSize: 28,
-      fontWeight: "800",
-      letterSpacing: -0.3,
-    },
-    pageSub: {
-      color: colors.muted,
-      fontSize: 13,
-      marginTop: 4,
-      marginBottom: 16,
-    },
-    profileCard: {
-      flexDirection: "row",
-      alignItems: "center",
+    heroCard: {
       borderRadius: radius.lg,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.line,
-      padding: 14,
-      marginBottom: 14,
+      overflow: "hidden",
+      marginBottom: 18,
     },
-    avatarWrap: {
+    heroAccent: {
+      height: 4,
+      backgroundColor: colors.primary,
+    },
+    heroBody: {
+      padding: 16,
+    },
+    heroTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    avatarStack: {
       width: 58,
       height: 58,
+    },
+    userAvatar: {
+      width: 54,
+      height: 54,
       borderRadius: 18,
-      backgroundColor: "rgba(241,90,36,0.14)",
+      backgroundColor: "rgba(241,90,36,0.18)",
       alignItems: "center",
       justifyContent: "center",
-      overflow: "hidden",
-      flexShrink: 0,
+      borderWidth: 1,
+      borderColor: "rgba(241,90,36,0.3)",
     },
-    avatarImg: { width: 58, height: 58, borderRadius: 18 },
-    avatarText: {
+    userAvatarText: {
       color: colors.primary,
       fontWeight: "900",
       fontSize: 18,
     },
-    profileMeta: {
-      flex: 1,
-      minWidth: 0,
-      marginLeft: 12,
-      marginRight: 8,
+    schoolBadge: {
+      position: "absolute",
+      right: -2,
+      bottom: -2,
+      width: 22,
+      height: 22,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: colors.card,
+      backgroundColor: colors.primary,
+      overflow: "hidden",
+    },
+    schoolBadgeFallback: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    heroMeta: { flex: 1, minWidth: 0 },
+    hello: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    name: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "800",
+      marginTop: 2,
+      letterSpacing: -0.3,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 6,
     },
     roleChip: {
-      alignSelf: "flex-start",
-      backgroundColor: "rgba(241,90,36,0.12)",
+      backgroundColor: "rgba(241,90,36,0.14)",
       borderRadius: 999,
       paddingHorizontal: 8,
       paddingVertical: 3,
-      marginBottom: 4,
     },
     roleChipText: {
       color: colors.primary,
       fontSize: 10,
       fontWeight: "800",
-      letterSpacing: 0.4,
+      letterSpacing: 0.3,
       textTransform: "uppercase",
     },
-    name: {
-      color: colors.text,
-      fontSize: 18,
-      fontWeight: "800",
-    },
     school: {
+      flex: 1,
       color: colors.muted,
-      marginTop: 2,
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: "600",
     },
-    profileArrow: {
-      width: 32,
-      height: 32,
-      borderRadius: 10,
-      backgroundColor: colors.bg2,
+    heroCta: {
       alignItems: "center",
       justifyContent: "center",
-    },
-    quickGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 14,
-    },
-    quickItem: {
-      width: "23%",
-      flexGrow: 1,
-      minWidth: 72,
-      backgroundColor: colors.card,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.line,
-      paddingVertical: 12,
-      paddingHorizontal: 8,
-      alignItems: "center",
-    },
-    quickIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
-      backgroundColor: "rgba(241,90,36,0.12)",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 6,
-    },
-    quickLabel: {
-      color: colors.text,
-      fontSize: 11,
-      fontWeight: "700",
-      textAlign: "center",
-    },
-    themeCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      backgroundColor: colors.card,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.line,
-      padding: 12,
-      marginBottom: 18,
-    },
-    themeLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-    themeIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
-      backgroundColor: "rgba(241,90,36,0.12)",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    themeTitle: { color: colors.text, fontWeight: "800", fontSize: 14 },
-    themeSub: { color: colors.muted, fontSize: 12, marginTop: 2, fontWeight: "600" },
-    themeBtn: {
-      flexDirection: "row",
-      alignItems: "center",
       gap: 4,
       backgroundColor: "rgba(241,90,36,0.12)",
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      minWidth: 64,
     },
-    themeBtnText: { color: colors.primary, fontWeight: "800", fontSize: 12 },
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.45)",
-      justifyContent: "center",
-      padding: 28,
-    },
-    modalCard: {
-      backgroundColor: colors.bg2,
-      borderRadius: 18,
-      padding: 16,
-      zIndex: 1,
-      borderWidth: 1,
-      borderColor: colors.line,
-    },
-    modalTitle: {
-      color: colors.text,
+    heroCtaText: {
+      color: colors.primary,
+      fontSize: 11,
       fontWeight: "800",
-      fontSize: 17,
-      marginBottom: 10,
     },
-    modalOption: {
+    sectionLabel: {
+      color: colors.muted,
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 0.9,
+      textTransform: "uppercase",
+      marginBottom: 8,
+      marginLeft: 2,
+    },
+    quickRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+      marginBottom: 18,
+    },
+    quickCard: {
+      width: "47%",
+      flexGrow: 1,
+      minWidth: 140,
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      paddingVertical: 13,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      paddingVertical: 14,
       paddingHorizontal: 12,
+    },
+    quickCardA: {
+      backgroundColor: isDark ? "rgba(241,90,36,0.1)" : "rgba(241,90,36,0.08)",
+      borderColor: "rgba(241,90,36,0.28)",
+    },
+    quickCardB: {
+      backgroundColor: colors.card,
+      borderColor: colors.line,
+    },
+    quickIcon: {
+      width: 40,
+      height: 40,
       borderRadius: 12,
-      marginTop: 4,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    modalOptionOn: {
-      backgroundColor: "rgba(241,90,36,0.12)",
-    },
-    modalOptionText: {
+    quickIconA: { backgroundColor: "rgba(241,90,36,0.18)" },
+    quickIconB: { backgroundColor: colors.bg2 },
+    quickLabel: {
       flex: 1,
       color: colors.text,
-      fontWeight: "700",
-      fontSize: 15,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    prefCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 14,
+      marginBottom: 18,
+    },
+    prefHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12,
+    },
+    themeIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: "rgba(241,90,36,0.12)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    themeTitle: { color: colors.text, fontWeight: "800", fontSize: 15 },
+    themeSub: { color: colors.muted, fontSize: 12, marginTop: 2, fontWeight: "600" },
+    segment: {
+      flexDirection: "row",
+      backgroundColor: colors.bg2,
+      borderRadius: 14,
+      padding: 4,
+      gap: 4,
+    },
+    segmentBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 11,
+    },
+    segmentBtnOn: {
+      backgroundColor: colors.primary,
+    },
+    segmentText: {
+      color: colors.muted,
+      fontWeight: "800",
+      fontSize: 13,
+    },
+    segmentTextOn: {
+      color: "#fff",
     },
     logoutBtn: {
       flexDirection: "row",
