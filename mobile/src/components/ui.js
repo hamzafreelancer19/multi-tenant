@@ -19,7 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeContext";
 import { getNotifications, markAllNotificationsAsRead, markNotificationAsRead } from "../api";
 import { rootNavigate } from "../navigation/rootNav";
-import { asList, badgeTone } from "../utils";
+import { asList, badgeTone, displayName, mediaUrl, roleLabel } from "../utils";
 
 function useUiStyles() {
   const { colors } = useTheme();
@@ -79,8 +79,10 @@ function AppHeader() {
   const styles = useUiStyles();
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState([]);
-  const name = role === "superadmin" ? "Classora" : (schoolName || user?.school_name || "Classora");
-  const showLogo = role !== "superadmin" && !!(schoolName || user?.school_name);
+  const brandName = role === "superadmin" ? "Classora" : schoolName || user?.school_name || "Classora";
+  const logoUri = mediaUrl(schoolLogo);
+  const userLabel = displayName(user);
+  const userInitials = schoolInitials(userLabel);
   const navState = navigation.getState?.();
   const canGoBack = navState?.type === "stack" && navigation.canGoBack();
 
@@ -93,11 +95,13 @@ function AppHeader() {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => {
-    loadNotes();
-    const timer = setInterval(loadNotes, 20000);
-    return () => clearInterval(timer);
-  }, [loadNotes]));
+  useFocusEffect(
+    useCallback(() => {
+      loadNotes();
+      const timer = setInterval(loadNotes, 20000);
+      return () => clearInterval(timer);
+    }, [loadNotes])
+  );
 
   const openNote = async (note) => {
     setOpen(false);
@@ -120,31 +124,58 @@ function AppHeader() {
     }
   };
 
+  const openProfile = () => {
+    if (role === "parent") rootNavigate("ParentProfile");
+    else rootNavigate("Profile");
+  };
+
   return (
     <View style={styles.appHeader}>
-      {canGoBack ? (
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.headerIconBtn}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-        </Pressable>
-      ) : null}
-      {showLogo ? (
-        schoolLogo ? (
-          <Image source={{ uri: schoolLogo }} style={styles.schoolMarkImg} />
-        ) : (
-          <View style={[styles.schoolMarkFallback, { backgroundColor: colors.primary }]}>
-            <Text style={styles.schoolMarkInitials}>{schoolInitials(name)}</Text>
-          </View>
-        )
-      ) : null}
-      <Text style={styles.schoolMarkName} numberOfLines={1}>{name}</Text>
-      <Pressable onPress={() => setOpen(true)} hitSlop={8} style={styles.headerIconBtn}>
-        <Ionicons name="notifications-outline" size={22} color={colors.text} />
-        {notes.length > 0 ? (
-          <View style={styles.notifBadge}>
-            <Text style={styles.notifBadgeText}>{notes.length > 9 ? "9+" : notes.length}</Text>
-          </View>
+      <View style={styles.headerLeft}>
+        {canGoBack ? (
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.headerIconBtn}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
         ) : null}
-      </Pressable>
+
+        <View style={styles.brandMark}>
+          {logoUri ? (
+            <Image source={{ uri: logoUri }} style={styles.brandLogo} />
+          ) : role === "superadmin" ? (
+            <Image source={require("../../assets/logo.png")} style={styles.brandLogo} />
+          ) : (
+            <View style={[styles.brandFallback, { backgroundColor: colors.primary }]}>
+              <Text style={styles.brandInitials}>{schoolInitials(brandName)}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.brandCopy}>
+          <Text style={styles.brandTitle} numberOfLines={1}>
+            {brandName}
+          </Text>
+          <Text style={styles.brandSub} numberOfLines={1}>
+            {roleLabel(role)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.headerRight}>
+        <Pressable onPress={() => setOpen(true)} hitSlop={6} style={styles.headerAction}>
+          <Ionicons name="notifications-outline" size={20} color={colors.text} />
+          {notes.length > 0 ? (
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>{notes.length > 9 ? "9+" : notes.length}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+
+        <Pressable onPress={openProfile} hitSlop={6} style={styles.profileBtn}>
+          <View style={[styles.profileAvatar, { backgroundColor: "rgba(241,90,36,0.16)" }]}>
+            <Text style={[styles.profileInitials, { color: colors.primary }]}>{userInitials}</Text>
+          </View>
+        </Pressable>
+      </View>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.notifBackdrop}>
@@ -159,19 +190,28 @@ function AppHeader() {
               ) : null}
             </View>
             <ScrollView style={styles.notifList} contentContainerStyle={{ paddingBottom: 8 }}>
-              {notes.length ? notes.map((note) => (
-                <Pressable key={note.id} onPress={() => openNote(note)} style={styles.notifRow}>
-                  <Ionicons name="notifications" size={16} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notifMsg}>{note.message}</Text>
-                    {!!note.created_at && (
-                      <Text style={styles.statDesc}>
-                        {new Date(note.created_at).toLocaleString("en-PK", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-              )) : (
+              {notes.length ? (
+                notes.map((note) => (
+                  <Pressable key={note.id} onPress={() => openNote(note)} style={styles.notifRow}>
+                    <View style={styles.notifIcon}>
+                      <Ionicons name="notifications" size={16} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notifMsg}>{note.message}</Text>
+                      {!!note.created_at && (
+                        <Text style={styles.statDesc}>
+                          {new Date(note.created_at).toLocaleString("en-PK", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                ))
+              ) : (
                 <Text style={styles.notifEmpty}>All caught up</Text>
               )}
             </ScrollView>
@@ -531,29 +571,88 @@ function makeStyles(colors) {
     appHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
+      justifyContent: "space-between",
+      gap: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
       backgroundColor: colors.bg2,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
       zIndex: 20,
     },
+    headerLeft: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minWidth: 0,
+    },
+    headerRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
     headerIconBtn: {
       width: 36,
       height: 36,
+      borderRadius: 12,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
       alignItems: "center",
       justifyContent: "center",
     },
+    headerAction: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandMark: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      overflow: "hidden",
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    brandLogo: { width: 42, height: 42, borderRadius: 14 },
+    brandFallback: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandInitials: { color: "#fff", fontWeight: "800", fontSize: 15 },
+    brandCopy: { flex: 1, minWidth: 0 },
+    brandTitle: { color: colors.text, fontWeight: "800", fontSize: 16, letterSpacing: -0.2 },
+    brandSub: { color: colors.muted, fontWeight: "600", fontSize: 11, marginTop: 2 },
+    profileBtn: { borderRadius: 999 },
+    profileAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1.5,
+      borderColor: "rgba(241,90,36,0.35)",
+    },
+    profileInitials: { fontWeight: "900", fontSize: 13 },
     notifBadge: {
       position: "absolute",
-      top: 2,
-      right: 2,
+      top: 4,
+      right: 4,
       minWidth: 16,
       height: 16,
       borderRadius: 8,
       paddingHorizontal: 3,
-      backgroundColor: colors.red,
+      backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -567,7 +666,7 @@ function makeStyles(colors) {
     },
     notifSheet: {
       backgroundColor: colors.bg2,
-      borderRadius: 16,
+      borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.border,
       maxHeight: 420,
@@ -589,25 +688,16 @@ function makeStyles(colors) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    notifMsg: { color: colors.text, fontSize: 14, fontWeight: "600" },
-    notifEmpty: { color: colors.muted, textAlign: "center", paddingVertical: 24 },
-    schoolMarkImg: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    schoolMarkFallback: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+    notifIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 10,
+      backgroundColor: "rgba(241,90,36,0.12)",
       alignItems: "center",
       justifyContent: "center",
     },
-    schoolMarkInitials: { color: "#fff", fontWeight: "800", fontSize: 14 },
-    schoolMarkName: { flex: 1, color: colors.text, fontWeight: "800", fontSize: 16 },
+    notifMsg: { color: colors.text, fontSize: 14, fontWeight: "600" },
+    notifEmpty: { color: colors.muted, textAlign: "center", paddingVertical: 24 },
     kicker: { color: colors.primary, fontWeight: "800", letterSpacing: 1, fontSize: 11, textTransform: "uppercase" },
     kickerCompact: { fontSize: 10, letterSpacing: 0.4 },
     h1: { color: colors.text, fontSize: 26, fontWeight: "800", marginTop: 4 },
