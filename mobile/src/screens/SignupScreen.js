@@ -20,8 +20,8 @@ import { useTheme } from "../theme/ThemeContext";
 import { apiError } from "../utils";
 
 export default function SignupScreen({ navigation }) {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [schoolName, setSchoolName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -87,8 +87,6 @@ export default function SignupScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -261,27 +259,9 @@ export default function SignupScreen({ navigation }) {
   );
 }
 
-function makeStyles(colors, isDark) {
+function makeStyles(colors) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
-    glowTop: {
-      position: "absolute",
-      top: -80,
-      right: -40,
-      width: 220,
-      height: 220,
-      borderRadius: 110,
-      backgroundColor: "rgba(241,90,36,0.16)",
-    },
-    glowBottom: {
-      position: "absolute",
-      bottom: 40,
-      left: -60,
-      width: 200,
-      height: 200,
-      borderRadius: 100,
-      backgroundColor: isDark ? "rgba(23,48,73,0.9)" : "rgba(241,90,36,0.08)",
-    },
     scroll: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
     backRow: {
       flexDirection: "row",
