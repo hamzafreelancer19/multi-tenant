@@ -1,18 +1,28 @@
 import React, { useMemo, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { MenuRow, MenuSection, Screen } from "../components/ui";
-import { displayName, isSchoolAdmin, roleLabel } from "../utils";
+import { displayName, isSchoolAdmin, mediaUrl, roleLabel } from "../utils";
 import { rootNavigate } from "../navigation/rootNav";
 import { useTheme } from "../theme/ThemeContext";
+import { radius } from "../theme";
 
 function withLast(items) {
   return items.map((item, i) => ({ ...item, last: i === items.length - 1 }));
 }
 
+function initialsOf(name) {
+  return String(name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
 export default function MoreScreen() {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, schoolLogo, schoolName } = useAuth();
   const { colors, isDark, setMode } = useTheme();
   const [themeOpen, setThemeOpen] = useState(false);
   const navigation = { navigate: rootNavigate };
@@ -27,6 +37,59 @@ export default function MoreScreen() {
   const icon = (name, color = colors.primary) => (
     <Ionicons name={name} size={18} color={color} />
   );
+
+  const quickActions = useMemo(() => {
+    const go = (name) => () => navigation.navigate(name);
+    if (admin) {
+      return [
+        { title: "Teachers", icon: "people-outline", onPress: go("Teachers") },
+        { title: "Classes", icon: "albums-outline", onPress: go("Classes") },
+        { title: "Notices", icon: "megaphone-outline", onPress: go("Notices") },
+        { title: "Chat", icon: "chatbubbles-outline", onPress: go("Chat") },
+      ];
+    }
+    if (teacher) {
+      return [
+        { title: "Students", icon: "people-outline", onPress: go("Students") },
+        { title: "Exams", icon: "clipboard-outline", onPress: go("Exams") },
+        { title: "Timetable", icon: "calendar-outline", onPress: go("Timetable") },
+        { title: "Chat", icon: "chatbubbles-outline", onPress: go("Chat") },
+      ];
+    }
+    if (parent) {
+      return [
+        { title: "Child", icon: "person-outline", onPress: go("ParentProfile") },
+        { title: "Fees", icon: "card-outline", onPress: go("ParentFees") },
+        { title: "Exams", icon: "clipboard-outline", onPress: go("ParentExams") },
+        { title: "Chat", icon: "chatbubbles-outline", onPress: go("Chat") },
+      ];
+    }
+    if (student) {
+      return [
+        { title: "Fees", icon: "card-outline", onPress: go("Fees") },
+        { title: "Homework", icon: "document-text-outline", onPress: go("Assignments") },
+        { title: "Timetable", icon: "calendar-outline", onPress: go("Timetable") },
+        { title: "Chat", icon: "chatbubbles-outline", onPress: go("Chat") },
+      ];
+    }
+    if (accountant) {
+      return [
+        { title: "Fees", icon: "card-outline", onPress: go("Fees") },
+        { title: "Notices", icon: "megaphone-outline", onPress: go("Notices") },
+        { title: "Chat", icon: "chatbubbles-outline", onPress: go("Chat") },
+        { title: "Profile", icon: "person-circle-outline", onPress: go("Profile") },
+      ];
+    }
+    if (superadmin) {
+      return [
+        { title: "Schools", icon: "business-outline", onPress: go("Schools") },
+        { title: "Plans", icon: "diamond-outline", onPress: go("Plans") },
+        { title: "Admins", icon: "shield-checkmark-outline", onPress: go("PlatformUsers") },
+        { title: "Settings", icon: "settings-outline", onPress: go("PlatformSettings") },
+      ];
+    }
+    return [];
+  }, [admin, teacher, parent, student, accountant, superadmin]);
 
   const sections = useMemo(() => {
     const go = (name) => () => navigation.navigate(name);
@@ -179,50 +242,79 @@ export default function MoreScreen() {
     ];
   }, [admin, teacher, parent, student, accountant, superadmin, colors]);
 
-  const initials = (displayName(user) || "?")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
-
   const accountSection = sections.find((s) => s.title === "Account");
   const mainSections = sections.filter((s) => s.title !== "Account");
+  const profileName = displayName(user) || "User";
+  const logoUri = mediaUrl(schoolLogo);
+  const schoolLabel = schoolName || user?.school_name || user?.school_domain || "Classora";
 
   return (
     <Screen>
+      <Text style={styles.kicker}>More</Text>
       <Text style={styles.pageTitle}>Menu</Text>
+      <Text style={styles.pageSub}>Shortcuts, settings, and your account.</Text>
 
       <Pressable
-        onPress={() => navigation.navigate("Profile")}
+        onPress={() => navigation.navigate(parent ? "ParentProfile" : "Profile")}
         style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.94 }]}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials || "?"}</Text>
+        <View style={styles.avatarWrap}>
+          {logoUri && !superadmin ? (
+            <Image source={{ uri: logoUri }} style={styles.avatarImg} />
+          ) : (
+            <Text style={styles.avatarText}>{initialsOf(profileName) || "?"}</Text>
+          )}
         </View>
         <View style={styles.profileMeta}>
-          <Text style={styles.role}>{roleLabel(role)}</Text>
-          <Text style={styles.name} numberOfLines={1}>{displayName(user) || "User"}</Text>
+          <View style={styles.roleChip}>
+            <Text style={styles.roleChipText}>{roleLabel(role)}</Text>
+          </View>
+          <Text style={styles.name} numberOfLines={1}>
+            {profileName}
+          </Text>
           <Text style={styles.school} numberOfLines={1}>
-            {user?.school_name || user?.school_domain || "Classora"}
+            {schoolLabel}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        <View style={styles.profileArrow}>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </View>
       </Pressable>
 
-      <MenuSection title="Appearance">
-        <Pressable
-          onPress={() => setThemeOpen(true)}
-          style={({ pressed }) => [styles.themeSelect, pressed && { backgroundColor: colors.card2 }]}
-        >
+      {quickActions.length > 0 ? (
+        <View style={styles.quickGrid}>
+          {quickActions.map((item) => (
+            <Pressable
+              key={item.title}
+              onPress={item.onPress}
+              style={({ pressed }) => [styles.quickItem, pressed && { opacity: 0.9 }]}
+            >
+              <View style={styles.quickIcon}>
+                <Ionicons name={item.icon} size={20} color={colors.primary} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={1}>
+                {item.title}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.themeCard}>
+        <View style={styles.themeLeft}>
           <View style={styles.themeIcon}>
             <Ionicons name={isDark ? "moon" : "sunny"} size={18} color={colors.primary} />
           </View>
-          <Text style={styles.themeSelectTitle}>Theme</Text>
-          <Text style={styles.themeSelectValue}>{isDark ? "Dark" : "Light"}</Text>
-          <Ionicons name="chevron-down" size={16} color={colors.muted} />
+          <View>
+            <Text style={styles.themeTitle}>Appearance</Text>
+            <Text style={styles.themeSub}>{isDark ? "Dark mode" : "Light mode"}</Text>
+          </View>
+        </View>
+        <Pressable onPress={() => setThemeOpen(true)} style={styles.themeBtn}>
+          <Text style={styles.themeBtnText}>Change</Text>
+          <Ionicons name="chevron-down" size={14} color={colors.primary} />
         </Pressable>
-      </MenuSection>
+      </View>
 
       <Modal visible={themeOpen} transparent animationType="fade" onRequestClose={() => setThemeOpen(false)}>
         <View style={styles.modalBackdrop}>
@@ -298,85 +390,157 @@ export default function MoreScreen() {
 
 function makeStyles(colors, isDark) {
   return StyleSheet.create({
+    kicker: {
+      color: colors.primary,
+      fontWeight: "800",
+      fontSize: 12,
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+      marginBottom: 4,
+    },
     pageTitle: {
       color: colors.text,
       fontSize: 28,
       fontWeight: "800",
+      letterSpacing: -0.3,
+    },
+    pageSub: {
+      color: colors.muted,
+      fontSize: 13,
+      marginTop: 4,
       marginBottom: 16,
     },
     profileCard: {
       flexDirection: "row",
       alignItems: "center",
-      borderRadius: 20,
-      backgroundColor: isDark ? colors.card : colors.card2,
-      padding: 16,
-      marginBottom: 22,
+      borderRadius: radius.lg,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 14,
+      marginBottom: 14,
     },
-    avatar: {
-      width: 56,
-      height: 56,
+    avatarWrap: {
+      width: 58,
+      height: 58,
       borderRadius: 18,
-      backgroundColor: isDark ? "rgba(241,90,36,0.2)" : "rgba(241,90,36,0.12)",
+      backgroundColor: "rgba(241,90,36,0.14)",
       alignItems: "center",
       justifyContent: "center",
+      overflow: "hidden",
       flexShrink: 0,
     },
+    avatarImg: { width: 58, height: 58, borderRadius: 18 },
     avatarText: {
       color: colors.primary,
-      fontWeight: "800",
+      fontWeight: "900",
       fontSize: 18,
     },
     profileMeta: {
       flex: 1,
       minWidth: 0,
-      marginLeft: 14,
-      marginRight: 10,
+      marginLeft: 12,
+      marginRight: 8,
     },
-    role: {
+    roleChip: {
+      alignSelf: "flex-start",
+      backgroundColor: "rgba(241,90,36,0.12)",
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginBottom: 4,
+    },
+    roleChipText: {
       color: colors.primary,
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: "800",
-      letterSpacing: 0.8,
+      letterSpacing: 0.4,
       textTransform: "uppercase",
     },
     name: {
       color: colors.text,
-      fontSize: 19,
+      fontSize: 18,
       fontWeight: "800",
-      marginTop: 2,
     },
     school: {
       color: colors.muted,
-      marginTop: 3,
+      marginTop: 2,
       fontSize: 13,
+      fontWeight: "600",
     },
-    themeSelect: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 13,
-      paddingHorizontal: 14,
-    },
-    themeIcon: {
-      width: 36,
-      height: 36,
+    profileArrow: {
+      width: 32,
+      height: 32,
       borderRadius: 10,
+      backgroundColor: colors.bg2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    quickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 14,
+    },
+    quickItem: {
+      width: "23%",
+      flexGrow: 1,
+      minWidth: 72,
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      alignItems: "center",
+    },
+    quickIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
       backgroundColor: "rgba(241,90,36,0.12)",
       alignItems: "center",
       justifyContent: "center",
-      marginRight: 12,
+      marginBottom: 6,
     },
-    themeSelectTitle: {
-      flex: 1,
+    quickLabel: {
       color: colors.text,
+      fontSize: 11,
       fontWeight: "700",
-      fontSize: 15,
+      textAlign: "center",
     },
-    themeSelectValue: {
-      color: colors.muted,
-      fontWeight: "600",
-      fontSize: 14,
-      marginRight: 6,
+    themeCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 12,
+      marginBottom: 18,
     },
+    themeLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+    themeIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor: "rgba(241,90,36,0.12)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    themeTitle: { color: colors.text, fontWeight: "800", fontSize: 14 },
+    themeSub: { color: colors.muted, fontSize: 12, marginTop: 2, fontWeight: "600" },
+    themeBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: "rgba(241,90,36,0.12)",
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    themeBtnText: { color: colors.primary, fontWeight: "800", fontSize: 12 },
     modalBackdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.45)",
@@ -388,6 +552,8 @@ function makeStyles(colors, isDark) {
       borderRadius: 18,
       padding: 16,
       zIndex: 1,
+      borderWidth: 1,
+      borderColor: colors.line,
     },
     modalTitle: {
       color: colors.text,
