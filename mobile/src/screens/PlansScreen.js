@@ -80,8 +80,8 @@ function planPayload(form) {
 }
 
 export default function PlansScreen() {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState("catalog");
   const [plans, setPlans] = useState([]);
   const [pending, setPending] = useState([]);
@@ -248,9 +248,6 @@ export default function PlansScreen() {
 
   return (
     <Screen onRefresh={load}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
-
       <View style={styles.headRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.kicker}>Platform</Text>
@@ -546,26 +543,8 @@ export default function PlansScreen() {
   );
 }
 
-function makeStyles(colors, isDark) {
+function makeStyles(colors) {
   return StyleSheet.create({
-    glowTop: {
-      position: "absolute",
-      top: -50,
-      right: -40,
-      width: 180,
-      height: 180,
-      borderRadius: 90,
-      backgroundColor: "rgba(241,90,36,0.14)",
-    },
-    glowBottom: {
-      position: "absolute",
-      bottom: 100,
-      left: -50,
-      width: 150,
-      height: 150,
-      borderRadius: 75,
-      backgroundColor: isDark ? "rgba(23,48,73,0.7)" : "rgba(241,90,36,0.06)",
-    },
     headRow: {
       flexDirection: "row",
       alignItems: "flex-start",

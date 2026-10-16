@@ -26,8 +26,8 @@ function schoolInitials(name) {
 }
 
 export default function SchoolsScreen() {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [schools, setSchools] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -202,9 +202,6 @@ export default function SchoolsScreen() {
 
   return (
     <Screen onRefresh={load}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
-
       <Text style={styles.kicker}>Platform</Text>
       <Text style={styles.pageTitle}>Schools</Text>
       <Text style={styles.pageSub}>Approve tenants & plans from the Actions menu.</Text>
@@ -382,26 +379,8 @@ export default function SchoolsScreen() {
   );
 }
 
-function makeStyles(colors, isDark) {
+function makeStyles(colors) {
   return StyleSheet.create({
-    glowTop: {
-      position: "absolute",
-      top: -50,
-      right: -40,
-      width: 180,
-      height: 180,
-      borderRadius: 90,
-      backgroundColor: "rgba(241,90,36,0.14)",
-    },
-    glowBottom: {
-      position: "absolute",
-      bottom: 120,
-      left: -60,
-      width: 160,
-      height: 160,
-      borderRadius: 80,
-      backgroundColor: isDark ? "rgba(23,48,73,0.75)" : "rgba(241,90,36,0.06)",
-    },
     kicker: {
       color: colors.primary,
       fontWeight: "800",
