@@ -115,7 +115,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <Screen>
-        <LoadingBlock label="Loading school…" />
+        <LoadingBlock />
       </Screen>
     );
   }

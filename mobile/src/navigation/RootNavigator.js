@@ -315,7 +315,7 @@ export default function RootNavigator() {
   if (!ready) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }}>
-        <LoadingBlock label="Starting Classora…" />
+        <LoadingBlock />
       </View>
     );
   }

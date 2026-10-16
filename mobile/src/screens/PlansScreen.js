@@ -241,7 +241,7 @@ export default function PlansScreen() {
   if (loading) {
     return (
       <Screen>
-        <LoadingBlock label="Loading plans…" />
+        <LoadingBlock />
       </Screen>
     );
   }

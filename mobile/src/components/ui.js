@@ -302,80 +302,46 @@ export function ErrorText({ children }) {
   return <Text style={styles.error}>{children}</Text>;
 }
 
-export function LoadingBlock({ label = "Loading…" }) {
+export function LoadingBlock() {
   const { colors, isDark } = useTheme();
   const slide = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0.55)).current;
 
   useEffect(() => {
-    const barLoop = Animated.loop(
+    const loop = Animated.loop(
       Animated.timing(slide, {
         toValue: 1,
-        duration: 1400,
+        duration: 1100,
         easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       })
     );
-    const textLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0.45,
-          duration: 700,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    );
     slide.setValue(0);
-    barLoop.start();
-    textLoop.start();
-    return () => {
-      barLoop.stop();
-      textLoop.stop();
-    };
-  }, [slide, pulse]);
+    loop.start();
+    return () => loop.stop();
+  }, [slide]);
 
   const translateX = slide.interpolate({
     inputRange: [0, 1],
-    outputRange: [-90, 210],
+    outputRange: [-72, 200],
   });
 
   return (
     <View style={loadingStyles.wrap}>
       <View
         style={[
-          loadingStyles.card,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.line,
-            shadowColor: isDark ? "#000" : colors.primary,
-          },
+          loadingStyles.track,
+          { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(15,23,42,0.1)" },
         ]}
       >
-        <View style={[loadingStyles.mark, { backgroundColor: "rgba(241,90,36,0.14)" }]}>
-          <Image source={require("../../assets/logo.png")} style={loadingStyles.logo} />
-        </View>
-        <Text style={[loadingStyles.title, { color: colors.text }]}>Classora</Text>
-        <Animated.Text style={[loadingStyles.label, { color: colors.muted, opacity: pulse }]}>
-          {label}
-        </Animated.Text>
-        <View style={[loadingStyles.track, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)" }]}>
-          <Animated.View
-            style={[
-              loadingStyles.bar,
-              {
-                backgroundColor: colors.primary,
-                transform: [{ translateX }],
-              },
-            ]}
-          />
-        </View>
+        <Animated.View
+          style={[
+            loadingStyles.bar,
+            {
+              backgroundColor: colors.primary,
+              transform: [{ translateX }],
+            },
+          ]}
+        />
       </View>
     </View>
   );
@@ -384,59 +350,21 @@ export function LoadingBlock({ label = "Loading…" }) {
 const loadingStyles = StyleSheet.create({
   wrap: {
     flexGrow: 1,
-    minHeight: 220,
+    minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 280,
-    alignItems: "center",
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  mark: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    overflow: "hidden",
-  },
-  logo: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-  },
-  label: {
-    marginTop: 6,
-    marginBottom: 18,
-    fontSize: 13,
-    fontWeight: "600",
+    paddingHorizontal: 48,
   },
   track: {
     width: "100%",
-    height: 6,
+    maxWidth: 180,
+    height: 4,
     borderRadius: 999,
     overflow: "hidden",
   },
   bar: {
-    width: 88,
-    height: 6,
+    width: 72,
+    height: 4,
     borderRadius: 999,
   },
 });

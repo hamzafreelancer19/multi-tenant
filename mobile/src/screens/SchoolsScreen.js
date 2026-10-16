@@ -195,7 +195,7 @@ export default function SchoolsScreen() {
   if (loading) {
     return (
       <Screen>
-        <LoadingBlock label="Loading tenants…" />
+        <LoadingBlock />
       </Screen>
     );
   }
