@@ -209,6 +209,18 @@ export default function SchoolAdmissionPage() {
     );
   }
 
+  if (tenant.subscriptionActive === false) {
+    return (
+      <div className="slp-loading">
+        <h2>{tenant.schoolName || "This school"} is not available</h2>
+        <p>Admissions stay closed until the school subscription is activated.</p>
+        <button className="slp-btn-primary" onClick={() => navigate("/login")}>
+          School login
+        </button>
+      </div>
+    );
+  }
+
   if (!tenant.schoolName) {
     return (
       <div className="slp-loading">

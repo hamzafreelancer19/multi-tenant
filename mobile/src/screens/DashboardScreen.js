@@ -1,13 +1,26 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { rootNavigate } from "../navigation/rootNav";
 import { useAuth } from "../auth/AuthContext";
 import { getActivities, getDashboardStats, getEnrollments, getStudents, acceptEnrollment, rejectEnrollment } from "../api";
 import { Badge, Card, EmptyState, ErrorText, Hero, LoadingBlock, PrimaryButton, Screen, StatRow } from "../components/ui";
-import { apiError, asList, displayName, greeting, isSchoolAdmin, money } from "../utils";
+import { useTheme } from "../theme/ThemeContext";
+import { apiError, asList, displayName, greeting, isSchoolAdmin, money, todayISO } from "../utils";
+
+const ACTIVITY_LIST_HEIGHT = 220;
+
+function isTodayActivity(item) {
+  if (!item?.created_at) return false;
+  const d = new Date(item.created_at);
+  if (Number.isNaN(d.getTime())) return false;
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return key === todayISO();
+}
 
 export default function DashboardScreen() {
   const { user, role } = useAuth();
+  const { colors } = useTheme();
   const navigation = { navigate: rootNavigate };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,13 +28,39 @@ export default function DashboardScreen() {
   const [activities, setActivities] = useState([]);
   const [recent, setRecent] = useState([]);
   const [pending, setPending] = useState([]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        activityBox: {
+          height: ACTIVITY_LIST_HEIGHT,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: colors.line,
+          backgroundColor: colors.bg2,
+          overflow: "hidden",
+          marginBottom: 8,
+        },
+        activityScroll: {
+          height: ACTIVITY_LIST_HEIGHT,
+        },
+        activityContent: {
+          paddingHorizontal: 10,
+          paddingTop: 8,
+          paddingBottom: 10,
+        },
+        activityCard: {
+          marginBottom: 8,
+        },
+      }),
+    [colors]
+  );
 
   const load = async () => {
     setError("");
     try {
       const [s, a] = await Promise.all([getDashboardStats(), getActivities()]);
       setStats(s.data || {});
-      setActivities(asList(a.data).slice(0, 8));
+      setActivities(asList(a.data).filter(isTodayActivity));
       if (role !== "superadmin") {
         try {
           const st = await getStudents();
@@ -137,12 +176,42 @@ export default function DashboardScreen() {
         </>
       )}
 
-      <Hero kicker="Activity" title="Latest updates" />
-      {activities.length ? activities.map((a, i) => (
-        <Card key={a.id || i}>
-          <Hero kicker={a.name} title={a.action} subtitle={a.created_at} />
-        </Card>
-      )) : <EmptyState title="No activity yet" text="Actions across the school will show up here." />}
+      <Hero kicker="Activity" title="Latest updates" subtitle="Today only · scroll inside" />
+      {activities.length ? (
+        <View style={styles.activityBox}>
+          <ScrollView
+            style={styles.activityScroll}
+            contentContainerStyle={styles.activityContent}
+            nestedScrollEnabled
+            scrollEnabled
+            showsVerticalScrollIndicator
+            persistentScrollbar
+            bounces={false}
+            overScrollMode="always"
+            keyboardShouldPersistTaps="handled"
+          >
+            {activities.map((a, i) => (
+              <Card key={a.id || i} style={styles.activityCard}>
+                <Hero
+                  compact
+                  kicker={a.name}
+                  title={a.action}
+                  subtitle={
+                    a.created_at
+                      ? new Date(a.created_at).toLocaleTimeString("en-PK", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""
+                  }
+                />
+              </Card>
+            ))}
+          </ScrollView>
+        </View>
+      ) : (
+        <EmptyState title="No activity today" text="Today’s school actions will show up here." />
+      )}
     </Screen>
   );
 }

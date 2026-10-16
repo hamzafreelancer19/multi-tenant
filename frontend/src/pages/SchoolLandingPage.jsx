@@ -76,7 +76,7 @@ export default function SchoolLandingPage() {
   }, []);
 
   useEffect(() => {
-    if (tenant.loading || !tenant.schoolName) return;
+    if (tenant.loading || !tenant.schoolName || tenant.subscriptionActive === false) return;
     const params = {};
     if (school_slug) params.domain = school_slug;
     else if (tenant.schoolDomain) params.domain = tenant.schoolDomain;
@@ -100,6 +100,18 @@ export default function SchoolLandingPage() {
       <div className="slp-loading">
         <div className="slp-spinner" />
         <p>Loading school…</p>
+      </div>
+    );
+  }
+
+  if (tenant.schoolName && tenant.subscriptionActive === false) {
+    return (
+      <div className="slp-loading">
+        <h2>{tenant.schoolName} is not available</h2>
+        <p>This school website stays closed until the subscription is activated.</p>
+        <button className="slp-btn-primary" onClick={() => navigate("/login")}>
+          School login
+        </button>
       </div>
     );
   }

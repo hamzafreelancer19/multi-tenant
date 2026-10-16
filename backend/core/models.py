@@ -61,6 +61,11 @@ class GlobalSetting(models.Model):
     support_phone = models.CharField(max_length=20, blank=True, default="")
     allow_signup = models.BooleanField(default=True)
     maintenance_mode = models.BooleanField(default=False)
+    payment_methods = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Platform payment details shown to schools when buying a plan",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

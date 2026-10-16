@@ -1,6 +1,7 @@
 import api from "./client";
 
 export const loginUser = (credentials) => api.post("token/", credentials);
+export const signupUser = (data) => api.post("signup/", data);
 export const refreshToken = (refresh) => api.post("token/refresh/", { refresh });
 export const getUserProfile = () => api.get("me/");
 export const updateUserProfile = (data) => api.patch("me/", data);
@@ -122,12 +123,28 @@ export const sendChatMessage = (threadId, payload) => {
 export const getSchools = (params = {}) => api.get("schools/", { params });
 export const getSchool = (id) => api.get(`schools/${id}/`);
 export const updateSchool = (id, data) => api.patch(`schools/${id}/`, data);
+export const uploadSchoolLogo = (id, asset) => {
+  const form = new FormData();
+  const uri = asset?.uri || "";
+  const name = asset?.fileName || uri.split("/").pop() || "logo.jpg";
+  const type = asset?.mimeType || (name.endsWith(".png") ? "image/png" : "image/jpeg");
+  form.append("logo", { uri, name, type });
+  return api.patch(`schools/${id}/`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 60000,
+  });
+};
+export const deleteSchool = (id) => api.delete(`schools/${id}/`);
 export const approveSchool = (id) => api.post(`schools/${id}/approve/`);
 export const rejectSchool = (id) => api.post(`schools/${id}/reject/`);
 export const approvePlan = (id) => api.post(`schools/${id}/approve_plan/`);
 export const rejectPlan = (id) => api.post(`schools/${id}/reject_plan/`);
 export const buyPlan = (id, data) => api.post(`schools/${id}/buy_plan/`, data);
 export const getPlans = (params = {}) => api.get("plans/", { params });
+export const getPlansOverview = () => api.get("plans/overview/");
+export const createPlan = (data) => api.post("plans/", data);
+export const updatePlan = (id, data) => api.patch(`plans/${id}/`, data);
+export const deletePlan = (id) => api.delete(`plans/${id}/`);
 export const getPlatformUsers = (params = {}) => api.get("platform-users/", { params });
 export const getPlatformSettings = () => api.get("platform/settings/");
 export const updatePlatformSettings = (data) => api.patch("platform/settings/", data);

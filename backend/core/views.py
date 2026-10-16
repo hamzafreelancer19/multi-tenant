@@ -153,6 +153,8 @@ class ActivityLogListView(generics.ListAPIView):
         user = self.request.user
         qs = ActivityLog.objects.all().order_by('-created_at')
 
+        today = timezone.localdate()
+
         if user.role == 'superadmin':
             days = self.request.query_params.get('days')
             if days:
@@ -162,13 +164,11 @@ class ActivityLogListView(generics.ListAPIView):
                     days = 14
                 since = timezone.now() - timedelta(days=days)
                 return qs.filter(created_at__gte=since)[:80]
-            since = timezone.now() - timedelta(hours=12)
-            return qs.filter(created_at__gte=since)[:20]
+            return qs.filter(created_at__date=today)[:40]
 
         school = get_current_school(self.request)
         if school:
-            since = timezone.now() - timedelta(hours=12)
-            return qs.filter(school=school, created_at__gte=since)[:10]
+            return qs.filter(school=school, created_at__date=today)[:40]
         return ActivityLog.objects.none()
 
 class NotificationListView(generics.ListAPIView):
@@ -376,6 +376,7 @@ class GlobalSettingView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _payload(self, gs):
+        from core.platform import normalize_payment_methods
         key = gs.groq_api_key or ""
         return {
             "id": gs.id,
@@ -384,6 +385,7 @@ class GlobalSettingView(APIView):
             "support_phone": gs.support_phone or "",
             "allow_signup": bool(gs.allow_signup),
             "maintenance_mode": bool(gs.maintenance_mode),
+            "payment_methods": normalize_payment_methods(getattr(gs, "payment_methods", None)),
             "groq_api_key_set": bool(key),
             "groq_api_key": f"••••{key[-4:]}" if len(key) >= 4 else "",
             "updated_at": gs.updated_at,
@@ -412,6 +414,13 @@ class GlobalSettingView(APIView):
         if "maintenance_mode" in request.data:
             from core.platform import parse_bool
             gs.maintenance_mode = parse_bool(request.data.get("maintenance_mode"), gs.maintenance_mode)
+        if "payment_methods" in request.data:
+            from core.platform import normalize_payment_methods
+            incoming = request.data.get("payment_methods")
+            if isinstance(incoming, dict):
+                current = normalize_payment_methods(getattr(gs, "payment_methods", None))
+                current.update({k: incoming.get(k, current.get(k)) for k in current.keys()})
+                gs.payment_methods = normalize_payment_methods(current)
         key = request.data.get("groq_api_key")
         if isinstance(key, str) and key.strip() and "•" not in key:
             gs.groq_api_key = key.strip()

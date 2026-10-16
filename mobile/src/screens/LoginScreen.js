@@ -1,27 +1,55 @@
-import React, { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { getPlatformStatus } from "../api";
 import { useAuth } from "../auth/AuthContext";
-import { Field, PrimaryButton, ErrorText } from "../components/ui";
-import { getApiBaseUrl, getDefaultTenantDomain } from "../config";
-import { colors } from "../theme";
+import { ErrorText, PrimaryButton } from "../components/ui";
+import { radius } from "../theme";
+import { useTheme } from "../theme/ThemeContext";
 import { apiError } from "../utils";
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [schoolDomain, setSchoolDomain] = useState(getDefaultTenantDomain());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [lastSchool, setLastSchool] = useState("");
+  const [allowSignup, setAllowSignup] = useState(true);
+  const fade = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(18)).current;
+  const passwordRef = useRef(null);
 
   useEffect(() => {
-    AsyncStorage.getItem("schoolDomain").then((stored) => {
-      if (stored) setSchoolDomain(stored);
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 480, useNativeDriver: true }),
+      Animated.timing(rise, { toValue: 0, duration: 480, useNativeDriver: true }),
+    ]).start();
+    AsyncStorage.getItem("schoolName").then((name) => {
+      if (name) setLastSchool(name);
     });
-  }, []);
+    getPlatformStatus()
+      .then((res) => {
+        setAllowSignup(res.data?.allow_signup !== false);
+      })
+      .catch(() => {});
+  }, [fade, rise]);
 
   const onSubmit = async () => {
     if (username.trim().length < 3) return setError("Enter your username or email.");
@@ -29,9 +57,9 @@ export default function LoginScreen() {
     setBusy(true);
     setError("");
     try {
-      await login({ username: username.trim(), password, schoolDomain });
+      await login({ username: username.trim(), password });
     } catch (err) {
-      setError(apiError(err, "Login failed. Check username, password, API URL, and tenant domain."));
+      setError(apiError(err, "Login failed. Check your username and password."));
     } finally {
       setBusy(false);
     }
@@ -39,37 +67,214 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <View style={styles.inner}>
-          <Text style={styles.brand}>CLASSORA</Text>
-          <Text style={styles.title}>Sign in to your school</Text>
-          <Text style={styles.hint}>Same Django API as the website. Use your Classora username and password.</Text>
-          <Field label="Username / Email" value={username} onChangeText={setUsername} />
-          <Field label="Password" value={password} onChangeText={setPassword} secure={!showPw} />
-          <Pressable onPress={() => setShowPw((v) => !v)}>
-            <Text style={styles.link}>{showPw ? "Hide password" : "Show password"}</Text>
-          </Pressable>
-          <Field
-            label="School domain (X-Tenant-Domain)"
-            value={schoolDomain}
-            onChangeText={setSchoolDomain}
-            placeholder="localhost or your-school.example.com"
-          />
-          <ErrorText>{error}</ErrorText>
-          <PrimaryButton title={busy ? "Signing in…" : "Sign in"} onPress={onSubmit} disabled={busy} />
-          <Text style={styles.meta}>API: {getApiBaseUrl()}</Text>
-        </View>
+      <View style={styles.glowTop} />
+      <View style={styles.glowBottom} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>
+            <View style={styles.brandRow}>
+              <Image
+                source={require("../../assets/logo.png")}
+                style={styles.logo}
+                accessibilityLabel="Classora"
+              />
+              <View>
+                <Text style={styles.brand}>CLASSORA</Text>
+                <Text style={styles.brandTag}>School management</Text>
+              </View>
+            </View>
+            <Text style={styles.title}>Welcome back</Text>
+
+            {!!lastSchool && (
+              <View style={styles.schoolChip}>
+                <Ionicons name="school-outline" size={16} color={colors.primary} />
+                <Text style={styles.schoolChipText}>Last school: {lastSchool}</Text>
+              </View>
+            )}
+
+            <View style={styles.form}>
+              <Text style={styles.label}>Username</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="person-outline" size={18} color={colors.muted} style={styles.inputIcon} />
+                <TextInput
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="Username"
+                  placeholderTextColor={colors.muted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="username"
+                  textContentType="username"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  style={styles.input}
+                />
+              </View>
+
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.muted} style={styles.inputIcon} />
+                <TextInput
+                  ref={passwordRef}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Your password"
+                  placeholderTextColor={colors.muted}
+                  secureTextEntry={!showPw}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="password"
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={onSubmit}
+                  style={[styles.input, { paddingRight: 44 }]}
+                />
+                <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eye} hitSlop={10}>
+                  <Ionicons
+                    name={showPw ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={colors.muted}
+                  />
+                </Pressable>
+              </View>
+
+              <ErrorText>{error}</ErrorText>
+              <PrimaryButton
+                title={busy ? "Signing in…" : "Sign in"}
+                onPress={onSubmit}
+                disabled={busy}
+              />
+            </View>
+
+            {allowSignup ? (
+              <Pressable
+                onPress={() => navigation?.navigate("Signup")}
+                style={styles.footerLink}
+              >
+                <Text style={styles.footerMuted}>New school? </Text>
+                <Text style={styles.footerAction}>Register here</Text>
+              </Pressable>
+            ) : null}
+          </Animated.View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  inner: { flex: 1, padding: 22, justifyContent: "center" },
-  brand: { color: colors.primary, fontWeight: "900", letterSpacing: 3, fontSize: 13 },
-  title: { color: colors.text, fontSize: 28, fontWeight: "800", marginTop: 8, marginBottom: 8 },
-  hint: { color: colors.muted, marginBottom: 22, lineHeight: 20 },
-  link: { color: colors.accent, marginBottom: 12, fontWeight: "700" },
-  meta: { color: colors.muted, marginTop: 18, fontSize: 12 },
-});
+function makeStyles(colors, isDark) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    glowTop: {
+      position: "absolute",
+      top: -80,
+      right: -40,
+      width: 220,
+      height: 220,
+      borderRadius: 110,
+      backgroundColor: "rgba(241,90,36,0.16)",
+    },
+    glowBottom: {
+      position: "absolute",
+      bottom: 40,
+      left: -60,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: isDark ? "rgba(23,48,73,0.9)" : "rgba(241,90,36,0.08)",
+    },
+    scroll: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
+    brandRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 18,
+    },
+    logo: {
+      width: 56,
+      height: 56,
+      borderRadius: 14,
+    },
+    brand: {
+      color: colors.primary,
+      fontWeight: "900",
+      letterSpacing: 4,
+      fontSize: 14,
+    },
+    brandTag: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 2,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 34,
+      fontWeight: "800",
+      marginTop: 4,
+      marginBottom: 22,
+      letterSpacing: -0.5,
+    },
+    schoolChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      alignSelf: "flex-start",
+      backgroundColor: "rgba(241,90,36,0.12)",
+      borderColor: "rgba(241,90,36,0.28)",
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 18,
+    },
+    schoolChipText: { color: colors.primary2, fontWeight: "700", fontSize: 13 },
+    form: {
+      backgroundColor: colors.bg2,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 18,
+    },
+    label: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: "700",
+      marginBottom: 8,
+      letterSpacing: 0.3,
+    },
+    inputWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      marginBottom: 14,
+    },
+    inputIcon: { marginLeft: 12 },
+    input: {
+      flex: 1,
+      color: colors.text,
+      paddingHorizontal: 10,
+      paddingVertical: Platform.OS === "ios" ? 12 : 10,
+      fontSize: 13,
+    },
+    eye: { position: "absolute", right: 12, padding: 4 },
+    footerLink: {
+      flexDirection: "row",
+      justifyContent: "center",
+      flexWrap: "wrap",
+      marginTop: 20,
+    },
+    footerMuted: { color: colors.muted, fontSize: 14 },
+    footerAction: { color: colors.primary, fontWeight: "800", fontSize: 14 },
+  });
+}

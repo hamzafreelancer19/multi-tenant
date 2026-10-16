@@ -37,6 +37,22 @@ def get_global_setting():
     return GlobalSetting.load()
 
 
+def normalize_payment_methods(raw=None):
+    data = raw if isinstance(raw, dict) else {}
+    return {
+        "jazzcash": str(data.get("jazzcash") or "").strip(),
+        "easypaisa": str(data.get("easypaisa") or "").strip(),
+        "bank_name": str(data.get("bank_name") or "").strip(),
+        "account_title": str(data.get("account_title") or "").strip(),
+        "account_number": str(data.get("account_number") or "").strip(),
+        "iban": str(data.get("iban") or "").strip(),
+        "instructions": str(
+            data.get("instructions")
+            or "Pay via JazzCash / EasyPaisa / bank transfer, then submit your transaction ID."
+        ).strip(),
+    }
+
+
 def public_status():
     gs = get_global_setting()
     return {
@@ -45,6 +61,7 @@ def public_status():
         "maintenance_mode": bool(gs.maintenance_mode),
         "support_email": gs.support_email or "",
         "support_phone": gs.support_phone or "",
+        "payment_methods": normalize_payment_methods(getattr(gs, "payment_methods", None)),
     }
 
 

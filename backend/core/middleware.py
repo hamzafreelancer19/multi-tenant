@@ -76,3 +76,78 @@ class TenantMiddleware:
             clear_tenant_context()
             
         return response
+
+
+class SubscriptionAccessMiddleware:
+    """Block school website and API access until the subscription is active."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method == "OPTIONS":
+            return self.get_response(request)
+
+        path = request.path or "/"
+        if not path.startswith("/api/"):
+            return self.get_response(request)
+
+        from core.subscription_access import (
+            is_subscription_exempt,
+            subscription_block_message,
+            subscription_is_active,
+        )
+
+        if is_subscription_exempt(path, request.method):
+            return self.get_response(request)
+
+        user = _user_from_request(request)
+        if user and getattr(user, "role", None) == "superadmin":
+            return self.get_response(request)
+
+        school = None
+        if user and getattr(user, "school_id", None):
+            school = user.school
+        if school is None:
+            school = getattr(request, "tenant", None) or getattr(request, "domain_school", None)
+
+        if not school or subscription_is_active(school):
+            return self.get_response(request)
+
+        return JsonResponse(
+            {
+                "error": subscription_block_message(school),
+                "detail": subscription_block_message(school),
+                "code": "subscription_inactive",
+                "plan_status": school.plan_status,
+            },
+            status=403,
+        )
+
+
+def _user_from_request(request):
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return user
+
+    header = request.META.get("HTTP_AUTHORIZATION") or ""
+    if not header.lower().startswith("bearer "):
+        return None
+    raw = header.split(" ", 1)[1].strip()
+    if not raw:
+        return None
+
+    from django.contrib.auth import get_user_model
+    from rest_framework_simplejwt.exceptions import TokenError
+    from rest_framework_simplejwt.tokens import AccessToken
+
+    try:
+        token = AccessToken(raw)
+        uid = token.get("user_id")
+        if not uid:
+            return None
+        return get_user_model().objects.select_related("school").filter(pk=uid).first()
+    except TokenError:
+        return None
+    except Exception:
+        return None

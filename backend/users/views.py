@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth import get_user_model
 
+from core.subscription_access import subscription_is_active
 from core.utils import get_current_school
 from core.models import ActivityLog
 
@@ -31,10 +32,18 @@ def serialize_me(request):
         "school_id": school.id if school else None,
         "user_school_id": user.school.id if user.school else None,
         "school_name": school.name if school else (user.school.name if user.school else None),
+        "school_domain": (
+            getattr(school, "domain", None)
+            if school
+            else (user.school.domain if user.school else None)
+        ),
         "is_active": user.is_active,
         "date_joined": user.date_joined,
         "last_login": user.last_login,
         "has_usable_password": user.has_usable_password(),
+        "plan_status": getattr(school, "plan_status", None) if school else None,
+        "plan_type": getattr(school, "plan_type", None) if school else None,
+        "subscription_active": user.role == "superadmin" or subscription_is_active(school),
     }
 
 
@@ -413,6 +422,19 @@ class TenantInfoView(APIView):
             }, status=200)
 
         if school:
+            from django.utils.text import slugify
+            from core.subscription_access import subscription_is_active
+            if not subscription_is_active(school):
+                return Response({
+                    "school_id": school.id,
+                    "school_name": school.name,
+                    "school_domain": school.domain,
+                    "school_slug": slugify(school.name) or (school.code or "").lower(),
+                    "plan_status": school.plan_status,
+                    "subscription_active": False,
+                    "detail": "This school website stays closed until its subscription is activated.",
+                })
+
             from students.models import Student
             from teachers.models import Teacher
 
@@ -422,8 +444,7 @@ class TenantInfoView(APIView):
                 course_count = Student.objects.filter(school=school).values('class_name').distinct().count()
             except Exception:
                 student_count = teacher_count = course_count = 0
-            
-            from django.utils.text import slugify
+
             from schools.landing_defaults import (
                 default_features,
                 default_programs,
@@ -435,6 +456,8 @@ class TenantInfoView(APIView):
                 "school_name": school.name,
                 "school_domain": school.domain,
                 "school_slug": slugify(school.name) or (school.code or "").lower(),
+                "plan_status": school.plan_status,
+                "subscription_active": True,
                 "branding": {
                     "logo": request.build_absolute_uri(school.logo.url) if school.logo and hasattr(school.logo, 'url') and school.logo.name else None,
                     "favicon": request.build_absolute_uri(school.favicon.url) if school.favicon and hasattr(school.favicon, 'url') and school.favicon.name else None,

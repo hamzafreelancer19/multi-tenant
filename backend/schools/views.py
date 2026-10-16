@@ -349,6 +349,9 @@ class EnrollmentViewSet(SchoolOpsMixin, viewsets.ModelViewSet):
         school = serializer.validated_data.get("school") or get_current_school(self.request)
         if not school:
             raise ValidationError({"school": "School is required."})
+        from core.subscription_access import subscription_block_message, subscription_is_active
+        if not subscription_is_active(school):
+            raise ValidationError({"school": subscription_block_message(school)})
         instance = serializer.save(school=school)
         school_class, incharge = resolve_enrollment_class(instance.school, instance.class_applying)
         instance.school_class = school_class

@@ -1,5 +1,17 @@
+import { getApiOrigin } from "./config";
+
 export function unwrapList(data) {
   return asList(data);
+}
+
+/** Absolute URL for media paths returned by the API (logo_url, etc.). */
+export function mediaUrl(path) {
+  if (!path) return null;
+  const value = String(path).trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value) || value.startsWith("file:")) return value;
+  const origin = getApiOrigin().replace(/\/$/, "");
+  return `${origin}${value.startsWith("/") ? "" : "/"}${value}`;
 }
 
 export function asList(data) {

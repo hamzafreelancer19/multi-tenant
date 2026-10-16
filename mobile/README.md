@@ -50,7 +50,13 @@ Android also needs cleartext HTTP allowed (already set in `app.json`).
 
 ## Tenant header
 
-Every request sends `X-Tenant-Domain` (same as the website). On login you can set the school domain (default `localhost` from `extra.tenantDomain`). The last used domain is restored from AsyncStorage on the login screen. After login, if the token response includes `school_domain`, that value is stored.
+Every request sends `X-Tenant-Domain` (same as the website). You do **not** enter a tenant on the login screen.
+
+1. Sign-in uses the platform host (`extra.tenantDomain` / `localhost`).
+2. The token response includes `school_domain` + `school_name` for that user.
+3. The app stores them in AsyncStorage and sends the school domain on all later API calls.
+
+Superadmins can still switch schools from the Schools screen (`Use tenant …`).
 
 ## Auth
 

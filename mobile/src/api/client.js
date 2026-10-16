@@ -18,6 +18,13 @@ api.interceptors.request.use(async (config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   const storedDomain = await AsyncStorage.getItem("schoolDomain");
   config.headers["X-Tenant-Domain"] = storedDomain || getDefaultTenantDomain();
+  // Let RN/axios set multipart boundary when uploading files.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    if (config.headers) {
+      delete config.headers["Content-Type"];
+      delete config.headers["content-type"];
+    }
+  }
   return config;
 });
 

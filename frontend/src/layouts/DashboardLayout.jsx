@@ -50,6 +50,20 @@ const GENERIC_THEME_COLORS = new Set([
   "#e8b86d", "#08131c", "#3b82f6",
 ]);
 
+function schoolInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "S";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function resolveMediaUrl(raw) {
+  if (!raw) return "";
+  if (raw.startsWith("http") || raw.startsWith("data:")) return raw;
+  const base = String(api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+  return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
+
 function hexToRgb(hex) {
   const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
   return match
@@ -125,19 +139,18 @@ export default function DashboardLayout() {
   const tenant = useTenant();
   const [platformName, setPlatformName] = useState("Classora");
   const [notifications, setNotifications] = useState([]);
-  
-  const brandName = role === "superadmin"
-    ? (platformName && platformName !== "System Configuration" ? platformName : "Classora")
-    : (tenant?.schoolName || "Classora");
   const [showNotifs, setShowNotifs] = useState(false);
   const [theme, setTheme] = useState(() =>
     document.documentElement.classList.contains("dark") ? "dark" : "light"
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [planStatus, setPlanStatus] = useState(null);
+  const [planStatus, setPlanStatus] = useState(() => (role === "superadmin" || isDemoMode() ? "Active" : null));
   const [planType, setPlanType] = useState("None");
+  const [planChecked, setPlanChecked] = useState(() => role === "superadmin" || isDemoMode());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [sessionBrand, setSessionBrand] = useState(null);
+  const [logoBroken, setLogoBroken] = useState(false);
   const profileMenuRef = useRef(null);
 
   useEffect(() => {
@@ -158,39 +171,64 @@ export default function DashboardLayout() {
     }
   };
 
+  const schoolRole = ["admin", "teacher", "accountant", "parent", "student"].includes(role);
+  const subscriptionLocked = schoolRole && planChecked && planStatus !== "Active";
+
   const fetchPlanStatus = async () => {
-    if (isDemoMode()) {
+    if (isDemoMode() || role === "superadmin") {
       setPlanStatus("Active");
       setPlanType("Pro");
+      setPlanChecked(true);
       return;
     }
-    if (!["admin", "teacher", "accountant"].includes(role)) return;
+    if (!schoolRole) {
+      setPlanChecked(true);
+      return;
+    }
     try {
-      let currentUser = user;
-      if (role === "admin" && !currentUser?.school) {
-        const freshProfile = await getUserProfile();
-        setUser(freshProfile);
-        currentUser = freshProfile;
-      }
-
-      const res = await api.get("/schools/");
-      const schools = Array.isArray(res.data) ? res.data : [];
-      const mySchool = schools.find(s => s.id === Number(currentUser?.school)) || schools[0];
-      setPlanStatus(mySchool?.plan_status || "Inactive");
-      setPlanType(mySchool?.plan_type || "None");
+      const freshProfile = await getUserProfile();
+      setUser(freshProfile);
+      const status = freshProfile.subscription_active === false
+        ? (freshProfile.plan_status === "Active" ? "Expired" : (freshProfile.plan_status || "Inactive"))
+        : (freshProfile.plan_status || "Inactive");
+      setPlanStatus(status);
+      setPlanType(freshProfile.plan_type || "None");
     } catch (err) {
       console.error("Plan status fetch failed:", err);
       setPlanStatus("Inactive");
       setPlanType("None");
+    } finally {
+      setPlanChecked(true);
     }
   };
 
   useEffect(() => {
-    fetchNotifs();
     fetchPlanStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!planChecked || subscriptionLocked) return undefined;
+    fetchNotifs();
     const interval = setInterval(fetchNotifs, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [planChecked, subscriptionLocked]);
+
+  useEffect(() => {
+    if (!subscriptionLocked) return;
+    if (location.pathname === "/subscription") return;
+    navigate("/subscription", { replace: true });
+  }, [subscriptionLocked, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!subscriptionLocked) return undefined;
+    const refresh = () => { fetchPlanStatus(); };
+    window.addEventListener("focus", refresh);
+    const interval = setInterval(refresh, 20000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      clearInterval(interval);
+    };
+  }, [subscriptionLocked]);
 
   useEffect(() => {
     if (role !== "superadmin" || isDemoMode()) return undefined;
@@ -200,6 +238,27 @@ export default function DashboardLayout() {
       })
       .catch(() => {});
   }, [role]);
+
+  useEffect(() => {
+    setLogoBroken(false);
+  }, [sessionBrand?.branding?.logo, tenant.branding?.logo]);
+
+  useEffect(() => {
+    if (tenant.loading || isDemoMode() || role === "superadmin" || tenant.schoolName) {
+      return undefined;
+    }
+    const domain = getUser()?.school_domain || localStorage.getItem("schoolDomain");
+    if (!domain) return undefined;
+    let cancelled = false;
+    api.get("tenant-info/", { params: { domain } })
+      .then((res) => {
+        if (!cancelled && res.data?.school_id) setSessionBrand(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [tenant.loading, tenant.schoolName, role]);
 
   useEffect(() => {
     if (isDemoMode()) return undefined;
@@ -273,10 +332,17 @@ export default function DashboardLayout() {
     navigate("/");
   };
 
-  const dashboardBranding = dashboardTheme(tenant.branding?.dashboard || {});
-  const logoUrl = tenant.branding?.logo 
-    ? (tenant.branding.logo.startsWith('http') ? tenant.branding.logo : `${api.defaults.baseURL.replace('/api', '')}${tenant.branding.logo}`) 
-    : null;
+  const schoolName = role === "superadmin"
+    ? ""
+    : (sessionBrand?.school_name || tenant.schoolName || user?.school_name || "");
+  const brandName = role === "superadmin"
+    ? (platformName && platformName !== "System Configuration" ? platformName : "Classora")
+    : (schoolName || "Classora");
+  const activeBranding = sessionBrand?.branding || tenant.branding || {};
+  const dashboardBranding = dashboardTheme(activeBranding.dashboard || {});
+  const logoUrl = resolveMediaUrl(activeBranding.logo);
+  const showSchoolLogo = role !== "superadmin" && !!schoolName;
+  const showUploadedLogo = showSchoolLogo && !!logoUrl && !logoBroken;
 
   return (
     <div 
@@ -296,20 +362,18 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-logo">
-          {brandName === "Classora" ? (
-             <BrandLogo 
-                size="md" 
-                color="white" 
-                collapsed={isCollapsed} 
-                className="pl-1"
-             />
-          ) : (
+          {showSchoolLogo ? (
             <>
-              <div className="logo-icon">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <div className={`logo-icon ${showUploadedLogo ? "has-image" : ""}`}>
+                {showUploadedLogo ? (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    onError={() => setLogoBroken(true)}
+                  />
                 ) : (
-                  <School size={24} />
+                  <span className="logo-initials">{schoolInitials(schoolName)}</span>
                 )}
               </div>
               {!isCollapsed && (
@@ -319,6 +383,13 @@ export default function DashboardLayout() {
                 </div>
               )}
             </>
+          ) : (
+             <BrandLogo 
+                size="md" 
+                color="white" 
+                collapsed={isCollapsed} 
+                className="pl-1"
+             />
           )}
         </div>
 
@@ -331,7 +402,7 @@ export default function DashboardLayout() {
               const currentLevel = planHierarchy.indexOf(planType || "None");
               const requiredLevel = planHierarchy.indexOf(item.plan || "None");
               
-              const isLocked = ["admin", "teacher", "accountant"].includes(role) && 
+              const isLocked = schoolRole &&
                               (planStatus !== "Active" || currentLevel < requiredLevel);
 
               if (isLocked) {
@@ -529,7 +600,13 @@ export default function DashboardLayout() {
           </div>
         </header>
         <div className={`page-body ${location.pathname.startsWith("/chat") ? "is-chat" : ""}`}>
-          <Outlet />
+          {schoolRole && (!planChecked || (subscriptionLocked && location.pathname !== "/subscription")) ? (
+            <div className="page" style={{ alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
+              <p>Checking subscription…</p>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </div>
       </main>
       {/* Only show AI Assistant for Business and Pro plans */}

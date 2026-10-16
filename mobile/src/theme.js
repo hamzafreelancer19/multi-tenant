@@ -1,4 +1,4 @@
-export const colors = {
+export const darkColors = {
   bg: "#07111C",
   bg2: "#0C1A2A",
   card: "#122133",
@@ -23,18 +23,54 @@ export const colors = {
   white: "#FFFFFF",
 };
 
+export const lightColors = {
+  bg: "#F3F6FA",
+  bg2: "#FFFFFF",
+  card: "#FFFFFF",
+  card2: "#EEF2F7",
+  cardAlt: "#EEF2F7",
+  line: "rgba(15,23,42,0.08)",
+  border: "rgba(15,23,42,0.1)",
+  text: "#0F172A",
+  muted: "#64748B",
+  primary: "#F15A24",
+  primary2: "#E85A28",
+  orange: "#F15A24",
+  accent: "#E85A28",
+  navy: "#E8EEF5",
+  navy2: "#DDE5F0",
+  success: "#059669",
+  green: "#059669",
+  warn: "#D97706",
+  yellow: "#D97706",
+  danger: "#DC2626",
+  red: "#DC2626",
+  white: "#FFFFFF",
+};
+
+/** @deprecated Prefer useTheme().colors — kept for modules that still import statically. */
+export const colors = darkColors;
+
 export const space = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32 };
 export const spacing = space;
 export const radius = { sm: 10, md: 14, lg: 20 };
 
-export const navTheme = {
-  dark: true,
-  colors: {
-    primary: colors.primary,
-    background: colors.bg,
-    card: colors.bg2,
-    text: colors.text,
-    border: colors.border,
-    notification: colors.primary,
-  },
-};
+export function getColors(mode) {
+  return mode === "light" ? lightColors : darkColors;
+}
+
+export function buildNavTheme(palette, isDark) {
+  return {
+    dark: isDark,
+    colors: {
+      primary: palette.primary,
+      background: palette.bg,
+      card: palette.bg2,
+      text: palette.text,
+      border: palette.border,
+      notification: palette.primary,
+    },
+  };
+}
+
+export const navTheme = buildNavTheme(darkColors, true);

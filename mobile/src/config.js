@@ -1,10 +1,27 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-const RAILWAY = "https://multi-tenant-production-a3db.up.railway.app/api";
+const RAILWAY = "https://multi-tenant-production.up.railway.app/api";
 
+/** Platform host used before login; school domain is set from the token response. */
 export function getDefaultTenantDomain() {
-  return (process.env.EXPO_PUBLIC_TENANT_DOMAIN || "localhost").trim();
+  const extra = Constants.expoConfig?.extra || {};
+  return (
+    process.env.EXPO_PUBLIC_TENANT_DOMAIN ||
+    extra.tenantDomain ||
+    "localhost"
+  )
+    .toString()
+    .trim();
+}
+
+/** True when host is the shared Classora platform (not a school subdomain). */
+export function isPlatformTenantDomain(domain) {
+  const host = String(domain || "")
+    .trim()
+    .toLowerCase()
+    .split(":")[0];
+  return !host || host === "localhost" || host === "127.0.0.1";
 }
 
 export function getApiOrigin() {

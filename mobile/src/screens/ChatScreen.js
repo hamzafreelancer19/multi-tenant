@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,7 +6,7 @@ import { getChatContacts, getChatMessages, getChatThreads, sendChatMessage, star
 import { Card, EmptyState, ErrorText, Hero, LoadingBlock, Screen, SearchBar } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
 import { apiError, asList } from "../utils";
-import { colors } from "../theme";
+import { useTheme } from "../theme/ThemeContext";
 
 function pretty(row) {
   return row?.name || row?.username || "User";
@@ -14,6 +14,8 @@ function pretty(row) {
 
 export default function ChatScreen() {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [threads, setThreads] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [q, setQ] = useState("");
@@ -127,11 +129,13 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  bubble: { maxWidth: "80%", padding: 10, borderRadius: 14, marginBottom: 8 },
-  mine: { alignSelf: "flex-end", backgroundColor: colors.primary },
-  theirs: { alignSelf: "flex-start", backgroundColor: colors.card },
-  composer: { flexDirection: "row", padding: 12, gap: 8, borderTopWidth: 1, borderColor: colors.border },
-  input: { flex: 1, backgroundColor: colors.card, color: colors.text, borderRadius: 12, paddingHorizontal: 12 },
-  send: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 16, justifyContent: "center" },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    bubble: { maxWidth: "80%", padding: 10, borderRadius: 14, marginBottom: 8 },
+    mine: { alignSelf: "flex-end", backgroundColor: colors.primary },
+    theirs: { alignSelf: "flex-start", backgroundColor: colors.card },
+    composer: { flexDirection: "row", padding: 12, gap: 8, borderTopWidth: 1, borderColor: colors.border },
+    input: { flex: 1, backgroundColor: colors.card, color: colors.text, borderRadius: 12, paddingHorizontal: 12, fontSize: 13 },
+    send: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 16, justifyContent: "center" },
+  });
+}

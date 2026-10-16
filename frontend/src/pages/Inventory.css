@@ -44,13 +44,19 @@
   background: var(--gradient-primary) !important;
   color: white !important;
   font-weight: 800 !important;
-  padding: 12px 24px !important;
+  height: 40px;
+  padding: 0 16px !important;
   border-radius: 14px !important;
   border: none !important;
   cursor: pointer !important;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  line-height: 1;
+  white-space: nowrap;
+  width: fit-content;
+  flex: 0 0 auto;
 }
 
 .inv-btn.is-dark {
@@ -124,11 +130,12 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 10050;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
+  overflow: auto;
 }
 
 .inv-modal {
@@ -137,7 +144,8 @@
   border: 1px solid var(--border-glass);
   width: 100%;
   max-width: 560px;
-  max-height: 90vh;
+  max-height: 100%;
+  margin: auto;
   overflow: auto;
   border-radius: 32px;
 }

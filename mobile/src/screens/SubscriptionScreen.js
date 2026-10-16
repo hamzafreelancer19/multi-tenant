@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { buyPlan, getPlans, getSchools } from "../api";
+import { buyPlan, getPlans, getPlatformStatus, getSchools, getUserProfile } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import { Badge, Card, ChipSelect, EmptyState, ErrorText, Field, Hero, LoadingBlock, PrimaryButton, Screen, StatRow } from "../components/ui";
 import { apiError, asList, formatDate, money } from "../utils";
@@ -12,7 +12,7 @@ const FALLBACK = [
 ];
 
 export default function SubscriptionScreen() {
-  const { user } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const [school, setSchool] = useState(null);
   const [plans, setPlans] = useState(FALLBACK);
   const [selected, setSelected] = useState("Business");
@@ -21,18 +21,27 @@ export default function SubscriptionScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
+  const [payment, setPayment] = useState(null);
 
   const load = async () => {
     try {
-      const [s, p] = await Promise.all([
+      const [s, p, status] = await Promise.all([
         getSchools(),
         getPlans().catch(() => ({ data: [] })),
+        getPlatformStatus().catch(() => ({ data: {} })),
       ]);
       const schools = asList(s.data);
       const mine =
         schools.find((row) => row.id === Number(user?.school) || row.id === Number(user?.school_id)) ||
         schools[0];
       setSchool(mine || null);
+      setPayment(status.data?.payment_methods || null);
+      try {
+        const profile = await getUserProfile();
+        if (profile.data) setUser(profile.data);
+      } catch {
+        /* school row still shows the current plan status */
+      }
       const catalog = asList(p.data);
       if (catalog.length) {
         setPlans(
@@ -102,10 +111,28 @@ export default function SubscriptionScreen() {
         </>
       ) : <EmptyState text="School record not found." />}
 
-      <Hero kicker="Upgrade" title="Request a plan" subtitle="Pay via your bank/wallet, then paste the transaction ID." />
+      <Hero kicker="Upgrade" title="Request a plan" subtitle="Pay via the methods below, then paste your transaction ID." />
+      {payment && (payment.jazzcash || payment.easypaisa || payment.account_number || payment.instructions) ? (
+        <Card>
+          <Hero kicker="Pay here" title="Payment methods" subtitle={payment.instructions || ""} />
+          {!!payment.jazzcash && <Hero compact kicker="JazzCash" title={payment.jazzcash} />}
+          {!!payment.easypaisa && <Hero compact kicker="EasyPaisa" title={payment.easypaisa} />}
+          {!!payment.bank_name && (
+            <Hero
+              compact
+              kicker={payment.bank_name}
+              title={payment.account_title || "Bank transfer"}
+              subtitle={[payment.account_number, payment.iban].filter(Boolean).join(" · ")}
+            />
+          )}
+        </Card>
+      ) : null}
       <ChipSelect label="Plan" value={selected} options={plans.map((p) => ({ value: p.id, label: `${p.name} · ${money(p.price)}` }))} onChange={setSelected} />
       <Field label="Transaction ID" value={txn} onChangeText={setTxn} placeholder="e.g. JazzCash / bank ref" />
       <PrimaryButton title={saving ? "Submitting…" : "Submit request"} onPress={submit} disabled={saving || !school} />
+      {user?.subscription_active === false && (
+        <PrimaryButton title="Log out" tone="navy" onPress={logout} />
+      )}
     </Screen>
   );
 }

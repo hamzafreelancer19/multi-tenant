@@ -1,14 +1,17 @@
-import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import React, { useMemo } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthContext";
 import { isSchoolAdmin } from "../utils";
-import { colors } from "../theme";
+import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./rootNav";
+import { LoadingBlock } from "../components/ui";
 import LoginScreen from "../screens/LoginScreen";
+import SignupScreen from "../screens/SignupScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import StudentsScreen from "../screens/StudentsScreen";
 import TeachersScreen from "../screens/TeachersScreen";
@@ -49,96 +52,158 @@ import {
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const navTheme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.navy, text: colors.text, border: colors.border, primary: colors.primary },
-};
-
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.navy },
-  headerTintColor: colors.text,
-  headerTitleStyle: { fontWeight: "800" },
-  contentStyle: { backgroundColor: colors.bg },
-};
-
-function tabIcon(name) {
-  return ({ color, size }) => <Ionicons name={name} color={color} size={size} />;
+function TabIcon({ outline, filled, color, focused, showActiveLine = true }) {
+  const { colors } = useTheme();
+  return (
+    <View style={tabStyles.iconWrap}>
+      {focused && showActiveLine ? (
+        <View style={[tabStyles.activeDot, { backgroundColor: colors.primary }]} />
+      ) : (
+        <View style={tabStyles.activeDotSpacer} />
+      )}
+      <Ionicons name={focused ? filled : outline} color={color} size={focused ? 24 : 22} />
+    </View>
+  );
 }
 
-const tabBarOpts = {
-  headerShown: false,
-  tabBarStyle: { backgroundColor: colors.navy, borderTopColor: colors.border },
-  tabBarActiveTintColor: colors.primary,
-  tabBarInactiveTintColor: colors.muted,
-};
+function tabIcon(outline, filled, { showActiveLine = true } = {}) {
+  return ({ color, focused }) => (
+    <TabIcon
+      outline={outline}
+      filled={filled || outline.replace("-outline", "")}
+      color={color}
+      focused={focused}
+      showActiveLine={showActiveLine}
+    />
+  );
+}
+
+function useTabBarOptions() {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const bottom = Math.max(insets.bottom, Platform.OS === "android" ? 8 : 6);
+  return {
+    headerShown: false,
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.muted,
+    tabBarHideOnKeyboard: true,
+    tabBarStyle: {
+      backgroundColor: colors.bg2,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(15,23,42,0.08)",
+      height: 58 + bottom,
+      paddingTop: 6,
+      paddingBottom: bottom,
+      elevation: 12,
+      shadowColor: "#000",
+      shadowOpacity: isDark ? 0.35 : 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: -4 },
+    },
+    tabBarItemStyle: {
+      paddingVertical: 2,
+    },
+    tabBarLabelStyle: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 0.2,
+      marginTop: 2,
+    },
+  };
+}
 
 function AdminTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline") }} />
-      <Tab.Screen name="StudentsTab" component={StudentsScreen} options={{ title: "Students", tabBarIcon: tabIcon("people-outline") }} />
-      <Tab.Screen name="AttendanceTab" component={AttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline") }} />
-      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline", "grid") }} />
+      <Tab.Screen name="StudentsTab" component={StudentsScreen} options={{ title: "Students", tabBarIcon: tabIcon("people-outline", "people") }} />
+      <Tab.Screen name="AttendanceTab" component={AttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline", "checkmark-circle") }} />
+      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline", "card") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
 
 function TeacherTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={TeacherHomeScreen} options={{ title: "Home", tabBarIcon: tabIcon("school-outline") }} />
-      <Tab.Screen name="AttendanceTab" component={AttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline") }} />
-      <Tab.Screen name="HomeworkTab" component={AssignmentsScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={TeacherHomeScreen} options={{ title: "Home", tabBarIcon: tabIcon("school-outline", "school") }} />
+      <Tab.Screen name="AttendanceTab" component={AttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline", "checkmark-circle") }} />
+      <Tab.Screen name="HomeworkTab" component={AssignmentsScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline", "document-text") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
 
 function ParentTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={ParentHomeScreen} options={{ title: "Home", tabBarIcon: tabIcon("home-outline") }} />
-      <Tab.Screen name="AttendanceTab" component={ParentAttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline") }} />
-      <Tab.Screen name="FeesTab" component={ParentFeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline") }} />
-      <Tab.Screen name="HomeworkTab" component={ParentHomeworkScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={ParentHomeScreen} options={{ title: "Home", tabBarIcon: tabIcon("home-outline", "home") }} />
+      <Tab.Screen name="AttendanceTab" component={ParentAttendanceScreen} options={{ title: "Attendance", tabBarIcon: tabIcon("checkmark-circle-outline", "checkmark-circle") }} />
+      <Tab.Screen name="FeesTab" component={ParentFeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline", "card") }} />
+      <Tab.Screen name="HomeworkTab" component={ParentHomeworkScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline", "document-text") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
 
 function StudentTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("home-outline") }} />
-      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline") }} />
-      <Tab.Screen name="HomeworkTab" component={AssignmentsScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline") }} />
-      <Tab.Screen name="ExamsTab" component={ExamsScreen} options={{ title: "Exams", tabBarIcon: tabIcon("clipboard-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("home-outline", "home") }} />
+      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline", "card") }} />
+      <Tab.Screen name="HomeworkTab" component={AssignmentsScreen} options={{ title: "Homework", tabBarIcon: tabIcon("document-text-outline", "document-text") }} />
+      <Tab.Screen name="ExamsTab" component={ExamsScreen} options={{ title: "Exams", tabBarIcon: tabIcon("clipboard-outline", "clipboard") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
 
 function AccountantTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline") }} />
-      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline", "grid") }} />
+      <Tab.Screen name="FeesTab" component={FeesScreen} options={{ title: "Fees", tabBarIcon: tabIcon("card-outline", "card") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
 
 function SuperTabs() {
+  const tabBarOpts = useTabBarOptions();
   return (
     <Tab.Navigator screenOptions={tabBarOpts}>
-      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline") }} />
-      <Tab.Screen name="SchoolsTab" component={SchoolsScreen} options={{ title: "Schools", tabBarIcon: tabIcon("business-outline") }} />
-      <Tab.Screen name="PlansTab" component={PlansScreen} options={{ title: "Plans", tabBarIcon: tabIcon("card-outline") }} />
-      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tab.Screen name="HomeTab" component={DashboardScreen} options={{ title: "Home", tabBarIcon: tabIcon("grid-outline", "grid") }} />
+      <Tab.Screen name="SchoolsTab" component={SchoolsScreen} options={{ title: "Schools", tabBarIcon: tabIcon("business-outline", "business") }} />
+      <Tab.Screen name="PlansTab" component={PlansScreen} options={{ title: "Plans", tabBarIcon: tabIcon("card-outline", "card") }} />
+      <Tab.Screen name="MoreTab" component={MoreScreen} options={{ title: "More", tabBarIcon: tabIcon("menu-outline", "menu", { showActiveLine: false }) }} />
     </Tab.Navigator>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  iconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 40,
+  },
+  activeDot: {
+    width: 18,
+    height: 3,
+    borderRadius: 2,
+    marginBottom: 4,
+  },
+  activeDotSpacer: {
+    width: 18,
+    height: 3,
+    marginBottom: 4,
+  },
+});
 
 function RoleTabs() {
   const { role } = useAuth();
@@ -151,7 +216,51 @@ function RoleTabs() {
   return <AdminTabs />;
 }
 
+function subscriptionLocked(user) {
+  if (!user || user.role === "superadmin") return false;
+  if (user.subscription_active === false) return true;
+  if (user.plan_status && user.plan_status !== "Active") return true;
+  return false;
+}
+
+function SubscriptionLock() {
+  const { colors } = useTheme();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.bg2 },
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Subscription" }} />
+    </Stack.Navigator>
+  );
+}
+
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function AppStack() {
+  const { colors } = useTheme();
+  const screenOptions = useMemo(
+    () => ({
+      headerStyle: { backgroundColor: colors.bg2 },
+      headerTintColor: colors.text,
+      headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+      headerShown: false,
+      contentStyle: { backgroundColor: colors.bg },
+    }),
+    [colors]
+  );
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Tabs" component={RoleTabs} options={{ headerShown: false }} />
@@ -193,16 +302,26 @@ function AppStack() {
 
 export default function RootNavigator() {
   const { ready, user } = useAuth();
+  const { colors, navTheme, isDark } = useTheme();
+  const theme = useMemo(
+    () => ({
+      ...DefaultTheme,
+      dark: isDark,
+      colors: { ...DefaultTheme.colors, ...navTheme.colors },
+    }),
+    [isDark, navTheme]
+  );
+
   if (!ready) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={colors.primary} />
+        <LoadingBlock label="Starting Classora…" />
       </View>
     );
   }
   return (
-    <NavigationContainer ref={navigationRef} theme={navTheme}>
-      {user ? <AppStack /> : <LoginScreen />}
+    <NavigationContainer ref={navigationRef} theme={theme}>
+      {user ? (subscriptionLocked(user) ? <SubscriptionLock /> : <AppStack />) : <AuthStack />}
     </NavigationContainer>
   );
 }

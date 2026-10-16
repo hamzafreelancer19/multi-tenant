@@ -5,16 +5,29 @@
 .st-add-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   border: 0;
   background: var(--accent);
   color: #fff;
   border-radius: 999px;
-  padding: 10px 16px;
+  height: 40px;
+  padding: 0 16px;
   font-weight: 800;
   font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   font-family: inherit;
+  flex-shrink: 0;
+  width: fit-content;
+}
+
+.st-add-btn svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .st-add-btn:disabled {
@@ -268,14 +281,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 10050;
   padding: 16px;
   overflow: auto;
 }
 
 .st-modal {
   width: min(680px, 100%);
-  max-height: min(calc(100dvh - 32px), 720px);
+  max-height: min(100%, 720px);
+  margin: auto;
   background: #fff;
   border-radius: 20px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);

@@ -1099,6 +1099,20 @@ textarea {
   border-radius: 10px;
 }
 
+.sidebar-logo .logo-icon.has-image {
+  background: #fff;
+  padding: 4px;
+  box-shadow: none;
+}
+
+.sidebar-logo .logo-initials {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1;
+}
+
 .login-brand {
   font-size: 18px;
   font-weight: 800;
@@ -1644,18 +1658,23 @@ textarea {
    PRIMARY BUTTON
 ───────────────────────────────────────── */
 .primary-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 18px;
+  min-height: 40px;
+  padding: 0 16px;
   background: var(--gradient-primary);
   color: white;
   font-weight: 600;
   font-size: 13px;
+  line-height: 1;
   border-radius: var(--radius-sm);
   transition: var(--transition);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   white-space: nowrap;
+  width: fit-content;
+  flex: 0 0 auto;
 }
 
 .primary-btn:hover {
@@ -2055,8 +2074,10 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10050;
   animation: fadeIn 0.2s ease-out;
+  padding: 16px;
+  overflow: auto;
 }
 
 .lp-section-bg {
@@ -2074,17 +2095,31 @@ textarea {
   border-radius: 20px;
   width: 100%;
   max-width: 500px;
+  max-height: 100%;
+  margin: auto;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .modal-header {
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -2106,22 +2141,37 @@ textarea {
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 16px 20px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .modal-footer {
-  padding: 16px 24px;
+  padding: 12px 20px;
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.modal-footer .primary-btn,
+.modal-footer .secondary-btn {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 @keyframes fadeIn {

@@ -15,7 +15,7 @@ import {
 import { ChipSelect, EmptyState, ErrorText, Field, Hero, LoadingBlock, PrimaryButton, Screen, SearchBar, StatRow } from "../components/ui";
 import { Card } from "../components/ui";
 import { apiError, asList, classLabel, isSchoolAdmin, todayISO, unique } from "../utils";
-import { colors } from "../theme";
+import { useTheme } from "../theme/ThemeContext";
 
 const STATUSES = ["Present", "Absent", "Late", "Leave"];
 
@@ -35,6 +35,7 @@ function Register({ people, marks, setMarks, keyName, titleOf, metaOf }) {
 
 export default function AttendanceScreen() {
   const { role } = useAuth();
+  const { colors } = useTheme();
   const adminMode = isSchoolAdmin(role);
   const [date, setDate] = useState(todayISO());
   const [loading, setLoading] = useState(true);

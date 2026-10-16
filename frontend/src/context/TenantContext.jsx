@@ -17,6 +17,8 @@ export const TenantProvider = ({ children }) => {
     schoolSlug: null,
     landing: null,
     branding: null,
+    planStatus: null,
+    subscriptionActive: true,
     loading: true,
     error: null,
   });
@@ -31,6 +33,8 @@ export const TenantProvider = ({ children }) => {
         schoolSlug: data.school_slug || null,
         landing: data.landing,
         branding: data.branding,
+        planStatus: data.plan_status || null,
+        subscriptionActive: data.subscription_active !== false,
         loading: false,
         error: null,
       }));
@@ -43,6 +47,8 @@ export const TenantProvider = ({ children }) => {
         schoolSlug: null,
         landing: null,
         branding: null,
+        planStatus: null,
+        subscriptionActive: true,
         loading: false,
         error: data?.detail || null,
       }));

@@ -239,9 +239,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           const isVercel = window.location.hostname.includes('vercel.app');
 
           let targetPath = "/dashboard";
-          if (userProfile.role === "superadmin") targetPath = "/schools";
-          if (userProfile.role === "teacher") targetPath = "/teacher";
-          if (userProfile.role === "parent") targetPath = "/parent";
+          if (userProfile.role !== "superadmin" && userProfile.subscription_active === false) targetPath = "/subscription";
+          else if (userProfile.role === "superadmin") targetPath = "/schools";
+          else if (userProfile.role === "teacher") targetPath = "/teacher";
+          else if (userProfile.role === "parent") targetPath = "/parent";
 
           if (userProfile.role === 'superadmin') {
             const currentHost = window.location.hostname;
@@ -306,9 +307,10 @@ export const AuthComponent = ({ mode = "login", logo = <DefaultLogo />, brandNam
           const isVercel = window.location.hostname.includes('vercel.app');
 
           let targetPath = "/dashboard";
-          if (userProfile.role === "superadmin") targetPath = "/schools";
-          if (userProfile.role === "teacher") targetPath = "/teacher";
-          if (userProfile.role === "parent") targetPath = "/parent";
+          if (userProfile.role !== "superadmin" && userProfile.subscription_active === false) targetPath = "/subscription";
+          else if (userProfile.role === "superadmin") targetPath = "/schools";
+          else if (userProfile.role === "teacher") targetPath = "/teacher";
+          else if (userProfile.role === "parent") targetPath = "/parent";
 
           if (userProfile.role === 'superadmin') {
             const currentHost = window.location.hostname;
